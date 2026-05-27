@@ -1,0 +1,25 @@
+:root {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #1a1f36;
+  background: linear-gradient(180deg, #f4f7fb 0%, #ecf2ff 100%);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+.app-shell { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+.sidebar { background: #0f2745; color: #dce8ff; padding: 20px; overflow: auto; }
+.brand { display: flex; gap: 8px; align-items: center; font-weight: 700; margin-bottom: 16px; }
+.nav-item { width: 100%; text-align: left; margin: 4px 0; padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
+.nav-item.active, .nav-item:hover { background: #1f3f6d; }
+.main { display: grid; grid-template-rows: auto 1fr; }
+.topbar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 12px 20px; background: #fff; border-bottom: 1px solid #d6dfef; }
+.logout { display: flex; gap: 6px; align-items: center; border: 1px solid #c2d1ec; background: #f8fbff; padding: 7px 10px; border-radius: 7px; }
+.content { padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 12px; }
+.card { background: #fff; border: 1px solid #d6dfef; border-radius: 12px; padding: 16px; min-height: 96px; }
+
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { max-height: 260px; }
+  .grid { grid-template-columns: 1fr; }
+}

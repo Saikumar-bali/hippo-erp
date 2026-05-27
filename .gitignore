@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# TypeScript and tooling cache
+*.tsbuildinfo
+.eslintcache
+.vite/
+.vitest/
+coverage/
+
+# Supabase local runtime
+supabase/.branches/
+supabase/.temp/
+
+# AI planning / handoff files
+GPT55_TO_CODEX53_FULLSTACK_TASKS.md
+*_TO_CODEX*_TASKS.md
+AI_*.md
+ai-*.md
+.codex/
+.agents/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
