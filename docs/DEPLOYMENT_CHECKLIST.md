@@ -36,3 +36,15 @@ Project: `hippo-erp`
 - Command: `npm run test:simulation`
 - SQL file: `tests/simulations/full_inventory_flow.sql`
 - This command prints safe cloud execution instructions when no direct DB execution context is configured.
+
+## Verification Log (2026-05-27)
+
+- Cloudflare Pages project `hippo-erp` is connected to GitHub source `Saikumar-bali/hippo-erp` on production branch `main`.
+- Production env vars confirmed in Cloudflare Pages config:
+  - `VITE_SUPABASE_URL=https://bhqgszzvemejfbgndtnf.supabase.co`
+  - `VITE_SUPABASE_PUBLISHABLE_KEY` is set
+  - `NODE_VERSION=22`
+- Git push to `main` completed for commit `593a5ff`.
+- Cloudflare created a new deployment with trigger type `github:push` and commit hash `593a5ffe5e739fd036d8b061ced5fb9433ae656b`.
+- Runtime availability check passed: `curl -I https://hippo-erp.pages.dev/login` returned `HTTP/1.1 200 OK`.
+- `npm run test:simulation` executed and returned safe cloud SQL execution instructions.
