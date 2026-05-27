@@ -291,6 +291,7 @@ a {
   color: #dce8ff;
   padding: 20px;
   overflow: auto;
+  border-right: 1px solid #1b4769;
 }
 
 .sidebar .brand {
@@ -300,7 +301,7 @@ a {
 .nav-item {
   width: 100%;
   text-align: left;
-  margin: 4px 0;
+  margin: 3px 0;
   padding: 10px 12px;
   border: 0;
   border-radius: 8px;
@@ -312,6 +313,54 @@ a {
 .nav-item.active,
 .nav-item:hover {
   background: #1f4b66;
+}
+
+.module-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.erp-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.erp-table th,
+.erp-table td {
+  text-align: left;
+  border-bottom: 1px solid #d9e3f1;
+  padding: 10px 8px;
+  white-space: nowrap;
+}
+
+.erp-table th {
+  color: #415a73;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.state-info {
+  background: #f5f9ff;
+  border-color: #c7dcff;
+  color: #224367;
+}
+
+.state-error {
+  background: #fff2f0;
+  border-color: #ffc8ba;
+  color: #8a1f11;
+}
+
+.state-success {
+  background: #edf9f3;
+  border-color: #b9e4cb;
+  color: #1b573e;
 }
 
 .main {
@@ -386,7 +435,7 @@ a {
   }
 
   .sidebar {
-    max-height: 260px;
+    max-height: 320px;
   }
 
   .grid {

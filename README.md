@@ -37,3 +37,7 @@ Inventory ERP implemented with React + Vite + TypeScript frontend and Supabase b
 ## Known limitations
 - Supabase local stack and SQL test execution depend on Docker/CLI availability in host environment.
 - Auth user seeding is manual unless local auth setup is scripted.
+
+## Docs
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md)

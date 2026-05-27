@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:simulation": "node scripts/run-simulation.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
