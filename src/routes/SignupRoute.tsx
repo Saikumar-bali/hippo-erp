@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Boxes, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { getAuthRedirectUrl } from "../lib/auth-redirect";
 
 export function SignupRoute() {
   const [email, setEmail] = useState("");
@@ -13,7 +14,14 @@ export function SignupRoute() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: getAuthRedirectUrl()
+      }
+    });
     if (error) return setError(error.message);
     navigate("/");
   };

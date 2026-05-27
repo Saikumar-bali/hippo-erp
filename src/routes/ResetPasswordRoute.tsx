@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Boxes, Mail, RotateCcw, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { getAuthRedirectUrl } from "../lib/auth-redirect";
 
 export function ResetPasswordRoute() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,9 @@ export function ResetPasswordRoute() {
     e.preventDefault();
     setError("");
     setMsg("");
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getAuthRedirectUrl()
+    });
     if (error) return setError(error.message);
     setMsg("Password reset email sent.");
   };
