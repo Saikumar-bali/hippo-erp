@@ -14,6 +14,7 @@ create or replace function wh.post_inventory_movement(
 ) returns wh.inventory_movements
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_row wh.inventory_movements;
@@ -53,6 +54,7 @@ create or replace function wh._upsert_stock(
 ) returns wh.inventory_stock
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_stock wh.inventory_stock;
@@ -124,6 +126,7 @@ create or replace function wh.create_grn(p_payload jsonb)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_grn wh.grn_headers;
@@ -164,6 +167,7 @@ create or replace function wh.receive_grn_line(p_grn_line_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_line wh.grn_lines;
@@ -205,6 +209,7 @@ create or replace function wh.allocate_grn_to_bin(p_grn_line_id uuid, p_bin_id u
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_line wh.grn_lines;
@@ -238,6 +243,7 @@ create or replace function wh.reserve_stock(p_stock_id uuid, p_qty numeric, p_re
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_stock wh.inventory_stock;
@@ -268,6 +274,7 @@ create or replace function wh.release_reservation(p_reservation_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_res wh.inventory_reservations;
@@ -300,6 +307,7 @@ create or replace function wh.dispatch_reserved_stock(p_reservation_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_res wh.inventory_reservations;
@@ -333,6 +341,7 @@ create or replace function wh.create_stock_transfer(p_payload jsonb)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_transfer wh.stock_transfers;
@@ -372,6 +381,7 @@ create or replace function wh.complete_stock_transfer(p_transfer_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_transfer wh.stock_transfers;
@@ -419,6 +429,7 @@ create or replace function wh.create_stock_adjustment(p_payload jsonb)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_adj wh.stock_adjustments;
@@ -450,6 +461,7 @@ create or replace function wh.approve_stock_adjustment(
 ) returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_adj wh.stock_adjustments;
@@ -488,6 +500,7 @@ create or replace function wh.start_cycle_count(p_tenant_id uuid, p_warehouse_id
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_cc wh.cycle_counts;
@@ -513,6 +526,7 @@ create or replace function wh.complete_cycle_count(p_cycle_count_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_cc wh.cycle_counts;
@@ -548,6 +562,7 @@ create or replace function wh.generate_reorder_alerts(p_tenant_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_count integer;
@@ -576,6 +591,7 @@ create or replace function wh.recalculate_inventory_valuation(p_tenant_id uuid)
 returns jsonb
 language plpgsql
 security invoker
+set search_path = wh, app, auth, public
 as $$
 declare
   v_count integer;

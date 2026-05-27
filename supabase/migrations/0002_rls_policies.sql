@@ -33,6 +33,7 @@ create or replace function app.current_tenant_roles(tenant uuid)
 returns text[]
 language sql
 stable
+set search_path = app, auth, public
 as $$
   select coalesce(array_agg(tm.role::text), '{}'::text[])
   from app.tenant_members tm
@@ -81,6 +82,7 @@ with check (app.current_user_has_tenant_role(id, array['owner','admin']));
 create or replace function private.apply_wh_policies()
 returns void
 language plpgsql
+set search_path = private, wh, app, public
 as $$
 declare t record;
 begin
