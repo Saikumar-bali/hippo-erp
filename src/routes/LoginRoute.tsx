@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Boxes, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 export function LoginRoute() {
@@ -16,5 +17,77 @@ export function LoginRoute() {
     navigate("/");
   };
 
-  return <form onSubmit={submit}><h2>Login</h2><input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Email" /><input value={password} onChange={(e)=>setPassword(e.target.value)} type="password" placeholder="Password" /><button type="submit">Login</button>{error && <p>{error}</p>}<Link to="/signup">Signup</Link> <Link to="/reset">Reset</Link></form>;
+  return (
+    <main className="auth-page">
+      <section className="auth-panel" aria-label="Hippo ERP sign in">
+        <div className="auth-brand">
+          <span className="brand-mark"><Boxes size={22} /></span>
+          <span>Hippo ERP</span>
+        </div>
+        <div className="auth-copy">
+          <p className="eyebrow">Inventory operations console</p>
+          <h1>Run warehouses with clearer stock control.</h1>
+          <p>
+            Secure access for product masters, bins, GRN, transfers, cycle counts,
+            reservations, and valuation workflows.
+          </p>
+        </div>
+        <div className="auth-metrics" aria-label="Inventory highlights">
+          <div><strong>23</strong><span>ERP tables</span></div>
+          <div><strong>RLS</strong><span>Tenant security</span></div>
+          <div><strong>RPC</strong><span>Stock ledger</span></div>
+        </div>
+      </section>
+
+      <section className="auth-card" aria-label="Login form">
+        <div className="auth-card-header">
+          <div className="auth-icon"><ShieldCheck size={22} /></div>
+          <div>
+            <p className="eyebrow">Welcome back</p>
+            <h2>Login</h2>
+          </div>
+        </div>
+
+        <form className="auth-form" onSubmit={submit}>
+          <label>
+            <span>Email</span>
+            <div className="input-wrap">
+              <Mail size={18} />
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                type="email"
+                autoComplete="email"
+              />
+            </div>
+          </label>
+          <label>
+            <span>Password</span>
+            <div className="input-wrap">
+              <LockKeyhole size={18} />
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                placeholder="Password"
+                autoComplete="current-password"
+              />
+            </div>
+          </label>
+
+          {error && <p className="form-alert" role="alert">{error}</p>}
+
+          <button className="primary-action" type="submit">
+            Login <ArrowRight size={18} />
+          </button>
+        </form>
+
+        <div className="auth-links">
+          <Link to="/signup">Create account</Link>
+          <Link to="/reset">Reset password</Link>
+        </div>
+      </section>
+    </main>
+  );
 }
