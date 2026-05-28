@@ -9,6 +9,7 @@ import { LoginRoute } from "./routes/LoginRoute";
 import { SignupRoute } from "./routes/SignupRoute";
 import { ResetPasswordRoute } from "./routes/ResetPasswordRoute";
 import { AuthCallbackRoute } from "./routes/AuthCallbackRoute";
+import { UpdatePasswordRoute } from "./routes/UpdatePasswordRoute";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -18,6 +19,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/login" element={<LoginRoute />} />
           <Route path="/signup" element={<SignupRoute />} />
           <Route path="/reset" element={<ResetPasswordRoute />} />
+          <Route path="/reset/update" element={<UpdatePasswordRoute />} />
           <Route path="/auth/callback" element={<AuthCallbackRoute />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<App />} />
