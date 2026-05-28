@@ -37,12 +37,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const loadingGuard = window.setTimeout(() => {
+      setLoading(false);
+    }, 8000);
+
     supabase.auth
       .getSession()
       .then(async ({ data }) => {
         setSession(data.session);
         if (data.session) {
-          await refreshTenants();
+          try {
+            await refreshTenants();
+          } catch {
+            setTenants([]);
+          }
         }
       })
       .catch(() => {
@@ -58,7 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange(async (_, next) => {
       setSession(next);
       if (next) {
-        await refreshTenants();
+        try {
+          await refreshTenants();
+        } catch {
+          setTenants([]);
+        }
       } else {
         setTenants([]);
         localStorage.removeItem("tenant_id");
@@ -66,7 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => data.subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(loadingGuard);
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   const value = useMemo(

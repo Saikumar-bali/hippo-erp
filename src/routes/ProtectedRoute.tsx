@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 
 export function ProtectedRoute() {
   const { session, loading } = useAuth();
-  if (loading) return <div>Loading session...</div>;
+  if (loading && session) return <div>Loading session...</div>;
   if (!session) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
