@@ -37,11 +37,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      if (data.session) await refreshTenants();
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        setSession(data.session);
+        if (data.session) {
+          await refreshTenants();
+        }
+      })
+      .catch(() => {
+        setSession(null);
+        setTenants([]);
+        localStorage.removeItem("tenant_id");
+        setSelectedTenantIdState(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     const { data } = supabase.auth.onAuthStateChange(async (_, next) => {
       setSession(next);
