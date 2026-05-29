@@ -34,16 +34,16 @@ export function SignupRoute() {
           <span>Hippo ERP</span>
         </div>
         <div className="auth-copy">
-          <p className="eyebrow">Tenant-ready inventory</p>
+          <p className="eyebrow">Company-ready inventory</p>
           <h1>Create a secure workspace for warehouse teams.</h1>
           <p>
-            Start with Supabase Auth, tenant membership, and RLS-backed inventory
+            Start with Supabase Auth, company membership, and RLS-backed inventory
             operations from the first login.
           </p>
         </div>
         <div className="auth-metrics" aria-label="Security highlights">
           <div><strong>Auth</strong><span>Supabase</span></div>
-          <div><strong>RLS</strong><span>Tenant scope</span></div>
+          <div><strong>RLS</strong><span>Company scope</span></div>
           <div><strong>UI</strong><span>ERP console</span></div>
         </div>
       </section>
@@ -52,9 +52,13 @@ export function SignupRoute() {
         <div className="auth-card-header">
           <div className="auth-icon"><ShieldCheck size={22} /></div>
           <div>
-            <p className="eyebrow">New workspace user</p>
+            <p className="eyebrow">Demo / testing only</p>
             <h2>Signup</h2>
           </div>
+        </div>
+
+        <div className="card state-info state-note">
+          Real company access is admin-provisioned. Use this form for sandbox/demo users, then assign company membership and role from <strong>Users and roles</strong>.
         </div>
 
         <form className="auth-form" onSubmit={submit}>

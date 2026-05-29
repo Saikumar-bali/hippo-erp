@@ -3,6 +3,20 @@ values
   ('11111111-1111-1111-1111-111111111111', 'Demo Tenant', 'demo-tenant')
 on conflict do nothing;
 
+update app.tenants
+set
+  name = 'Demo Company',
+  slug = 'demo-company',
+  gst_number = '29ABCDE1234F2Z5',
+  email = 'ops@demo-company.com',
+  phone = '+919876543210',
+  address = '42 Warehouse Road, Bengaluru',
+  logo_url = 'https://cdn.example.com/demo-company-logo.png',
+  industry_type = 'Distribution',
+  currency_code = 'INR',
+  financial_year_start = '2026-04-01'
+where id = '11111111-1111-1111-1111-111111111111';
+
 insert into wh.product_categories (id, tenant_id, code, name)
 values
   ('21111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'RAW', 'Raw Material'),

@@ -10,6 +10,7 @@ import { SignupRoute } from "./routes/SignupRoute";
 import { ResetPasswordRoute } from "./routes/ResetPasswordRoute";
 import { AuthCallbackRoute } from "./routes/AuthCallbackRoute";
 import { UpdatePasswordRoute } from "./routes/UpdatePasswordRoute";
+import { InviteAcceptRoute } from "./routes/InviteAcceptRoute";
 
 function HashAuthBridge() {
   const location = useLocation();
@@ -38,6 +39,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/signup" element={<SignupRoute />} />
           <Route path="/reset" element={<ResetPasswordRoute />} />
           <Route path="/reset/update" element={<UpdatePasswordRoute />} />
+          <Route path="/invite/accept" element={<InviteAcceptRoute />} />
           <Route path="/auth/callback" element={<AuthCallbackRoute />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<App />} />

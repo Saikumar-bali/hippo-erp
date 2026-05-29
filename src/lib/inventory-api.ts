@@ -1,11 +1,22 @@
 import { supabase } from "./supabase";
-import type { Product, Tenant, Warehouse } from "./types";
+import type { Tenant, Warehouse } from "./types";
 
+// Compatibility note: database and RPC use `tenant_*` names; they represent company context.
 function fail(message: string): never {
   throw new Error(message);
 }
 
+function normalizeError(message: string) {
+  if (message.includes("Invalid schema: wh")) {
+    return "This module uses the wh schema which is not yet exposed in the Supabase Data API.";
+  }
+  return message;
+}
+
 type Id = string;
+const devLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log("[inventory-api]", ...args);
+};
 
 async function unwrap<T>(p: any): Promise<T> {
   const { data, error } = await p;
@@ -14,13 +25,37 @@ async function unwrap<T>(p: any): Promise<T> {
   return data;
 }
 
+async function withTimeout<T>(promiseLike: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promiseLike),
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), ms);
+    })
+  ]);
+}
+
+// Re-export product-domain functions from the public-RPC-based product-api
+export {
+  listProducts, createProduct,
+  listCategories, createCategory,
+  listUoms, createUom
+} from "./product-api";
+
 export async function getMyTenants(): Promise<Tenant[]> {
-  const { data, error } = await supabase
-    .schema("app")
-    .from("tenant_members")
-    .select("tenant:tenants(id,name,slug)");
-  if (error) fail(error.message);
-  return (data ?? []).map((row: any) => row.tenant as Tenant);
+  devLog("getMyTenants:start");
+  const result: any = await withTimeout(
+    supabase.rpc("get_my_companies"),
+    15000,
+    "Company membership request timed out after 15s."
+  );
+  if (result.error) {
+    const message = normalizeError(result.error.message);
+    devLog("getMyTenants:error", message);
+    fail(message);
+  }
+  const rows = (result.data ?? []) as Tenant[];
+  devLog("getMyTenants:success", { count: rows.length, ids: rows.map((r: Tenant) => r.id) });
+  return rows;
 }
 
 export async function getMyProfile() {
@@ -29,51 +64,9 @@ export async function getMyProfile() {
   );
 }
 
-export async function listProducts(tenantId: Id): Promise<Product[]> {
-  const { data, error } = await supabase
-    .schema("wh")
-    .from("products")
-    .select("id,tenant_id,sku,name,is_active")
-    .eq("tenant_id", tenantId)
-    .order("created_at", { ascending: false });
-  if (error) fail(error.message);
-  return data ?? [];
-}
-
-export async function createProduct(payload: {
-  tenant_id: Id;
-  category_id: Id;
-  uom_id: Id;
-  sku: string;
-  name: string;
-  reorder_point: number;
-}) {
-  return unwrap(supabase.schema("wh").from("products").insert(payload).select("*").single());
-}
-
-export async function listCategories(tenantId: Id) {
-  const { data, error } = await supabase.schema("wh").from("product_categories").select("*").eq("tenant_id", tenantId);
-  if (error) fail(error.message);
-  return data ?? [];
-}
-
-export async function createCategory(payload: { tenant_id: Id; code: string; name: string }) {
-  return unwrap(supabase.schema("wh").from("product_categories").insert(payload).select("*").single());
-}
-
-export async function listUoms(tenantId: Id) {
-  const { data, error } = await supabase.schema("wh").from("units_of_measure").select("*").eq("tenant_id", tenantId);
-  if (error) fail(error.message);
-  return data ?? [];
-}
-
-export async function createUom(payload: { tenant_id: Id; code: string; name: string }) {
-  return unwrap(supabase.schema("wh").from("units_of_measure").insert(payload).select("*").single());
-}
-
 export async function listWarehouses(tenantId: Id): Promise<Warehouse[]> {
   const { data, error } = await supabase.schema("wh").from("warehouses").select("id,tenant_id,warehouse_code,name,is_active").eq("tenant_id", tenantId);
-  if (error) fail(error.message);
+  if (error) fail(normalizeError(error.message));
   return data ?? [];
 }
 
@@ -83,19 +76,19 @@ export async function createWarehouse(payload: { tenant_id: Id; warehouse_code: 
 
 export async function listStock(tenantId: Id) {
   const { data, error } = await supabase.schema("wh").from("inventory_stock").select("*").eq("tenant_id", tenantId);
-  if (error) fail(error.message);
+  if (error) fail(normalizeError(error.message));
   return data ?? [];
 }
 
 export async function listBatches(tenantId: Id) {
   const { data, error } = await supabase.schema("wh").from("inventory_batches").select("*").eq("tenant_id", tenantId);
-  if (error) fail(error.message);
+  if (error) fail(normalizeError(error.message));
   return data ?? [];
 }
 
 export async function listMovements(tenantId: Id) {
   const { data, error } = await supabase.schema("wh").from("inventory_movements").select("*").eq("tenant_id", tenantId).order("movement_date", { ascending: false });
-  if (error) fail(error.message);
+  if (error) fail(normalizeError(error.message));
   return data ?? [];
 }
 
@@ -175,6 +168,6 @@ export async function recalculateInventoryValuation(tenantId: Id) {
 
 export async function listValuation(tenantId: Id) {
   const { data, error } = await supabase.schema("wh").from("inventory_valuation").select("*").eq("tenant_id", tenantId).order("valuation_date", { ascending: false });
-  if (error) fail(error.message);
+  if (error) fail(normalizeError(error.message));
   return data ?? [];
 }

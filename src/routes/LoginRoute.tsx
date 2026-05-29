@@ -42,7 +42,7 @@ export function LoginRoute() {
         </div>
         <div className="auth-metrics" aria-label="Inventory highlights">
           <div><strong>23</strong><span>ERP tables</span></div>
-          <div><strong>RLS</strong><span>Tenant security</span></div>
+          <div><strong>RLS</strong><span>Company security</span></div>
           <div><strong>RPC</strong><span>Stock ledger</span></div>
         </div>
       </section>
@@ -51,9 +51,13 @@ export function LoginRoute() {
         <div className="auth-card-header">
           <div className="auth-icon"><ShieldCheck size={22} /></div>
           <div>
-            <p className="eyebrow">Welcome back</p>
+            <p className="eyebrow">Admin-provisioned access</p>
             <h2>Login</h2>
           </div>
+        </div>
+
+        <div className="card state-info state-note">
+          Company access is granted by an admin through membership and company role assignment. If you received an invite, use the invite email first to set your password, then return here to sign in.
         </div>
 
         <form className="auth-form" onSubmit={submit}>

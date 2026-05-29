@@ -1,13 +1,28 @@
 import { useAuth } from "../context/AuthContext";
 
 export function TenantSelector() {
-  const { tenants, selectedTenantId, setSelectedTenantId } = useAuth();
-  if (tenants.length === 0) return <div>No tenant membership yet.</div>;
+  const { tenants, tenantLoadError, selectedTenantId, setSelectedTenantId } = useAuth();
+
+  if (tenants.length === 0) {
+    return (
+      <div className="tenant-selector tenant-selector--empty" title={tenantLoadError || undefined}>
+        No company selected
+      </div>
+    );
+  }
+
+  const selected = tenants.find((tenant) => tenant.id === selectedTenantId) ?? tenants[0];
+
   return (
-    <select value={selectedTenantId ?? ""} onChange={(e) => setSelectedTenantId(e.target.value)}>
-      {tenants.map((t) => (
-        <option key={t.id} value={t.id}>{t.name}</option>
-      ))}
-    </select>
+    <div className="tenant-selector" title={tenantLoadError || undefined}>
+      <select value={selected.id} onChange={(event) => setSelectedTenantId(event.target.value)}>
+        {tenants.map((tenant) => (
+          <option key={tenant.id} value={tenant.id}>
+            {tenant.name}
+          </option>
+        ))}
+      </select>
+      <span>{selected.slug}</span>
+    </div>
   );
 }

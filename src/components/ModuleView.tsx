@@ -1,7 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { AccessDenied } from "./AccessDenied";
 import { createCategory, createGrn, createProduct, createUom, createWarehouse, listBatches, listMovements, listProducts, listStock, listValuation } from "../lib/inventory-api";
+import { ERP_MODULES } from "../lib/erp-modules";
+import { getModulePermissionSpec } from "../lib/permission-access";
 
-type Props = { tenantId: string; module: string };
+type Props = { tenantId: string; module: string; can?: (required: string | readonly string[]) => boolean };
 
 const columnMap: Record<string, string[]> = {
   "Products": ["sku", "name", "is_active"],
@@ -11,15 +15,26 @@ const columnMap: Record<string, string[]> = {
   "Inventory valuation": ["product_id", "quantity", "average_cost", "total_value", "valuation_date"]
 };
 
-export function ModuleView({ tenantId, module }: Props) {
+export function ModuleView({ tenantId, module, can }: Props) {
   const [rows, setRows] = useState<any[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const columns = useMemo(() => columnMap[module] ?? [], [module]);
+  const moduleEntry = useMemo(() => ERP_MODULES.find((item) => item.label === module) ?? null, [module]);
+  const permissionSpec = useMemo(() => getModulePermissionSpec(module), [module]);
+  const canViewModule = can ? can(permissionSpec.requiredPermissions) : true;
+  const canCreateRecords = can ? !permissionSpec.createPermissions || can(permissionSpec.createPermissions) : true;
 
   useEffect(() => {
+    if (moduleEntry?.status === "pending") {
+      setRows([]);
+      setMessage("");
+      setError("");
+      setLoading(false);
+      return;
+    }
     const run = async () => {
       setMessage("");
       setError("");
@@ -36,13 +51,15 @@ export function ModuleView({ tenantId, module }: Props) {
         else if (module === "Inventory valuation") setRows(await listValuation(tenantId));
         else setRows([]);
       } catch (err: any) {
-        setError(err?.message ?? "Failed to load module data.");
+        const message = err?.message ?? "Failed to load module data.";
+        setError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
     };
     void run();
-  }, [tenantId, module]);
+  }, [tenantId, module, moduleEntry?.status]);
 
   const simpleCreate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -74,23 +91,52 @@ export function ModuleView({ tenantId, module }: Props) {
         });
       }
       setMessage("Saved successfully.");
+      toast.success("Saved successfully.");
       e.currentTarget.reset();
     } catch (err: any) {
-      setError(err?.message ?? "Save failed.");
+      const message = err?.message ?? "Save failed.";
+      setError(message);
+      toast.error(message);
     }
   };
 
   const showForm = ["Product categories", "Units of measure", "Warehouse hierarchy builder", "Products", "GRN"].includes(module);
 
+  if (!canViewModule) {
+    return (
+      <AccessDenied
+        title={module}
+        requiredPermissions={permissionSpec.requiredPermissions}
+        message="Your current company role cannot access this module."
+      />
+    );
+  }
+
+  if (moduleEntry?.status === "pending") {
+    return (
+      <div className="card state-info">
+        <strong>{module}</strong>
+        <p style={{ margin: "8px 0 0" }}>
+          This module is part of the Frappe-style ERP foundation and is planned for a later phase.
+          The menu entry is documented now, but the backend and screen flow are not wired yet.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="module-stack">
-      {showForm && (
+      {showForm && canCreateRecords && (
         <form onSubmit={simpleCreate} className="card form-grid">
           {module !== "Products" && module !== "GRN" && <><input name="code" placeholder="Code" required /><input name="name" placeholder="Name" required /></>}
           {module === "Products" && <><input name="category_id" placeholder="Category ID" required /><input name="uom_id" placeholder="UOM ID" required /><input name="sku" placeholder="SKU" required /><input name="name" placeholder="Name" required /><input name="reorder_point" type="number" placeholder="Reorder point" required /></>}
           {module === "GRN" && <><input name="warehouse_id" placeholder="Warehouse ID" required /><input name="supplier_name" placeholder="Supplier" required /><input name="product_id" placeholder="Product ID" required /><input name="qty" type="number" placeholder="Qty" required /><input name="unit_cost" type="number" placeholder="Unit cost" required /></>}
           <button className="primary-action" type="submit">Save</button>
         </form>
+      )}
+
+      {showForm && !canCreateRecords && (
+        <div className="card state-info">You can view this module, but your current company role cannot create new records here.</div>
       )}
 
       {loading && <div className="card state-info">Loading {module.toLowerCase()}...</div>}
