@@ -4,5 +4,5 @@ import { MetadataDataTable } from "./MetadataDataTable";
 
 export function DocFieldList() {
   const fetcher = useCallback(() => listAllDocfields(), []);
-  return <MetadataDataTable label="DocFields" fetcher={fetcher} />;
+  return <MetadataDataTable label="DocFields" tableKey="docfields" fetcher={fetcher} />;
 }

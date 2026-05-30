@@ -4,10 +4,10 @@ import { MetadataDataTable } from "./MetadataDataTable";
 
 export function WorkspaceMetadataList() {
   const fetcher = useCallback(() => listAllWorkspaces(), []);
-  return <MetadataDataTable label="Workspaces" fetcher={fetcher} />;
+  return <MetadataDataTable label="Workspaces" tableKey="workspaces" fetcher={fetcher} />;
 }
 
 export function WorkspaceItemList() {
   const fetcher = useCallback(() => listAllWorkspaceItems(), []);
-  return <MetadataDataTable label="Workspace Items" fetcher={fetcher} />;
+  return <MetadataDataTable label="Workspace Items" tableKey="workspace_items" fetcher={fetcher} />;
 }

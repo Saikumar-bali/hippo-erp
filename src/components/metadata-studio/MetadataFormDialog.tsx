@@ -1,0 +1,134 @@
+import { useState } from "react";
+import type { FieldDef } from "../../lib/metadata/metadata-studio-api";
+
+type Props = {
+  title: string;
+  fields: FieldDef[];
+  initial: Record<string, unknown>;
+  onSave: (values: Record<string, unknown>) => Promise<void>;
+  onClose: () => void;
+};
+
+export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: Props) {
+  const [values, setValues] = useState<Record<string, unknown>>({ ...initial });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const visible = fields.filter((f) => !f.hidden);
+
+  const set = (name: string, val: unknown) => setValues((prev) => ({ ...prev, [name]: val }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(values);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "6px 8px",
+    fontSize: "var(--font-size-sm)",
+    border: "1px solid var(--border)",
+    borderRadius: "4px",
+    background: "var(--bg)",
+    color: "var(--fg)",
+    boxSizing: "border-box",
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.4)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="card"
+        style={{
+          width: "520px", maxHeight: "80vh", overflowY: "auto",
+          padding: "var(--card-padding)",
+        }}
+      >
+        <h3 style={{ marginBottom: "12px" }}>{title}</h3>
+
+        {error && (
+          <p style={{ color: "var(--danger)", fontSize: "var(--font-size-sm)", marginBottom: "8px" }}>
+            {error}
+          </p>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {visible.map((f) => (
+            <label key={f.name} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                {f.label}
+                {f.required && <span style={{ color: "var(--danger)" }}> *</span>}
+              </span>
+              {f.type === "boolean" ? (
+                <input
+                  type="checkbox"
+                  checked={!!values[f.name]}
+                  onChange={(e) => set(f.name, e.target.checked)}
+                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                />
+              ) : f.type === "number" ? (
+                <input
+                  type="number"
+                  value={String(values[f.name] ?? "")}
+                  onChange={(e) => set(f.name, e.target.value ? Number(e.target.value) : null)}
+                  style={inputStyle}
+                />
+              ) : f.type === "select" ? (
+                <select
+                  value={String(values[f.name] ?? "")}
+                  onChange={(e) => set(f.name, e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">--</option>
+                  {(f.options ?? []).map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={String(values[f.name] ?? "")}
+                  onChange={(e) => set(f.name, e.target.value)}
+                  style={inputStyle}
+                />
+              )}
+            </label>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
+          <button
+            className="logout"
+            onClick={onClose}
+            disabled={saving}
+            style={{ padding: "6px 14px", fontSize: "var(--font-size-sm)", cursor: "pointer" }}
+          >
+            Cancel
+          </button>
+          <button
+            className="btn"
+            onClick={handleSave}
+            disabled={saving}
+            style={{ padding: "6px 14px", fontSize: "var(--font-size-sm)", cursor: "pointer" }}
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
