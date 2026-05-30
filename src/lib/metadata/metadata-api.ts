@@ -13,6 +13,8 @@ import type {
   FullDocTypeConfig,
 } from "./types";
 
+const meta = () => supabase.schema("app");
+
 function mapRow<T>(data: unknown): T {
   return data as T;
 }
@@ -22,7 +24,7 @@ function mapRows<T>(data: unknown): T[] {
 }
 
 export async function getModules(): Promise<ErpModuleMeta[]> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_modules")
     .select("*")
     .eq("is_active", true)
@@ -32,7 +34,7 @@ export async function getModules(): Promise<ErpModuleMeta[]> {
 }
 
 export async function getDocTypeMeta(doctypeKey: string): Promise<DocTypeMeta | null> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_doctypes")
     .select("*")
     .eq("doctype_key", doctypeKey)
@@ -46,7 +48,7 @@ export async function getDocTypeMeta(doctypeKey: string): Promise<DocTypeMeta | 
 }
 
 export async function getDocFields(doctypeKey: string): Promise<DocFieldMeta[]> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_docfields")
     .select("*")
     .eq("doctype_key", doctypeKey)
@@ -56,7 +58,7 @@ export async function getDocFields(doctypeKey: string): Promise<DocFieldMeta[]> 
 }
 
 export async function getDocTypeActions(doctypeKey: string): Promise<DocTypeActionMeta[]> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_doctype_actions")
     .select("*")
     .eq("doctype_key", doctypeKey);
@@ -65,7 +67,7 @@ export async function getDocTypeActions(doctypeKey: string): Promise<DocTypeActi
 }
 
 export async function getDefaultListView(doctypeKey: string): Promise<ListViewMeta | null> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_list_views")
     .select("*")
     .eq("doctype_key", doctypeKey)
@@ -79,7 +81,7 @@ export async function getDefaultListView(doctypeKey: string): Promise<ListViewMe
 }
 
 export async function getDefaultFormLayout(doctypeKey: string): Promise<FormLayoutMeta | null> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_form_layouts")
     .select("*")
     .eq("doctype_key", doctypeKey)
@@ -117,7 +119,7 @@ export async function getFullDocTypeConfig(doctypeKey: string, companyId?: strin
 }
 
 export async function getNamingSeries(doctypeKey: string, companyId?: string): Promise<NamingSeriesMeta | null> {
-  let query = supabase
+  let query = meta()
     .from("erp_naming_series")
     .select("*")
     .eq("doctype_key", doctypeKey)
@@ -133,7 +135,7 @@ export async function getNamingSeries(doctypeKey: string, companyId?: string): P
 }
 
 export async function getWorkflows(doctypeKey: string): Promise<WorkflowMeta[]> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_workflows")
     .select("*")
     .eq("doctype_key", doctypeKey)
@@ -143,7 +145,7 @@ export async function getWorkflows(doctypeKey: string): Promise<WorkflowMeta[]> 
 }
 
 export async function getWorkflowStates(workflowKey: string): Promise<WorkflowStateMeta[]> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_workflow_states")
     .select("*")
     .eq("workflow_key", workflowKey)
@@ -153,7 +155,7 @@ export async function getWorkflowStates(workflowKey: string): Promise<WorkflowSt
 }
 
 export async function getWorkflowTransitions(workflowKey: string): Promise<WorkflowTransitionMeta[]> {
-  const { data, error } = await supabase
+  const { data, error } = await meta()
     .from("erp_workflow_transitions")
     .select("*")
     .eq("workflow_key", workflowKey);
