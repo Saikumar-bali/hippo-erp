@@ -6,8 +6,11 @@ Harden the Phase 2.9 Custom DocType Wizard so a real authenticated user can crea
 ## Branch
 `phase-2.5-metadata-engine`
 
-## Commits
-*(set after commit)*
+## Start Commit
+`25ecd88` (Update AI run report with final commit hash)
+
+## Final Commit
+`4cd29b6`
 
 ## Files Created (3)
 | File | Purpose |
