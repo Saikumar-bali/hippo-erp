@@ -311,6 +311,17 @@ export async function checkDuplicateWorkspaceItem(workspaceKey: string, itemKey:
   return data !== null;
 }
 
+export async function checkDuplicateRoute(route: string): Promise<boolean> {
+  if (!route) return false;
+  const { data, error } = await meta()
+    .from("erp_doctypes")
+    .select("doctype_key")
+    .eq("route", route)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data !== null;
+}
+
 // ── Permission key catalog lookup ──────────────────────────────────────────────
 
 export async function loadExistingPermissionKeys(): Promise<string[]> {

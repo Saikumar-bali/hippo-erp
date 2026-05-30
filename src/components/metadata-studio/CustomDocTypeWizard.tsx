@@ -5,6 +5,7 @@ import {
   loadExistingPermissionKeys,
   checkDuplicateDoctypeKey,
   checkDuplicateWorkspaceItem,
+  checkDuplicateRoute,
   createCustomDocTypeBundle,
 } from "../../lib/metadata/metadata-studio-api";
 
@@ -103,6 +104,7 @@ export function CustomDocTypeWizard({ onClose, onCreated, onSidebarRefresh, onDo
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateDocTypeKey, setDuplicateDocTypeKey] = useState(false);
+  const [duplicateRoute, setDuplicateRoute] = useState(false);
   const [duplicateWorkspaceItem, setDuplicateWorkspaceItem] = useState(false);
   const [existingPermissionKeys, setExistingPermissionKeys] = useState<Set<string>>(new Set());
   const [bundleResult, setBundleResult] = useState<{ permissions_created: number; grants_added: number } | null>(null);
@@ -122,6 +124,13 @@ export function CustomDocTypeWizard({ onClose, onCreated, onSidebarRefresh, onDo
     checkDuplicateDoctypeKey(state.doctype_key).then((dup) => { if (!cancelled) setDuplicateDocTypeKey(dup); }).catch(() => {});
     return () => { cancelled = true; };
   }, [state.doctype_key]);
+
+  useEffect(() => {
+    if (!state.route) { setDuplicateRoute(false); return; }
+    let cancelled = false;
+    checkDuplicateRoute(state.route).then((dup) => { if (!cancelled) setDuplicateRoute(dup); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [state.route]);
 
   useEffect(() => {
     if (!state.workspace_key || !state.doctype_key) { setDuplicateWorkspaceItem(false); return; }
@@ -188,6 +197,8 @@ export function CustomDocTypeWizard({ onClose, onCreated, onSidebarRefresh, onDo
         newErrors.doctype_key = "Uppercase characters are not allowed";
       else if (duplicateDocTypeKey)
         newErrors.doctype_key = "This DocType key already exists";
+      if (state.route && duplicateRoute)
+        newErrors.route = "This route conflicts with an existing DocType route";
       if (!state.module_key) newErrors.module_key = "Module is required";
       if (state.storage_strategy !== "generic_json")
         newErrors.storage_strategy = "Custom DocTypes must use generic_json";
