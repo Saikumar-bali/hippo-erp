@@ -6,7 +6,7 @@ import { DynamicFilterBar } from "./DynamicFilterBar";
 import { DynamicActionBar } from "./DynamicActionBar";
 import { DynamicDetailPage } from "./DynamicDetailPage";
 import { StatusField } from "./StatusField";
-import { getDocTypeApi } from "./doctype-api-map";
+import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
 import { DynamicFormPage } from "./DynamicFormPage";
 import type { DocFieldMeta, ListViewColumn } from "../../lib/metadata/types";
 
@@ -40,6 +40,17 @@ export function DynamicListPage({
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
 
+  const [apiReady, setApiReady] = useState(false);
+
+  useEffect(() => {
+    if (api) { setApiReady(true); return; }
+    let cancelled = false;
+    detectAndRegisterGenericDocTypeApi(doctypeKey).then((detected) => {
+      if (!cancelled) setApiReady(!!detected);
+    });
+    return () => { cancelled = true; };
+  }, [doctypeKey, api]);
+
   const loadAll = useMemo(() => async () => {
     setDataLoading(true);
     setError("");
@@ -60,7 +71,9 @@ export function DynamicListPage({
     }
   }, [api, tenantId]);
 
-  useEffect(() => { void loadAll(); }, [loadAll]);
+  useEffect(() => {
+    if (apiReady) void loadAll();
+  }, [loadAll, apiReady]);
 
   useEffect(() => {
     if (!api || records.length === 0 || !config) return;
@@ -185,6 +198,14 @@ export function DynamicListPage({
 
   if (metaError) return <div className="card state-error">{metaError}</div>;
   if (!config) return <div className="card state-error">Unknown DocType: {doctypeKey}</div>;
+  if (!apiReady) {
+    return (
+      <div className="card state-info">
+        <h3>{config.doctype.label}</h3>
+        <p>Connecting to data API…</p>
+      </div>
+    );
+  }
   if (!api) {
     return (
       <div className="card state-info">
@@ -195,7 +216,8 @@ export function DynamicListPage({
         <p>
           To make it usable in the ERP menu, add DocFields, List View, Form Layout,
           DocType Actions, a Workspace Item, and either a registered API in
-          <code> doctype-api-map.ts </code> or a future generic document storage API.
+          <code> doctype-api-map.ts </code> or set it as 'generic_json' storage
+          strategy.
         </p>
       </div>
     );
@@ -232,6 +254,7 @@ export function DynamicListPage({
       <DynamicDetailPage
         doctypeKey={doctypeKey}
         recordId={selectedId!}
+        tenantId={tenantId}
         canUpdate={canUpdate}
         canDelete={canDelete}
         onEdit={() => setEditingId(selectedId)}

@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
-import { getDocTypeApi } from "./doctype-api-map";
+import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
 import { StatusField } from "./StatusField";
 
 type Props = {
@@ -16,6 +16,7 @@ type Props = {
   onDeactivate?: () => void;
   onReactivate?: () => void;
   onBack?: () => void;
+  tenantId?: string;
 };
 
 export function DynamicDetailPage({
@@ -28,6 +29,7 @@ export function DynamicDetailPage({
   onDeactivate,
   onReactivate,
   onBack,
+  tenantId,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
   const [record, setRecord] = useState<Record<string, unknown> | null>(null);
@@ -35,12 +37,22 @@ export function DynamicDetailPage({
   const [linkLabels, setLinkLabels] = useState<Record<string, string>>({});
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
+  const [apiReady, setApiReady] = useState(false);
 
   useEffect(() => {
-    if (!api || !recordId) return;
+    if (api) { setApiReady(true); return; }
+    let cancelled = false;
+    detectAndRegisterGenericDocTypeApi(doctypeKey).then((detected) => {
+      if (!cancelled) setApiReady(!!detected);
+    });
+    return () => { cancelled = true; };
+  }, [doctypeKey, api]);
+
+  useEffect(() => {
+    if (!apiReady || !api || !recordId) return;
     let cancelled = false;
     setDataLoading(true);
-    api.get(recordId)
+    api.get(recordId, tenantId)
       .then((data) => {
         if (!cancelled) setRecord(data as Record<string, unknown>);
       })

@@ -78,6 +78,7 @@ export const TABLES: Record<string, TableMeta> = {
       { name: "schema_name", label: "Schema Name", type: "text", required: true },
       { name: "table_name", label: "Table Name", type: "text", required: true },
       { name: "route", label: "Route", type: "text" },
+      { name: "storage_strategy", label: "Storage Strategy", type: "select", options: ["physical_rpc", "generic_json"], required: true, default: "physical_rpc" },
       { name: "is_company_scoped", label: "Company Scoped", type: "boolean", default: true },
       { name: "is_submittable", label: "Submittable", type: "boolean" },
       { name: "is_child_table", label: "Child Table", type: "boolean" },

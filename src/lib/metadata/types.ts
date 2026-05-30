@@ -24,6 +24,7 @@ export interface DocTypeMeta {
   is_single: boolean;
   is_active: boolean;
   default_order_by: string | null;
+  storage_strategy: "physical_rpc" | "generic_json";
 }
 
 export type DocFieldType =

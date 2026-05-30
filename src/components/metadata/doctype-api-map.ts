@@ -3,14 +3,15 @@ import {
   listUoms, getUom, createUom, updateUom, deactivateUom, reactivateUom,
   listProducts, getProduct, createProduct, updateProduct, deactivateProduct, reactivateProduct,
 } from "../../lib/product-api";
+import { supabase } from "../../lib/supabase";
 
 export interface DocTypeApi {
   list: (tenantId: string) => Promise<unknown[]>;
-  get: (id: string) => Promise<unknown>;
+  get: (id: string, tenantId?: string) => Promise<unknown>;
   create?: (payload: Record<string, unknown>) => Promise<unknown>;
-  update?: (id: string, payload: Record<string, unknown>) => Promise<unknown>;
-  deactivate?: (id: string) => Promise<void>;
-  reactivate?: (id: string) => Promise<void>;
+  update?: (id: string, payload: Record<string, unknown>, tenantId?: string) => Promise<unknown>;
+  deactivate?: (id: string, tenantId?: string) => Promise<void>;
+  reactivate?: (id: string, tenantId?: string) => Promise<void>;
 }
 
 const doctypeApiRegistry = new Map<string, DocTypeApi>();
@@ -45,6 +46,26 @@ register("product", {
   deactivate: (id) => deactivateProduct(id),
   reactivate: (id) => reactivateProduct(id),
 });
+
+export async function detectAndRegisterGenericDocTypeApi(doctypeKey: string): Promise<DocTypeApi | null> {
+  const { data, error } = await supabase
+    .schema("app")
+    .from("erp_doctypes")
+    .select("doctype_key, storage_strategy")
+    .eq("doctype_key", doctypeKey)
+    .single();
+
+  if (error || !data) return null;
+
+  if ((data as { storage_strategy: string }).storage_strategy === "generic_json") {
+    const { createGenericDocTypeApi } = await import("../../lib/metadata/generic-doctype-api");
+    const api = createGenericDocTypeApi(doctypeKey);
+    doctypeApiRegistry.set(doctypeKey, api);
+    return api;
+  }
+
+  return null;
+}
 
 export function getDocTypeApi(doctypeKey: string): DocTypeApi | null {
   return doctypeApiRegistry.get(doctypeKey) ?? null;

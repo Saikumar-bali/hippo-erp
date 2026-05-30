@@ -1,0 +1,85 @@
+import { supabase } from "../supabase";
+import type { DocTypeApi } from "../../components/metadata/doctype-api-map";
+
+function handleRpcResponse(response: unknown): Record<string, unknown>[] {
+  const r = response as { ok?: boolean; data?: unknown[]; error?: string } | null;
+  if (!r) throw new Error("No response from server");
+  if (!r.ok) throw new Error(r.error ?? "Unknown error");
+  return (r.data as Record<string, unknown>[]) ?? [];
+}
+
+function handleSingleRpcResponse(response: unknown): Record<string, unknown> {
+  const r = response as { ok?: boolean; data?: Record<string, unknown>; error?: string } | null;
+  if (!r) throw new Error("No response from server");
+  if (!r.ok) throw new Error(r.error ?? "Unknown error");
+  return r.data ?? {};
+}
+
+export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
+  return {
+    list: async (tenantId: string) => {
+      const { data, error } = await supabase.rpc("erp_list_documents", {
+        p_doctype_key: doctypeKey,
+        p_company_id: tenantId,
+      });
+      if (error) throw new Error(error.message);
+      return handleRpcResponse(data);
+    },
+
+    get: async (id: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_get_document", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+      });
+      if (error) throw new Error(error.message);
+      return handleSingleRpcResponse(data);
+    },
+
+    create: async (payload: Record<string, unknown>) => {
+      const { data, error } = await supabase.rpc("erp_create_document", {
+        p_doctype_key: doctypeKey,
+        p_company_id: payload.tenant_id as string,
+        p_data: payload,
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; document_id?: string; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Create failed");
+      return r;
+    },
+
+    update: async (id: string, payload: Record<string, unknown>, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_update_document", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? (payload.tenant_id as string) ?? "00000000-0000-0000-0000-000000000000",
+        p_data: payload,
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Update failed");
+    },
+
+    deactivate: async (id: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_deactivate_document", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Deactivate failed");
+    },
+
+    reactivate: async (id: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_reactivate_document", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Reactivate failed");
+    },
+  };
+}

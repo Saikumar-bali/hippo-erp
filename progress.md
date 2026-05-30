@@ -17,8 +17,9 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2 | Product master data | Complete | Product Category, UOM, and Product/SKU flows exist. |
 | 2.5 | Metadata-Driven ERP Core | Complete as renderer prototype | Metadata tables, Product Master metadata seed, dynamic renderers, and Product Master metadata UI exist. |
 | 2.6 | Metadata Workspace, Navigation, and Compact ERP UI | Complete | Migration 0021 + 0022, grouped workspace sidebar, DynamicRouteRenderer, compact density, pagination, no duplicate Status column. Senior review fixes applied. |
-| 2.7 | Metadata Studio / Developer Side | In Progress | Permission manage_metadata, Metadata Studio workspace, read-only metadata inspection pages (DocTypes, DocFields, Workspaces, List Views, Form Layouts, etc.), audit_logs + change_requests tables. |
-| 3 | Warehouse hierarchy | On Hold | Do not start until Phase 2.7 is verified. |
+| 2.7 | Metadata Studio / Developer Side | Complete | Permission manage_metadata, Metadata Studio workspace, read-only metadata inspection pages (DocTypes, DocFields, Workspaces, List Views, Form Layouts, etc.), audit_logs + change_requests tables, CRUD RLS on metadata tables, FK dropdowns in form. |
+| 2.8 | Custom DocType Document Storage | Complete | Database: storage_strategy, erp_documents + erp_document_versions tables, 6 RPC functions with field validation + permission check + company scoping. Frontend: generic-doctype-api bridge, doctype-api-map auto-detection, DynamicListPage/DynamicDetailPage generic_json support, storage_strategy in DocType form. Applied + verified on Supabase Cloud. |
+| 3 | Warehouse hierarchy | On Hold | Do not start until Phase 2.8 is verified. |
 | 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
 
 ## Phase 2.6 Implementation Summary
@@ -94,6 +95,31 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | `npm run test` | 31 pass, 6 fail (pre-existing) |
 | `npm run build` | Success |
 | Supabase Cloud simulation (metadata_studio_foundation_flow) | **PASSED** — all 9 checks pass |
+
+## Phase 2.8 Implementation Summary
+
+### Database
+
+- `supabase/migrations/0026_custom_doctype_storage.sql` — adds `storage_strategy` column to `erp_doctypes`, creates `app.erp_documents` + `app.erp_document_versions` with RLS, `public.current_user_has_doctype_permission` helper, 6 RPC functions for generic document CRUD with field validation and company scoping.
+- Applied to Supabase Cloud — all objects verified.
+
+### Frontend
+
+- `src/lib/metadata/types.ts` — added `storage_strategy` to `DocTypeMeta`
+- `src/lib/metadata/generic-doctype-api.ts` — bridge wrapping 6 RPC calls for generic JSON documents
+- `src/components/metadata/doctype-api-map.ts` — `detectAndRegisterGenericDocTypeApi()` auto-registers API for `generic_json` doctypes; `get` signature updated with optional `tenantId`
+- `src/components/metadata/DynamicListPage.tsx` — auto-detects generic_json when API is null
+- `src/components/metadata/DynamicDetailPage.tsx` — auto-detects generic_json + passes tenantId
+- `src/lib/metadata/metadata-studio-api.ts` — `storage_strategy` select field in DocType form
+
+### Verification Results
+
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 29 warnings (pre-existing) |
+| `npm run build` | Success |
+| Supabase Cloud simulation (custom_doctype_storage_flow) | 9/9 PASS |
 
 ### Supabase Cloud Verification (all PASS)
 | Check | Result |

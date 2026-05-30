@@ -1,177 +1,80 @@
-# Phase 2.7 Tasks: Metadata Studio / Developer Side
+# Phase 2.8 Tasks: Custom DocType Document Storage
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: create the Developer Side of the two-sided ERP architecture — a Metadata Studio workspace where authorized developers and platform admins can inspect metadata that drives all ERP screens.
+Goal: Allow Metadata Studio–created custom DocTypes to store and retrieve generic JSON documents through RPC functions, without creating physical database tables.
 
-Phase 2.6 proved workspace navigation + compact UI from metadata. Phase 2.7 adds the developer-facing metadata inspection layer.
-
-## Senior Architecture Rule
-
-Do not implement Warehouse, GRN, Stock Ledger, generic write API, or physical table creation in this phase. Metadata Studio is read-only inspection for now.
-
-## Two-Sided Architecture
+## Architecture
 
 ```
-ERP User Side (2.5 + 2.6)      Developer Side (2.7)
-─────────────────────────      ─────────────────────────
-Product Master                 Metadata Studio
-  Products                       DocTypes
-  Product Categories             DocFields
-  Units of Measure               Workspaces
-                                 Workspace Items
-                                 List Views
-                                 Form Layouts
-                                 DocType Actions
-                                 Naming Series
-                                 Workflows
+Custom DocType (generic_json)
+  └─ erp_documents table (app schema)
+       ├─ data (jsonb) — all dynamic fields
+       ├─ doctype_key — identifies the DocType
+       ├─ company_id — company context
+       ├─ is_active — soft-delete
+       └─ audit columns (created_by, created_at, updated_at)
+  └─ erp_document_versions (app schema) — append-only version history
+  └─ RPC functions (public schema) — erp_list_documents, erp_get_document,
+     erp_create_document, erp_update_document, erp_deactivate_document,
+     erp_reactivate_document
 ```
 
-Only users with `manage_metadata` permission see the Metadata Studio workspace.
+Only `manage_metadata` users can create DocTypes. Document access is gated by `erp_doctype_actions` + company role permissions.
 
 ---
 
 # A. Planning And Docs
 
-Files:
-
-- [x] `docs/PHASE_2_7_METADATA_STUDIO.md`
-
-Tasks:
-
-- [x] Document two-sided architecture (ERP User Side vs Developer Side).
-- [x] Explain how DocType metadata drives ERP screens.
-- [x] Explain why normal users should not create physical DB tables.
-- [x] Explain why Supabase Cloud migrations/seeds must be verified.
+- [x] `docs/PHASE_2_8_CUSTOM_DOCTYPE_STORAGE.md` — architecture design doc
 
 ---
 
-# B. Database: Metadata Studio Foundation
+# B. Database: Custom DocType Storage
 
-Migration:
-
-- [x] `supabase/migrations/0023_metadata_studio_foundation.sql`
-
-New permission:
-
-- [x] `manage_metadata` permission seeded to `app.permissions`.
-- [x] Granted to `owner` and `admin` roles.
-- [x] Added to `create_company_role` for owner/admin auto-grant.
-
-New tables:
-
-- [x] `app.erp_audit_logs` — foundation for tracking metadata changes.
-- [x] `app.erp_metadata_change_requests` — foundation for safe metadata edit flow.
-
-Metadata Studio workspace seed:
-
-- [x] `metadata_studio` workspace (active, requires `manage_metadata`).
-- [x] DocTypes item → page `metadata_studio_doctypes`.
-- [x] DocFields item → page `metadata_studio_docfields`.
-- [x] Workspaces item → page `metadata_studio_workspaces`.
-- [x] Workspace Items item → page `metadata_studio_workspace_items`.
-- [x] List Views item → page `metadata_studio_list_views`.
-- [x] Form Layouts item → page `metadata_studio_form_layouts`.
-- [x] DocType Actions item → page `metadata_studio_actions`.
-- [x] Naming Series item → page `metadata_studio_naming_series`.
-- [x] Workflows item → page `metadata_studio_workflows`.
-
-RLS:
-
-- [x] `erp_audit_logs` — authenticated read, no frontend write.
-- [x] `erp_metadata_change_requests` — authenticated read, no frontend write.
+- [x] Migration `0026_custom_doctype_storage.sql`:
+  - [x] `storage_strategy` column on `app.erp_doctypes` (default `physical_rpc`)
+  - [x] `app.erp_documents` table with RLS policies
+  - [x] `app.erp_document_versions` table
+  - [x] `public.current_user_has_doctype_permission` helper function
+  - [x] 6 RPC functions with field validation, permission check, company scoping
+  - [x] Version history writes on create/update
+- [x] Applied to Supabase Cloud via Management API
+- [x] Verified: `storage_strategy` column, `erp_documents` table, 6 RPC functions, RLS policies all present
 
 ---
 
-# C. Metadata Studio Frontend
+# C. Frontend: Generic Document API
 
-Add files:
-
-- [x] `src/components/metadata-studio/MetadataStudioHome.tsx`
-- [x] `src/components/metadata-studio/DocTypeList.tsx`
-- [x] `src/components/metadata-studio/DocTypeDetail.tsx`
-- [x] `src/components/metadata-studio/DocFieldList.tsx`
-- [x] `src/components/metadata-studio/WorkspaceMetadataList.tsx`
-- [x] `src/components/metadata-studio/ListViewMetadataList.tsx`
-- [x] `src/components/metadata-studio/FormLayoutMetadataList.tsx`
-
-Update:
-
-- [x] `src/components/metadata/DynamicRouteRenderer.tsx` — route Metadata Studio page items.
-- [x] `scripts/run-simulation.cjs` — add metadata studio simulation.
+- [x] `src/lib/metadata/types.ts` — added `storage_strategy` to `DocTypeMeta`
+- [x] `src/lib/metadata/generic-doctype-api.ts` — bridge wrapping 6 RPC calls
+- [x] `src/components/metadata/doctype-api-map.ts`:
+  - [x] `DocTypeApi.get` signature updated with optional `tenantId`
+  - [x] `detectAndRegisterGenericDocTypeApi()` — auto-detects `generic_json` doctypes
+- [x] `src/components/metadata/DynamicListPage.tsx` — auto-detect generic_json when api is null
+- [x] `src/components/metadata/DynamicDetailPage.tsx` — auto-detect + tenantId passthrough
+- [x] `src/lib/metadata/metadata-studio-api.ts` — added `storage_strategy` field to DocType form
 
 ---
 
-# D. Simulation Test
+# D. Frontend: Metadata Studio
 
-Add:
-
-- [x] `tests/simulations/metadata_studio_foundation_flow.sql`
-
-Simulation must verify:
-
-- [x] `manage_metadata` permission exists.
-- [x] Metadata Studio workspace exists and is active.
-- [x] Metadata Studio workspace items exist (at least 4).
-- [x] Audit logs table exists.
-- [x] Metadata change requests table exists.
-- [x] RLS enabled on audit/change tables.
+- [x] `storage_strategy` field in DocType create form (select: physical_rpc / generic_json)
+- [ ] Metadata Studio "Create Starter Metadata" helper — wizard for auto-creating module + workspace + doctype + actions + workspace item (can be separate PR)
 
 ---
 
-# E. Verification Commands
+# E. Testing
 
-Run and document exact output in `progress.md`:
-
-```bash
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-npm run test:simulation
-```
-
-Manual verification:
-
-- [x] Metadata Studio workspace appears for users with `manage_metadata`.
-- [x] Metadata Studio hidden for users without `manage_metadata`.
-- [x] Each metadata page shows a data table with correct columns.
-- [x] Pages are read-only (no edit/create buttons).
+- [x] `tests/simulations/custom_doctype_storage_flow.sql` — 9 checks
+- [x] Simulation run on Supabase Cloud — 9/9 PASS
+- [x] `npm run typecheck` — 0 errors (all pre-existing 0 errors)
+- [x] `npm run lint` — 0 errors (all pre-existing 29 warnings)
+- [x] `npm run build` — success
 
 ---
 
-# F. Supabase Cloud
+# F. Commit & Push
 
-- [x] Migration 0023 applied to Supabase Cloud.
-- [x] Simulation run against Supabase Cloud, all checks PASS.
-- [x] Final commit pushed to `phase-2.5-metadata-engine`.
-
----
-
-# G. Out Of Scope
-
-Do not implement in Phase 2.7:
-
-- Warehouse CRUD.
-- GRN or Stock Ledger.
-- Generic document write API.
-- Physical table creation by users.
-- User-created DocType storage (dynamic schema).
-- Workflow transition engine.
-- Naming series generation engine.
-- Metadata Studio edit/create forms (read-only only).
-- Breadcrumbs component.
-
----
-
-# H. Acceptance Criteria
-
-Phase 2.7 is complete only when:
-
-- [x] `manage_metadata` permission exists and is granted to owner/admin.
-- [x] Metadata Studio workspace appears in sidebar for authorized users.
-- [x] All 9 metadata pages render read-only tables.
-- [x] Audit logs and change requests tables exist with RLS.
-- [x] Simulation passes all checks.
-- [x] Verification commands documented with results.
-- [x] All changes applied and verified on Supabase Cloud.
+- [x] Push to `origin/phase-2.5-metadata-engine`
+- [x] Update `progress.md` with Phase 2.8 results
