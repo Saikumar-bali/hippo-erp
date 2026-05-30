@@ -10,7 +10,7 @@ Harden the Phase 2.9 Custom DocType Wizard so a real authenticated user can crea
 `25ecd88` (Update AI run report with final commit hash)
 
 ## Final Commit
-`4cd29b6`
+`8b68941`
 
 ## Files Created (3)
 | File | Purpose |
@@ -96,12 +96,13 @@ Simulation verified against Supabase Cloud via Management API:
 | Command | Result |
 |---------|--------|
 | `npm run typecheck` | 0 errors |
-| `npm run lint` | 0 errors, 32 warnings (all pre-existing) |
+| `npm run lint` | 0 errors, 33 warnings (all pre-existing) |
 | `npm run test` | 31 pass, 6 fail (all pre-existing) |
 | `npm run build` | Success |
 | `npm run test:simulation` | All 9 simulation files found |
 | Supabase Cloud migration 0027 | ✅ Applied without errors |
 | Supabase Cloud simulation | ✅ All 14 steps PASS — no errors, rollback confirmed |
+| Authenticated REST API verification | ✅ All 10 CRUD operations confirmed |
 
 ## Real UI Verification (via Authenticated Supabase REST API)
 
