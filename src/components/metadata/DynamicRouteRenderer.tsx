@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { WorkspaceItemMeta } from "../../lib/metadata/workspace-types";
 import type { PermissionChecker } from "../../lib/permission-access";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
@@ -7,6 +7,13 @@ import { CompanyProfileView } from "../CompanyProfileView";
 import { UsersRolesView } from "../UsersRolesView";
 import { MetadataPrototype } from "../MetadataPrototype";
 import { ModuleView } from "../ModuleView";
+import { MetadataStudioHome } from "../metadata-studio/MetadataStudioHome";
+import { DocTypeList } from "../metadata-studio/DocTypeList";
+
+import { DocFieldList } from "../metadata-studio/DocFieldList";
+import { WorkspaceMetadataList, WorkspaceItemList } from "../metadata-studio/WorkspaceMetadataList";
+import { ListViewMetadataList, DocTypeActionList } from "../metadata-studio/ListViewMetadataList";
+import { FormLayoutMetadataList, NamingSeriesList, WorkflowList } from "../metadata-studio/FormLayoutMetadataList";
 
 type Props = {
   selectedItem: WorkspaceItemMeta | null;
@@ -59,6 +66,37 @@ function DocTypeListPage({
       permissionChecker={(key: string) => permissions.can(key)}
     />
   );
+}
+
+function MetadataStudioRouter({ itemKey }: { itemKey: string }) {
+  const [subPage, setSubPage] = useState<string | null>(itemKey === "metadata_studio" ? null : itemKey);
+
+  if (!subPage || subPage === "metadata_studio") {
+    return <MetadataStudioHome onNavigate={(k) => setSubPage(k)} />;
+  }
+
+  switch (subPage) {
+    case "metadata_studio_doctypes":
+      return <DocTypeList />;
+    case "metadata_studio_docfields":
+      return <DocFieldList />;
+    case "metadata_studio_workspaces":
+      return <WorkspaceMetadataList />;
+    case "metadata_studio_workspace_items":
+      return <WorkspaceItemList />;
+    case "metadata_studio_list_views":
+      return <ListViewMetadataList />;
+    case "metadata_studio_form_layouts":
+      return <FormLayoutMetadataList />;
+    case "metadata_studio_actions":
+      return <DocTypeActionList />;
+    case "metadata_studio_naming_series":
+      return <NamingSeriesList />;
+    case "metadata_studio_workflows":
+      return <WorkflowList />;
+    default:
+      return <DocTypeList />;
+  }
 }
 
 export function DynamicRouteRenderer({ selectedItem, tenantId, permissions }: Props) {
@@ -119,6 +157,13 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions }: Pr
           canDeleteRole={permissions.can("delete_role")}
         />
       );
+    }
+
+    if (itemKey.startsWith("metadata_studio")) {
+      if (itemKey === "metadata_studio") {
+        return <MetadataStudioHome onNavigate={() => {}} />;
+      }
+      return <MetadataStudioRouter itemKey={itemKey} />;
     }
 
     return (

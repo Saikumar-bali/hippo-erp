@@ -8,6 +8,7 @@ const files = [
   { path: path.join(process.cwd(), "tests", "simulations", "product_master_flow.sql"), label: "Product master data (Phase 2)" },
   { path: path.join(process.cwd(), "tests", "simulations", "metadata_engine_flow.sql"), label: "Metadata engine core (Phase 2.5)" },
   { path: path.join(process.cwd(), "tests", "simulations", "workspace_navigation_flow.sql"), label: "Workspace navigation (Phase 2.6)" },
+  { path: path.join(process.cwd(), "tests", "simulations", "metadata_studio_foundation_flow.sql"), label: "Metadata Studio foundation (Phase 2.7)" },
 ];
 
 let missing = false;
