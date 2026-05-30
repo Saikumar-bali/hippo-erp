@@ -1,166 +1,147 @@
-# Phase 2.9 Tasks: Custom DocType Wizard UX
+# Phase 2.10 Tasks: Custom DocType Wizard Hardening And Real UI Verification
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Make Metadata Studio feel like a real Frappe-style developer side by adding a guided wizard that creates all required metadata for a working `generic_json` custom DocType.
+Goal: Harden the Phase 2.9 Custom DocType Wizard so a real authenticated user can create a custom DocType, see it in the sidebar, open it, create a record, edit it, and deactivate it.
 
 ## Why This Phase Exists
 
-Phase 2.8 added generic JSON storage, but the user experience is still too raw.
+Phase 2.9 created the wizard and generic metadata bundle creation. But before Warehouse starts, the custom DocType flow must be reliable.
 
-Creating only a row in `app.erp_doctypes` is not enough. A working custom DocType needs:
+Current gaps:
 
-1. DocType
-2. DocFields
-3. List View
-4. Form Layout
-5. DocType Actions
-6. Workspace Item
-7. Storage strategy / data API
-
-The wizard should create these pieces together.
+1. Permission keys can be mapped but not created/granted.
+2. Real authenticated CRUD was not fully verified.
+3. Duplicate DocType key detection is weak.
+4. Sidebar refresh after creation may require manual reload.
+5. Final success state needs a clear completion checklist.
 
 ---
 
 # A. Planning And Docs
 
-- [ ] Create `docs/PHASE_2_9_CUSTOM_DOCTYPE_WIZARD.md`
-- [ ] Update `docs/METADATA_ENGINE.md` with the wizard role in the architecture
+- [x] Add GPT review report: `docs/ai-runs/2026-05-30_gpt-review-phase-2-9-wizard.md`
+- [ ] Create `docs/PHASE_2_10_CUSTOM_DOCTYPE_WIZARD_HARDENING.md`
+- [ ] Update `docs/METADATA_ENGINE.md` with wizard hardening requirements
 - [ ] Update `progress.md` briefly after implementation
-- [x] Add GPT review report: `docs/ai-runs/2026-05-30_gpt-review-phase-2-8-and-ui.md`
 
 ---
 
-# B. Metadata Studio UI
+# B. Permission Handling
 
-Add:
+Problem: The wizard can generate permission keys, but if those keys do not exist in the permission catalog or are not assigned to the current role, the new DocType may not appear or may not allow CRUD.
 
-- [ ] `src/components/metadata-studio/CustomDocTypeWizard.tsx`
+Tasks:
 
-Update:
-
-- [ ] `src/components/metadata-studio/MetadataStudioHome.tsx`
-- [ ] `src/components/metadata-studio/MetadataDataTable.tsx` if needed
-- [ ] `src/components/metadata/DynamicRouteRenderer.tsx` if needed
-
-Requirements:
-
-- [ ] Metadata Studio home has a primary action: `Create Custom DocType`
-- [ ] Raw metadata tables move under an `Advanced Metadata Tables` section visually
-- [ ] Wizard explains that a working DocType requires fields, views, layout, actions, workspace item, and storage
-- [ ] Wizard uses compact enterprise UI, not large marketing-card styling
-
----
-
-# C. Wizard Steps
-
-## Step 1: Basic Info
-
-- [ ] DocType label input
-- [ ] Auto-generate lowercase snake_case `doctype_key`
-- [ ] Module select
-- [ ] Route auto-generated from label, editable
-- [ ] Storage strategy defaults to `generic_json`
-- [ ] Company scoped defaults to true
-- [ ] Reject uppercase or invalid keys
-
-## Step 2: Fields
-
-- [ ] Add/edit/remove fields
-- [ ] Field label input
-- [ ] Auto-generate lowercase snake_case `fieldname`
-- [ ] Field type select: Data, Text, Int, Float, Check, Select, Link, Date, Datetime
-- [ ] Required checkbox
-- [ ] In List View checkbox
-- [ ] In Standard Filter checkbox
-- [ ] Sort order handling
-- [ ] Reject duplicate fieldnames
-- [ ] Require at least one Data field or title/name field
-
-## Step 3: List View
-
-- [ ] Auto-generate list columns from fields marked `in_list_view`
-- [ ] Auto-generate search fields from Data fields
-- [ ] Default sort by first list column
-- [ ] Allow preview of generated columns
-
-## Step 4: Form Layout
-
-- [ ] Auto-generate `Basic Info` section
-- [ ] Include all non-hidden fields
-- [ ] Preview generated section JSON
-
-## Step 5: Actions And Permissions
-
-- [ ] Generate actions: read, create, update, deactivate
-- [ ] For now allow mapping to existing Product permissions for testing
-- [ ] Show warning that real domain permissions should be created later
-- [ ] Do not silently create broad permissions without explicit confirmation
-
-## Step 6: Workspace
-
-- [ ] Workspace select
-- [ ] Workspace item label defaults to plural label
-- [ ] Item type = `doctype`
-- [ ] Target = generated `doctype_key`
-- [ ] Required permission = read permission
-- [ ] Active by default
-
-## Step 7: Preview And Create
-
-- [ ] Show all generated metadata before creating
-- [ ] On confirm, insert all metadata rows in correct order:
-  - [ ] DocType
-  - [ ] DocFields
-  - [ ] List View
-  - [ ] Form Layout
-  - [ ] DocType Actions
-  - [ ] Workspace Item
-- [ ] Show success message
-- [ ] Tell user to open sidebar item and create first record
-- [ ] Refresh workspace navigation if possible
+- [ ] Inspect existing permission tables and role-permission functions.
+- [ ] Add safe helper/RPC if needed to create custom DocType permissions:
+  - `view_<doctype_key>`
+  - `create_<doctype_key>`
+  - `update_<doctype_key>`
+  - `delete_<doctype_key>`
+- [ ] Grant generated permissions to owner/admin roles by default, if this matches existing role model.
+- [ ] Do not grant broad permissions to normal users automatically.
+- [ ] Wizard Step 5 must clearly show whether permissions will be:
+  - created
+  - reused
+  - assigned to owner/admin
+  - still requiring manual role setup
+- [ ] Update simulation to verify permission keys exist and are granted to owner/admin roles.
 
 ---
 
-# D. Backend / API Requirements
+# C. Duplicate And Validation Hardening
 
-Use existing metadata-studio API if safe. Add a helper if needed:
+Tasks:
 
-- [ ] `createCustomDocTypeBundle()` in `src/lib/metadata/metadata-studio-api.ts`
-
-This helper should:
-
-- [ ] Validate metadata payload client-side before insert
-- [ ] Insert records in correct order
-- [ ] Roll back manually if any later insert fails, if practical
-- [ ] Never use service-role in frontend
-- [ ] Work with Supabase Cloud schema `app`
-
-Future improvement: replace this with a single safe RPC transaction.
+- [ ] Before final create, check if `doctype_key` already exists.
+- [ ] Check if workspace item key already exists in selected workspace.
+- [ ] Check duplicate fieldnames client-side.
+- [ ] Show friendly validation errors before submit.
+- [ ] Validate generated route is unique enough or warn if it conflicts.
+- [ ] Normalize labels into lowercase snake_case keys consistently.
+- [ ] Prevent uppercase custom DocType keys like `Supplier`.
 
 ---
 
-# E. Simulation Test
+# D. Transaction Safety
 
-Add:
+Current frontend bundle insert may partially create metadata if one insert fails.
 
-- [ ] `tests/simulations/custom_doctype_wizard_flow.sql`
+Tasks:
+
+- [ ] Prefer a single safe RPC transaction for wizard bundle creation:
+  - `public.erp_create_custom_doctype_bundle(...)`
+- [ ] The RPC should insert DocType, DocFields, List View, Form Layout, Actions, Workspace Item, and permission catalog entries atomically.
+- [ ] If RPC is too large for this phase, implement best-effort cleanup and clearly document the limitation.
+- [ ] Do not use service-role in frontend.
+- [ ] Do not allow physical table creation.
+- [ ] Only allow `generic_json` storage for wizard-created DocTypes.
+
+---
+
+# E. Sidebar Refresh / Open Created DocType
+
+Tasks:
+
+- [ ] After successful wizard creation, refresh workspace navigation without requiring browser reload if practical.
+- [ ] Add an `Open Created DocType` button.
+- [ ] If live refresh is not practical, show exact instruction: `Refresh the page, then open Workspace → Item`.
+- [ ] Final success state should show:
+  - DocType created
+  - Fields created
+  - List View created
+  - Form Layout created
+  - Actions created
+  - Permissions created/granted
+  - Workspace Item created
+  - Ready to create records
+
+---
+
+# F. Real UI Verification
+
+CLI-AI must verify in the running app using an authenticated user session connected to Supabase Cloud.
+
+Manual flow to verify:
+
+- [ ] Open Metadata Studio
+- [ ] Click Create Custom DocType
+- [ ] Create a test DocType like `supplier_ui_test`
+- [ ] Add fields:
+  - `supplier_code` Data required list view
+  - `supplier_name` Data required list view
+  - `phone` Data list view
+  - `email` Data
+  - `is_active` Check list view
+- [ ] Add it to an active workspace
+- [ ] Confirm it appears in sidebar after refresh/open action
+- [ ] Open it
+- [ ] Create first record
+- [ ] Confirm list displays record
+- [ ] Edit record
+- [ ] Deactivate record
+- [ ] Record all results in AI run report
+
+---
+
+# G. Simulation Test
+
+Update or create:
+
+- [ ] `tests/simulations/custom_doctype_wizard_hardening_flow.sql`
 
 Simulation must verify:
 
-- [ ] Create sample custom DocType `supplier_test` with `storage_strategy = generic_json`
-- [ ] Create DocFields
-- [ ] Create List View
-- [ ] Create Form Layout
-- [ ] Create DocType Actions
-- [ ] Create Workspace Item
-- [ ] Create one document with `erp_create_document`
-- [ ] List document with `erp_list_documents`
-- [ ] Update document with `erp_update_document`
-- [ ] Deactivate document with `erp_deactivate_document`
-- [ ] Reject unknown field
-- [ ] Reject missing required field
-- [ ] Roll back at end
+- [ ] Custom DocType bundle creation path
+- [ ] Permission keys created
+- [ ] Permission keys granted to owner/admin or equivalent role
+- [ ] Duplicate DocType key is rejected
+- [ ] Duplicate workspace item key is rejected
+- [ ] Required-field validation works
+- [ ] Unknown-field validation works
+- [ ] Generic document CRUD works where auth context allows
+- [ ] Rollback or cleanup at end
 
 Update:
 
@@ -168,22 +149,22 @@ Update:
 
 ---
 
-# F. UI Review Requirements
+# H. UI Review Requirements
 
 CLI-AI must review and report:
 
-- [ ] Wizard layout is compact
-- [ ] Steps are understandable
-- [ ] Primary action is obvious
-- [ ] Raw metadata tables are still available but secondary
-- [ ] Error messages explain what is missing
-- [ ] Success message explains where the new DocType appears
-- [ ] Sidebar item appears after refresh/reload
-- [ ] New custom DocType can create a record through generic JSON storage
+- [ ] Wizard is not too large or marketing-like
+- [ ] Each step has helper text
+- [ ] Permission step is understandable
+- [ ] Success screen gives clear next action
+- [ ] Error messages are helpful
+- [ ] Advanced metadata tables remain secondary
+- [ ] Sidebar remains compact
+- [ ] DynamicListPage empty states are clear
 
 ---
 
-# G. Verification Commands
+# I. Verification Commands
 
 Run and document exact output:
 
@@ -198,17 +179,17 @@ npm run test:simulation
 Supabase Cloud verification required:
 
 - [ ] Apply any needed migration/seeds to Supabase Cloud
-- [ ] Run `custom_doctype_wizard_flow.sql` on Supabase Cloud
+- [ ] Run hardening simulation on Supabase Cloud
 - [ ] Record PASS/FAIL in `progress.md`
 - [ ] Add detailed report in `docs/ai-runs/`
 
 ---
 
-# H. AI Run Report
+# J. AI Run Report
 
 Create:
 
-- [ ] `docs/ai-runs/2026-05-30_phase-2-9-custom-doctype-wizard.md`
+- [ ] `docs/ai-runs/2026-05-30_phase-2-10-custom-doctype-wizard-hardening.md`
 
 Must include:
 
@@ -219,7 +200,7 @@ Must include:
 - [ ] Files modified
 - [ ] Supabase Cloud changes
 - [ ] Simulation results
-- [ ] Frontend verification
+- [ ] Real UI verification
 - [ ] UI review
 - [ ] Command results
 - [ ] Known gaps
@@ -227,7 +208,7 @@ Must include:
 
 ---
 
-# I. Out Of Scope
+# K. Out Of Scope
 
 Do not implement in this phase:
 
@@ -241,15 +222,18 @@ Do not implement in this phase:
 
 ---
 
-# J. Acceptance Criteria
+# L. Acceptance Criteria
 
-Phase 2.9 is complete only when:
+Phase 2.10 is complete only when:
 
-- [ ] Metadata Studio has a clear `Create Custom DocType` wizard
-- [ ] Wizard creates all required metadata pieces
-- [ ] Created custom DocType appears in selected workspace/sidebar after refresh or reload
-- [ ] Created custom DocType opens with `DynamicListPage`
-- [ ] User can create at least one generic JSON document record
+- [ ] Wizard checks duplicates before create
+- [ ] Wizard handles permissions clearly and safely
+- [ ] Created custom DocType appears in sidebar or provides one-click/open instruction
+- [ ] Created custom DocType can create/list/edit/deactivate a real record in authenticated UI
+- [ ] Metadata bundle creation is transaction-safe or limitation is documented
 - [ ] Supabase Cloud simulation passes
+- [ ] Real UI verification is documented
 - [ ] Build/typecheck/lint/test results are documented
 - [ ] Detailed AI run report exists under `docs/ai-runs/`
+
+Only after Phase 2.10 should Warehouse Phase 3 begin.
