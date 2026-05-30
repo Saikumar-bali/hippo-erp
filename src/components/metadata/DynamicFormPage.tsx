@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { getDocTypeApi } from "./doctype-api-map";
@@ -29,7 +29,7 @@ export function DynamicFormPage({
   const [linkOptions, setLinkOptions] = useState<Record<string, Array<{ id: string; label: string }>>>({});
   const [linkSearch, setLinkSearch] = useState<Record<string, string>>({});
   const [linkFocus, setLinkFocus] = useState<Record<string, boolean>>({});
-  const linkRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [linkValues, setLinkValues] = useState<Record<string, string>>({});
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
 
@@ -83,6 +83,16 @@ export function DynamicFormPage({
     void loadOptions();
   }, [config, tenantId, record]);
 
+  useEffect(() => {
+    if (!record) return;
+    const initial: Record<string, string> = {};
+    for (const key of Object.keys(record)) {
+      const val = record[key];
+      if (val && typeof val === "string") initial[key] = val;
+    }
+    setLinkValues((prev) => ({ ...prev, ...initial }));
+  }, [record]);
+
   const fieldMap = useMemo(() => {
     const m = new Map<string, DocFieldMeta>();
     if (config) for (const f of config.fields) m.set(f.fieldname, f);
@@ -111,8 +121,7 @@ export function DynamicFormPage({
       } else if (f.fieldtype === "Float" || f.fieldtype === "Int") {
         value = raw ? Number(raw) : 0;
       } else if (f.fieldtype === "Link") {
-        const linkInput = fd.get(`${f.fieldname}_id`);
-        value = linkInput ?? raw;
+        value = linkValues[f.fieldname] ?? raw;
       }
 
       if (f.is_required && (value === "" || value === null || value === undefined)) {
@@ -180,6 +189,7 @@ export function DynamicFormPage({
       const options = linkOptions[field.fieldname] ?? [];
       const search = linkSearch[field.fieldname] ?? "";
       const focused = linkFocus[field.fieldname] ?? false;
+      const selectedId = linkValues[field.fieldname] ?? "";
       const filtered = focused && search.length > 0
         ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
         : options;
@@ -187,23 +197,19 @@ export function DynamicFormPage({
       return (
         <label key={field.fieldname} className="field field--link">
           <span>{field.label}{field.is_required ? " *" : ""}</span>
-          <div
-            ref={(el) => { linkRefs.current[field.fieldname] = el; }}
-            style={{ position: "relative" }}
-          >
+          <div style={{ position: "relative" }}>
             <input
               type="text"
-              name={`${field.fieldname}_display`}
               placeholder={`Search ${field.label}…`}
               value={search}
               onChange={(e) => setLinkSearch((prev) => ({ ...prev, [field.fieldname]: e.target.value }))}
               onFocus={() => setLinkFocus((prev) => ({ ...prev, [field.fieldname]: true }))}
               onBlur={() => setTimeout(() => setLinkFocus((prev) => ({ ...prev, [field.fieldname]: false })), 200)}
-              required={field.is_required}
+              required={field.is_required && !selectedId}
               disabled={isReadonly}
               autoComplete="off"
+              style={selectedId ? { borderColor: "#4ade80" } : undefined}
             />
-            <input type="hidden" name={`${field.fieldname}_id`} value={(currentValue as string) ?? ""} />
             {focused && filtered.length > 0 && (
               <div
                 className="typeahead-dropdown"
@@ -213,14 +219,14 @@ export function DynamicFormPage({
                   <div
                     key={opt.id}
                     className="typeahead-item"
-                    style={{ padding: "6px 10px", cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                    style={{
+                      padding: "6px 10px", cursor: "pointer", borderBottom: "1px solid #f0f0f0",
+                      background: opt.id === selectedId ? "#e8f4fd" : "transparent"
+                    }}
                     onMouseDown={() => {
                       setLinkSearch((prev) => ({ ...prev, [field.fieldname]: opt.label }));
                       setLinkFocus((prev) => ({ ...prev, [field.fieldname]: false }));
-                      const hiddenInput = document.querySelector<HTMLInputElement>(`input[name="${field.fieldname}_id"]`);
-                      if (hiddenInput) hiddenInput.value = opt.id;
-                      const displayInput = document.querySelector<HTMLInputElement>(`input[name="${field.fieldname}_display"]`);
-                      if (displayInput) displayInput.value = opt.label;
+                      setLinkValues((prev) => ({ ...prev, [field.fieldname]: opt.id }));
                     }}
                   >
                     {opt.label}
