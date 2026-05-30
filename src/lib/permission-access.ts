@@ -32,7 +32,8 @@ export type ModuleLabel =
   | "Reservations"
   | "Reorder alerts"
   | "Inventory valuation"
-  | "Users and roles";
+  | "Users and roles"
+  | "Metadata Prototype";
 
 export const MODULE_PERMISSION_MAP: Record<ModuleLabel, ModulePermissionSpec> = {
   "Company profile": {
@@ -109,6 +110,12 @@ export const MODULE_PERMISSION_MAP: Record<ModuleLabel, ModulePermissionSpec> = 
     createPermissions: ["invite_user", "create_role"],
     updatePermissions: ["update_user", "update_role"],
     deletePermissions: ["deactivate_user", "delete_role"]
+  },
+  "Metadata Prototype": {
+    requiredPermissions: ["view_products"],
+    createPermissions: ["create_product"],
+    updatePermissions: ["update_product"],
+    deletePermissions: ["delete_product"]
   }
 };
 

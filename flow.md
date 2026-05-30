@@ -332,7 +332,52 @@ The codebase treats this as a standard screen contract for future modules:
 
 Do not implement all of this in Phase 1. This section documents the convention.
 
-## I. Critical ERP Rules
+## I. Metadata-Driven ERP Core
+
+Hippo ERP now targets a Frappe-inspired metadata-driven architecture.
+
+### Goals
+
+- Replace hand-coded list/form/detail screens with metadata-driven renderers over time.
+- Store DocType, DocField, permission, list view, form layout, workflow, and naming series metadata in the database.
+- Keep Supabase as primary database and auth layer.
+- Add a Node.js backend only when orchestration needs exceed Supabase RPC/Edge Functions.
+- Stock-changing transactions remain explicit business logic, never generic CRUD.
+
+### Metadata Tables (app.erp_*)
+
+All metadata lives in the `app` schema:
+
+| Table | Purpose |
+|---|---|
+| `app.erp_modules` | High-level application modules |
+| `app.erp_doctypes` | Document/entity definitions |
+| `app.erp_docfields` | Field metadata per DocType |
+| `app.erp_doctype_actions` | Action-to-permission mapping |
+| `app.erp_list_views` | List view column/filter/search config |
+| `app.erp_form_layouts` | Form/detail section layout config |
+| `app.erp_naming_series` | Company-scoped document numbering |
+| `app.erp_workflows` | Workflow definitions |
+| `app.erp_workflow_states` | Workflow state definitions |
+| `app.erp_workflow_transitions` | Workflow transition rules |
+
+### Migration Path
+
+1. ✅ Phase 2.5: Seed metadata for Product Master. Add dynamic renderer prototypes alongside existing screens.
+2. 🔲 Future: Migrate existing Product screens to metadata renderers.
+3. 🔲 Future: Warehouse, GRN, Stock modules built on metadata engine.
+4. 🔲 Future: Dynamic DocType creator UI (admin-only, restricted).
+5. 🔲 Future: Generic safe CRUD APIs for master data only.
+
+### Rules
+
+- Metadata is readable by any authenticated user.
+- Metadata is writable only by migration in current phase (no UI writes).
+- Code-first screens and metadata-driven screens coexist during migration.
+- Transaction posting (GRN, stock transfer, adjustment) remains explicit business logic.
+- No dynamic user-created DocTypes in this phase.
+
+## J. Critical ERP Rules
 
 - Every stock-changing action must create an inventory movement ledger entry.
 - `inventory_stock` is the current balance/snapshot.
@@ -347,7 +392,7 @@ Do not implement all of this in Phase 1. This section documents the convention.
 - Approval actions must be permission protected.
 - Frontend permission guards are for UX; Supabase RLS/RPC must protect important writes.
 
-## J. Out Of Scope / Colleague-Owned
+## K. Out Of Scope / Colleague-Owned
 
 The following are platform-owned and should not be overbuilt in this ERP module:
 

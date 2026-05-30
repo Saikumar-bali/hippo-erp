@@ -196,6 +196,15 @@ export const ERP_MODULE_REGISTRY: readonly ErpModuleRegistryEntry[] = [
     requiredPermissions: ["view_users", "view_roles"],
     scope: "company",
     status: "active"
+  },
+  {
+    moduleKey: "metadata_prototype",
+    label: "Metadata Prototype",
+    route: "/metadata",
+    icon: DatabaseZap,
+    requiredPermissions: ["view_products"],
+    scope: "company",
+    status: "active"
   }
 ] as const;
 

@@ -1,6 +1,139 @@
 # Phase 2 Tasks: Product Master Data
 
-Work only on Phase 2 until every checkbox is complete. Do not start Warehouse, GRN, Stock Ledger, Transfers, Adjustments, Cycle Counts, Reservations, Reorder Alerts, Valuation, Dashboard, or Reports until GPT-5.5 verifies this phase.
+Phase 2 is complete. See below for Phase 2.5.
+
+---
+
+# Phase 2.5 Tasks: Metadata-Driven ERP Core
+
+Work only on Phase 2.5 until every checkbox is complete. Do not start Warehouse, GRN, Stock Ledger, Transfers, Adjustments, Cycle Counts, Reservations, Reorder Alerts, Valuation, Dashboard, or Reports until GPT-5.5 verifies this phase.
+
+Scope boundary: Phase 2.5 introduces Frappe-inspired metadata tables, seed data, frontend metadata loader, and dynamic renderer prototypes. It does NOT replace existing Product Master screens. It does NOT implement Warehouse, GRN, or Stock modules. It does NOT implement dynamic user-created DocTypes.
+
+Terminology rule: Frappe is design inspiration only. Do not copy Frappe source code. Do not install Frappe.
+
+## A. Planning Docs
+
+- [x] Create `docs/METADATA_ENGINE.md` — Frappe concept mapping, architecture, security rules.
+- [x] Create `docs/DOCUMENT_API_STRATEGY.md` — safe vs unsafe document API design.
+- [x] Create `docs/NODE_METADATA_SERVICE.md` — conditions for adding Node.js backend.
+- [x] Update `flow.md` — add Metadata-Driven ERP Core section.
+- [x] Update `progress.md` — add Phase 2.5 row, defer Warehouse.
+- [x] Update `tasks.md` — replace with Phase 2.5 task list.
+
+Done when:
+- [x] All planning docs are created or updated.
+- [x] Frappe inspiration is clearly documented, not Frappe backend.
+
+## B. Metadata Database Schema
+
+- [x] Create migration `supabase/migrations/0020_metadata_engine_core.sql`.
+- [x] Tables created:
+  - [x] `app.erp_modules` — module definitions.
+  - [x] `app.erp_doctypes` — DocType definitions.
+  - [x] `app.erp_docfields` — field metadata.
+  - [x] `app.erp_doctype_actions` — action-to-permission mapping.
+  - [x] `app.erp_list_views` — list view configuration.
+  - [x] `app.erp_form_layouts` — form/detail layout configuration.
+  - [x] `app.erp_naming_series` — naming series.
+  - [x] `app.erp_workflows` — workflow definitions.
+  - [x] `app.erp_workflow_states` — workflow states.
+  - [x] `app.erp_workflow_transitions` — workflow transitions.
+- [x] RLS enabled on all metadata tables.
+- [x] Read policies: any authenticated user can read.
+- [x] Write policies: blocked for all (migration-only writes).
+- [x] No existing tables dropped or altered.
+- [x] SQL is valid PostgreSQL.
+
+Done when:
+- [x] Migration SQL is ready and reviewed.
+
+## C. Metadata Seed Data
+
+- [x] Module seeds: `product_master`, `inventory`, `warehouse`, `purchasing`, `reporting`.
+- [x] DocType seeds: `product_category`, `unit_of_measure`, `product`.
+- [x] DocField seeds for all three DocTypes matching existing schema.
+- [x] DocType action seeds: read/create/update/deactivate mapped to permission keys.
+- [x] List view seeds: default column config for each DocType.
+- [x] Form layout seeds: section-organized layouts for each DocType.
+- [x] All seeds use `on conflict do nothing` for idempotency.
+
+Done when:
+- [x] Seeds exist for the existing Product Master.
+
+## D. Frontend Metadata Layer
+
+- [x] `src/lib/metadata/types.ts` — TypeScript types for all metadata entities.
+- [x] `src/lib/metadata/field-types.ts` — field type metadata and display helpers.
+- [x] `src/lib/metadata/metadata-api.ts` — Supabase queries for metadata loading.
+- [x] `src/lib/metadata/doctype-registry.ts` — caching layer and React hooks.
+- [x] No service role exposure.
+- [x] API functions handle error states.
+
+Done when:
+- [x] Metadata loader works and returns typed data.
+
+## E. Dynamic Renderer Components
+
+- [x] `src/components/metadata/DynamicFieldRenderer.tsx` — renders typed fields.
+- [x] `src/components/metadata/DynamicFilterBar.tsx` — renders filters from metadata.
+- [x] `src/components/metadata/DynamicActionBar.tsx` — renders permission-aware actions.
+- [x] `src/components/metadata/LinkField.tsx` — renders linked record display values.
+- [x] `src/components/metadata/StatusField.tsx` — status/active badge.
+- [x] `src/components/metadata/doctype-api-map.ts` — maps DocType keys to existing RPC APIs.
+- [x] `src/components/metadata/DynamicListPage.tsx` — metadata-driven list view.
+- [x] `src/components/metadata/DynamicFormPage.tsx` — metadata-driven form.
+- [x] `src/components/metadata/DynamicDetailPage.tsx` — metadata-driven detail view.
+- [x] Link fields render display values (e.g., category code, UOM code), not raw UUIDs.
+- [x] List view supports search and standard filters from metadata.
+
+Done when:
+- [x] Dynamic renderers work for Product/Product Category/UOM.
+- [x] Link fields show business-friendly values.
+- [x] Permission-aware action buttons.
+
+## F. Integration
+
+- [x] `MetadataPrototype` wrapper component created.
+- [x] "Metadata Prototype" module entry added to `erp-modules.ts`.
+- [x] App.tsx renders MetadataPrototype when module selected.
+- [x] Existing Product Master screens continue working unchanged.
+- [x] No Warehouse/GRN/Stock implemented.
+
+Done when:
+- [x] Metadata prototype renders alongside existing screens.
+- [x] Users can toggle between code-first and metadata-driven views.
+
+## G. Security
+
+- [x] Metadata tables are read-only from UI (RLS blocks writes).
+- [x] Metadata reads do not expose service role keys.
+- [x] Existing RLS policies are not weakened.
+- [x] Existing RPC permission checks remain in place.
+- [x] No arbitrary table writes from metadata.
+- [x] No dynamic user-created DocTypes.
+
+Done when:
+- [x] Metadata reads are safe and writes are blocked.
+
+## H. Build And Verification
+
+- [ ] `npm run typecheck` passes (verify no TypeScript errors).
+- [ ] `npm run lint` passes or only documented pre-existing warnings remain.
+- [ ] `npm run test` passes or pre-existing failures are documented.
+- [ ] `npm run build` passes.
+
+Done when:
+- [ ] TypeScript, lint, and build all pass.
+- [ ] Pre-existing test failures are documented.
+
+## I. Next Phase Decision
+
+After Phase 2.5 verification:
+- [ ] Determine if metadata core is stable enough for production.
+- [ ] Decide: next phase should be Warehouse (Phase 3) or metadata migration of existing screens.
+
+---
 
 Scope boundary: platform/auth/company onboarding is colleague-owned. This phase starts after an authenticated user and current company context are available.
 

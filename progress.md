@@ -50,7 +50,8 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 | 0 | Project scaffold and deployment foundation | Mostly complete | Platform-owned | React/Vite/Supabase/Cloudflare/GitHub foundation exists. |
 | 1 | Company profile, users, custom roles, permissions, ERP foundation | Complete | ERP module | Phase 1 complete. Company profile, roles, permissions, user-role assignment, and ERP foundation are in place. |
 | 2 | Product master data | Complete | ERP module | Phase 2 complete + professional polish. Categories, UOM, products/SKUs, barcode/QR, reorder data, batch/expiry flags, RPC-based RLS, PermissionGuard UI. Polish: column renames, TRACKING column, section-grouped detail, search/filter on all lists, professional schema fields (parent_category, symbol, etc.), updated RPCs and forms. |
-| 3 | Warehouse hierarchy | Next | ERP module | Warehouses, zones, aisles, racks, shelves, bins. Next phase in `tasks.md`. |
+| 2.5 | Metadata-Driven ERP Core | Active | ERP module | Frappe-style metadata engine introduced. DocType/DocField/DocPerm/List View/Form Layout metadata tables seeded for Product Master. Dynamic renderer prototypes added alongside existing screens. Warehouse should wait until metadata core is stable. |
+| 3 | Warehouse hierarchy | On Hold | ERP module | Warehouses, zones, aisles, racks, shelves, bins. Deferred until metadata core is stable. |
 | 4 | GRN, QC, batch, bin allocation | Pending | ERP module | Goods receipt, QC/grading, batch creation, bin allocation, stock posting. |
 | 5 | Stock snapshot and movement ledger | Pending | ERP module | Current balance, available stock, batch/expiry, FEFO, historical ledger. |
 | 6 | Transfers and adjustments | Pending | ERP module | Transfer request/completion, stock corrections, approvals. |
@@ -104,7 +105,10 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 - Inventory modules are incomplete.
 - UI still contains or may contain user-facing "tenant" wording that should be changed to "Company".
 - Product Master Data is complete.
-- Warehouse, GRN, inventory, transfer, adjustment, cycle count, reservation, reorder, valuation, and dashboard modules are still pending and out of Phase 2 scope.
+- Warehouse, GRN, inventory, transfer, adjustment, cycle count, reservation, reorder, valuation, and dashboard modules are still pending.
+- Phase 2.5 Metadata-Driven ERP Core is now active. Frappe-style DocType/DocField/List/Form metadata tables have been added. Dynamic renderer prototypes exist alongside existing screens.
+- Code-first screens should gradually migrate to metadata-driven renderers as modules are built or refactored.
+- Warehouse phase is deferred until metadata core is stable.
 - Simulation SQL exists but is not automatically executed against a safe test database.
 - Some repo files are currently modified/untracked and need review before commit.
 

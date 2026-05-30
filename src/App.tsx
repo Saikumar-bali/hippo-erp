@@ -5,6 +5,7 @@ import { Toaster, toast } from "sonner";
 import { useAuth } from "./context/AuthContext";
 import { TenantSelector } from "./components/TenantSelector";
 import { ModuleView } from "./components/ModuleView";
+import { MetadataPrototype } from "./components/MetadataPrototype";
 import { CompanyProfileView } from "./components/CompanyProfileView";
 import { UsersRolesView } from "./components/UsersRolesView";
 import { ProductList } from "./components/products/ProductList";
@@ -163,6 +164,11 @@ export default function App() {
                   canCreate={permissions.can("create_product")}
                   canUpdate={permissions.can("update_product")}
                   canDelete={permissions.can("delete_product")}
+                />
+              ) : selected === "Metadata Prototype" ? (
+                <MetadataPrototype
+                  tenantId={localStorage.getItem("tenant_id") ?? ""}
+                  permissions={permissions}
                 />
               ) : (
                 <ModuleView tenantId={localStorage.getItem("tenant_id") ?? ""} module={selected} can={permissions.can} />
