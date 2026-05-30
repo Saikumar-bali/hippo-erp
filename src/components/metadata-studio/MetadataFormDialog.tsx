@@ -49,6 +49,42 @@ function SelectField({
   );
 }
 
+function toJsonEditorValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "string") {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return value;
+    }
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function normalizeValuesForSave(fields: FieldDef[], values: Record<string, unknown>) {
+  const normalized = { ...values };
+  for (const field of fields) {
+    if (field.hidden || field.type !== "json") continue;
+    const raw = normalized[field.name];
+    if (raw === null || raw === undefined || raw === "") {
+      normalized[field.name] = field.required ? undefined : null;
+      continue;
+    }
+    if (typeof raw === "string") {
+      try {
+        normalized[field.name] = JSON.parse(raw);
+      } catch {
+        throw new Error(`${field.label} must be valid JSON.`);
+      }
+    }
+  }
+  return normalized;
+}
+
 export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: Props) {
   const [values, setValues] = useState<Record<string, unknown>>({ ...initial });
   const [saving, setSaving] = useState(false);
@@ -62,7 +98,8 @@ export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: 
     setSaving(true);
     setError(null);
     try {
-      await onSave(values);
+      const normalized = normalizeValuesForSave(fields, values);
+      await onSave(normalized);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -82,6 +119,14 @@ export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: 
     boxSizing: "border-box",
   };
 
+  const textareaStyle: React.CSSProperties = {
+    ...inputStyle,
+    minHeight: "110px",
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    lineHeight: 1.4,
+    resize: "vertical",
+  };
+
   return (
     <div
       style={{
@@ -94,7 +139,7 @@ export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: 
       <div
         className="card"
         style={{
-          width: "520px", maxHeight: "80vh", overflowY: "auto",
+          width: "620px", maxHeight: "82vh", overflowY: "auto",
           padding: "var(--card-padding)",
         }}
       >
@@ -133,6 +178,14 @@ export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: 
                   value={String(values[f.name] ?? "")}
                   onChange={(v) => set(f.name, v)}
                   inputStyle={inputStyle}
+                />
+              ) : f.type === "json" ? (
+                <textarea
+                  value={toJsonEditorValue(values[f.name])}
+                  onChange={(e) => set(f.name, e.target.value)}
+                  style={textareaStyle}
+                  placeholder="Enter valid JSON"
+                  spellCheck={false}
                 />
               ) : (
                 <input
