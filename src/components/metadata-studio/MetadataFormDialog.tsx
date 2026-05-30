@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FieldDef } from "../../lib/metadata/metadata-studio-api";
 
 type Props = {
@@ -8,6 +8,46 @@ type Props = {
   onSave: (values: Record<string, unknown>) => Promise<void>;
   onClose: () => void;
 };
+
+type Option = { value: string; label: string };
+
+function SelectField({
+  field, value, onChange, inputStyle,
+}: {
+  field: FieldDef;
+  value: string;
+  onChange: (v: string) => void;
+  inputStyle: React.CSSProperties;
+}) {
+  const [options, setOptions] = useState<Option[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (field.loadOptions) {
+      setLoading(true);
+      field.loadOptions()
+        .then(setOptions)
+        .catch(() => setOptions([]))
+        .finally(() => setLoading(false));
+    } else {
+      setOptions((field.options ?? []).map((o) => ({ value: o, label: o })));
+    }
+  }, [field]);
+
+  return (
+    <select
+      value={loading ? "" : String(value ?? "")}
+      onChange={(e) => onChange(e.target.value)}
+      style={inputStyle}
+      disabled={loading}
+    >
+      <option value="">--</option>
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  );
+}
 
 export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: Props) {
   const [values, setValues] = useState<Record<string, unknown>>({ ...initial });
@@ -88,16 +128,12 @@ export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: 
                   style={inputStyle}
                 />
               ) : f.type === "select" ? (
-                <select
+                <SelectField
+                  field={f}
                   value={String(values[f.name] ?? "")}
-                  onChange={(e) => set(f.name, e.target.value)}
-                  style={inputStyle}
-                >
-                  <option value="">--</option>
-                  {(f.options ?? []).map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                  onChange={(v) => set(f.name, v)}
+                  inputStyle={inputStyle}
+                />
               ) : (
                 <input
                   type="text"

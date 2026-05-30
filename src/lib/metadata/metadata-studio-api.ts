@@ -16,6 +16,7 @@ export type FieldDef = {
   hidden?: boolean;
   options?: string[];
   default?: unknown;
+  loadOptions?: () => Promise<{ value: string; label: string }[]>;
 };
 
 export type TableMeta = {
@@ -24,6 +25,32 @@ export type TableMeta = {
   fields: FieldDef[];
   orderBy: { column: string; ascending: boolean }[];
 };
+
+// ── Foreign key lookup helpers ────────────────────────────────────────────────
+
+export async function loadModuleKeys() {
+  const { data, error } = await meta().from("erp_modules").select("module_key, label").order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => ({ value: r.module_key as string, label: `${r.module_key} (${r.label})` }));
+}
+
+export async function loadDocTypeKeys() {
+  const { data, error } = await meta().from("erp_doctypes").select("doctype_key, label").order("doctype_key", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => ({ value: r.doctype_key as string, label: `${r.doctype_key} (${r.label})` }));
+}
+
+export async function loadWorkflowKeys() {
+  const { data, error } = await meta().from("erp_workflows").select("workflow_key, label").order("workflow_key", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => ({ value: r.workflow_key as string, label: `${r.workflow_key} (${r.label})` }));
+}
+
+export async function loadWorkspaceKeys() {
+  const { data, error } = await meta().from("erp_workspaces").select("workspace_key, label").order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => ({ value: r.workspace_key as string, label: `${r.workspace_key} (${r.label})` }));
+}
 
 export const TABLES: Record<string, TableMeta> = {
   modules: {
@@ -45,7 +72,7 @@ export const TABLES: Record<string, TableMeta> = {
     label: "DocTypes",
     fields: [
       { name: "doctype_key", label: "DocType Key", type: "text", required: true },
-      { name: "module_key", label: "Module Key", type: "text", required: true },
+      { name: "module_key", label: "Module Key", type: "select", required: true, loadOptions: loadModuleKeys },
       { name: "label", label: "Label", type: "text", required: true },
       { name: "description", label: "Description", type: "text" },
       { name: "schema_name", label: "Schema Name", type: "text", required: true },
@@ -64,7 +91,7 @@ export const TABLES: Record<string, TableMeta> = {
     table: "erp_docfields",
     label: "DocFields",
     fields: [
-      { name: "doctype_key", label: "DocType Key", type: "text", required: true },
+      { name: "doctype_key", label: "DocType Key", type: "select", required: true, loadOptions: loadDocTypeKeys },
       { name: "fieldname", label: "Field Name", type: "text", required: true },
       { name: "label", label: "Label", type: "text", required: true },
       { name: "fieldtype", label: "Field Type", type: "text", required: true },
@@ -87,7 +114,7 @@ export const TABLES: Record<string, TableMeta> = {
     table: "erp_doctype_actions",
     label: "DocType Actions",
     fields: [
-      { name: "doctype_key", label: "DocType Key", type: "text", required: true },
+      { name: "doctype_key", label: "DocType Key", type: "select", required: true, loadOptions: loadDocTypeKeys },
       { name: "action_key", label: "Action Key", type: "text", required: true },
       { name: "permission_key", label: "Permission Key", type: "text", required: true },
     ],
@@ -97,7 +124,7 @@ export const TABLES: Record<string, TableMeta> = {
     table: "erp_list_views",
     label: "List Views",
     fields: [
-      { name: "doctype_key", label: "DocType Key", type: "text", required: true },
+      { name: "doctype_key", label: "DocType Key", type: "select", required: true, loadOptions: loadDocTypeKeys },
       { name: "view_key", label: "View Key", type: "text", required: true },
       { name: "label", label: "Label", type: "text", required: true },
       { name: "columns_json", label: "Columns (JSON)", type: "json", required: true },
@@ -112,7 +139,7 @@ export const TABLES: Record<string, TableMeta> = {
     table: "erp_form_layouts",
     label: "Form Layouts",
     fields: [
-      { name: "doctype_key", label: "DocType Key", type: "text", required: true },
+      { name: "doctype_key", label: "DocType Key", type: "select", required: true, loadOptions: loadDocTypeKeys },
       { name: "layout_key", label: "Layout Key", type: "text", required: true },
       { name: "label", label: "Label", type: "text", required: true },
       { name: "sections_json", label: "Sections (JSON)", type: "json", required: true },
@@ -124,7 +151,7 @@ export const TABLES: Record<string, TableMeta> = {
     table: "erp_naming_series",
     label: "Naming Series",
     fields: [
-      { name: "doctype_key", label: "DocType Key", type: "text", required: true },
+      { name: "doctype_key", label: "DocType Key", type: "select", required: true, loadOptions: loadDocTypeKeys },
       { name: "prefix", label: "Prefix", type: "text", required: true },
       { name: "year_format", label: "Year Format", type: "text", default: "YYYY" },
       { name: "current_number", label: "Current Number", type: "number" },
@@ -138,7 +165,7 @@ export const TABLES: Record<string, TableMeta> = {
     label: "Workflows",
     fields: [
       { name: "workflow_key", label: "Workflow Key", type: "text", required: true },
-      { name: "doctype_key", label: "DocType Key", type: "text", required: true },
+      { name: "doctype_key", label: "DocType Key", type: "select", required: true, loadOptions: loadDocTypeKeys },
       { name: "label", label: "Label", type: "text", required: true },
       { name: "is_active", label: "Active", type: "boolean", default: true },
     ],
@@ -161,7 +188,7 @@ export const TABLES: Record<string, TableMeta> = {
     table: "erp_workspace_items",
     label: "Workspace Items",
     fields: [
-      { name: "workspace_key", label: "Workspace Key", type: "text", required: true },
+      { name: "workspace_key", label: "Workspace Key", type: "select", required: true, loadOptions: loadWorkspaceKeys },
       { name: "item_key", label: "Item Key", type: "text", required: true },
       { name: "label", label: "Label", type: "text", required: true },
       { name: "item_type", label: "Item Type", type: "select", required: true, options: ["doctype", "workspace", "page", "report", "external"] },
