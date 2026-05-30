@@ -10,7 +10,7 @@ Add a guided 7-step wizard that creates a working `generic_json` custom DocType 
 `8903a04` (Start phase 2.9 custom doctype wizard tasks)
 
 ## Final Commit
-`cbec98f`
+`654ed37`
 
 ## Files Created (4)
 | File | Purpose |
