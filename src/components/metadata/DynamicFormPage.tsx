@@ -37,7 +37,7 @@ export function DynamicFormPage({
     if (action !== "update" || !recordId || !api) return;
     let cancelled = false;
     setDataLoading(true);
-    api.get(recordId)
+    api.get(recordId, tenantId)
       .then((data) => {
         if (!cancelled) setRecord(data as Record<string, unknown>);
       })
@@ -46,7 +46,7 @@ export function DynamicFormPage({
       })
       .finally(() => { if (!cancelled) setDataLoading(false); });
     return () => { cancelled = true; };
-  }, [action, recordId, api]);
+  }, [action, recordId, api, tenantId]);
 
   useEffect(() => {
     if (!config) return;
@@ -144,7 +144,7 @@ export function DynamicFormPage({
         await api.create?.({ tenant_id: tenantId, ...data });
         toast.success(`${config?.doctype.label} created.`);
       } else if (recordId) {
-        await api.update?.(recordId, data);
+        await api.update?.(recordId, data, tenantId);
         toast.success(`${config?.doctype.label} updated.`);
       }
       onSaved();
