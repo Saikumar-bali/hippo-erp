@@ -8,6 +8,7 @@ import { UsersRolesView } from "../UsersRolesView";
 import { MetadataPrototype } from "../MetadataPrototype";
 import { ModuleView } from "../ModuleView";
 import { MetadataStudioHome } from "../metadata-studio/MetadataStudioHome";
+import { CustomDocTypeWizard } from "../metadata-studio/CustomDocTypeWizard";
 import { DocTypeList } from "../metadata-studio/DocTypeList";
 
 import { DocFieldList } from "../metadata-studio/DocFieldList";
@@ -76,6 +77,8 @@ function MetadataStudioRouter({ itemKey }: { itemKey: string }) {
   }
 
   switch (subPage) {
+    case "metadata_studio_wizard":
+      return <CustomDocTypeWizard onClose={() => setSubPage("metadata_studio")} />;
     case "metadata_studio_doctypes":
       return <DocTypeList />;
     case "metadata_studio_docfields":

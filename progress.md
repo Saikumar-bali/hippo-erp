@@ -19,7 +19,8 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2.6 | Metadata Workspace, Navigation, and Compact ERP UI | Complete | Migration 0021 + 0022, grouped workspace sidebar, DynamicRouteRenderer, compact density, pagination, no duplicate Status column. Senior review fixes applied. |
 | 2.7 | Metadata Studio / Developer Side | Complete | Permission manage_metadata, Metadata Studio workspace, read-only metadata inspection pages (DocTypes, DocFields, Workspaces, List Views, Form Layouts, etc.), audit_logs + change_requests tables, CRUD RLS on metadata tables, FK dropdowns in form. |
 | 2.8 | Custom DocType Document Storage | Complete | Database: storage_strategy, erp_documents + erp_document_versions tables, 6 RPC functions with field validation + permission check + company scoping. Frontend: generic-doctype-api bridge, doctype-api-map auto-detection, DynamicListPage/DynamicDetailPage generic_json support, storage_strategy in DocType form. Applied + verified on Supabase Cloud. |
-| 3 | Warehouse hierarchy | On Hold | Do not start until Phase 2.8 is verified. |
+| 2.9 | Custom DocType Wizard UX | Complete | Guided 7-step wizard for end-to-end custom DocType creation. Creates DocType + DocFields + List View + Form Layout + DocType Actions + Workspace Item in Supabase Cloud. Metadata Studio home reorganized with wizard as primary action. |
+| 3 | Warehouse hierarchy | On Hold | Warehouse CRUD not started. |
 | 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
 
 ## Phase 2.6 Implementation Summary
@@ -96,6 +97,51 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | `npm run build` | Success |
 | Supabase Cloud simulation (metadata_studio_foundation_flow) | **PASSED** — all 9 checks pass |
 
+## Phase 2.9 Implementation Summary
+
+### Files Created
+- `docs/PHASE_2_9_CUSTOM_DOCTYPE_WIZARD.md` — architecture doc with wizard design, validation, checklist
+- `src/components/metadata-studio/CustomDocTypeWizard.tsx` — 7-step guided wizard (450 lines)
+- `tests/simulations/custom_doctype_wizard_flow.sql` — end-to-end simulation creating supplier_test
+
+### Files Modified
+- `src/components/metadata-studio/MetadataStudioHome.tsx` — "Create Custom DocType" primary button, "Advanced Metadata Tables" section
+- `src/components/metadata/DynamicRouteRenderer.tsx` — wizard route `metadata_studio_wizard`
+- `scripts/run-simulation.cjs` — added Phase 2.8 and 2.9 simulation file references
+
+### Wizard Steps
+1. **Basic Info** — label, auto-generated snake_case key, module, route, storage strategy, company scoped
+2. **Fields** — add/edit/remove fields with auto-generated fieldnames, 9 field types
+3. **List View** — auto-generated columns from in_list_view fields
+4. **Form Layout** — auto-generated Basic Info section with all fields
+5. **Actions** — read/create/update/deactivate permission mapping
+6. **Workspace** — workspace selection + sidebar item creation
+7. **Preview & Create** — summary + inserts all metadata rows in Supabase Cloud
+
+### Verification Results
+
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 29 warnings (pre-existing) |
+| `npm run test` | 31 pass, 6 fail (pre-existing) |
+| `npm run build` | Success |
+| `npm run test:simulation` | All 8 simulation files found |
+
+### Supabase Cloud Simulation (custom_doctype_wizard_flow)
+| Check | Result |
+|-------|--------|
+| Module exists | PASS |
+| DocType inserted (generic_json) | PASS |
+| 5 DocFields inserted | PASS |
+| List View created | PASS |
+| Form Layout created | PASS |
+| 4 DocType Actions created | PASS |
+| Workspace Item created | PASS |
+| FullDocTypeConfig verified | PASS |
+| erp_create_document RPC | INFO (needs auth context) |
+| erp_list_documents RPC | INFO (needs auth context) |
+
 ## Phase 2.8 Implementation Summary
 
 ### Database
@@ -139,8 +185,9 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - Warehouse CRUD not started (Phase 3).
 - Workflow transition engine not implemented.
 - Naming series generation engine not implemented.
-- User-created DocType builder UI not implemented.
-- Metadata Studio edit/create forms (read-only only in this phase).
+- Metadata Studio edit/create forms (raw table editing remains available via MetadataDataTable).
 - DynamicListPage needs better empty state design for no-data vs no-matches.
 - Full anon-read verification requires separate anon-key client session (SQL Editor always runs as service_role).
 - Sort from `sort_json` not yet wired to DynamicListPage (default sort used).
+- Wizard does not auto-create naming series or workflow for new DocTypes.
+- Permission keys mapped by wizard do not auto-create role permissions.
