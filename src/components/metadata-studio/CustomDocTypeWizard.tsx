@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
-import { loadModuleKeys, loadWorkspaceKeys } from "../../lib/metadata/metadata-studio-api";
+import { loadModuleKeys, loadWorkspaceKeys, createCustomDocTypeBundle } from "../../lib/metadata/metadata-studio-api";
 
 type WizardField = {
   fieldname: string;
@@ -49,6 +48,14 @@ function toSnakeCase(str: string): string {
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/[\s-]+/g, "_")
     .replace(/^_|_$/g, "");
+}
+
+function pluralize(str: string): string {
+  if (str.endsWith("s") || str.endsWith("x") || str.endsWith("z") || str.endsWith("ch") || str.endsWith("sh"))
+    return str + "es";
+  if (str.endsWith("y") && str.length > 1 && !/[aeiou]y$/i.test(str))
+    return str.slice(0, -1) + "ies";
+  return str + "s";
 }
 
 function getInitialState(): WizardState {
@@ -153,6 +160,8 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
 
     if (stepNum === 1) {
       if (state.fields.length === 0) newErrors.fields = "Add at least one field";
+      const hasDataField = state.fields.some((f) => f.fieldtype === "Data" || f.fieldtype === "Text");
+      if (!hasDataField) newErrors.fields = "At least one Data or Text field is required for name/title";
       const names = new Set<string>();
       for (let i = 0; i < state.fields.length; i++) {
         const f = state.fields[i];
@@ -204,114 +213,19 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
     setError(null);
 
     try {
-      const meta = () => supabase.schema("app");
-
-      const doctypeResult = await meta()
-        .from("erp_doctypes")
-        .insert({
-          doctype_key: state.doctype_key,
-          module_key: state.module_key,
-          label: state.label,
-          description: state.description || null,
-          schema_name: "app",
-          table_name: "erp_documents",
-          route: state.route || null,
-          storage_strategy: state.storage_strategy,
-          is_company_scoped: state.is_company_scoped,
-          is_submittable: false,
-          is_child_table: false,
-          is_single: false,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (doctypeResult.error) throw new Error(`Failed to create DocType: ${doctypeResult.error.message}`);
-
-      for (const f of state.fields) {
-        const fieldResult = await meta()
-          .from("erp_docfields")
-          .insert({
-            doctype_key: state.doctype_key,
-            fieldname: f.fieldname,
-            label: f.label,
-            fieldtype: f.fieldtype,
-            is_required: f.is_required,
-            in_list_view: f.in_list_view,
-            in_standard_filter: f.in_standard_filter,
-            sort_order: f.sort_order,
-            is_hidden: false,
-            is_readonly: false,
-            is_unique: false,
-          })
-          .select()
-          .single();
-        if (fieldResult.error) throw new Error(`Failed to create field ${f.fieldname}: ${fieldResult.error.message}`);
-      }
-
-      const listViewColumns = state.fields
-        .filter((f) => f.in_list_view)
-        .map((f) => ({ fieldname: f.fieldname, label: f.label }));
-      const searchFields = state.fields
-        .filter((f) => f.fieldtype === "Data" || f.fieldtype === "Text")
-        .map((f) => f.fieldname);
-
-      const listViewResult = await meta()
-        .from("erp_list_views")
-        .insert({
-          doctype_key: state.doctype_key,
-          view_key: `${state.doctype_key}_default`,
-          label: `${state.label} List`,
-          columns_json: listViewColumns,
-          search_fields_json: searchFields,
-          is_default: true,
-        })
-        .select()
-        .single();
-      if (listViewResult.error) throw new Error(`Failed to create list view: ${listViewResult.error.message}`);
-
-      const sectionFields = state.fields.map((f) => f.fieldname);
-      const formResult = await meta()
-        .from("erp_form_layouts")
-        .insert({
-          doctype_key: state.doctype_key,
-          layout_key: `${state.doctype_key}_default`,
-          label: `${state.label} Form`,
-          sections_json: [{ section: "Basic Info", columns: 1, fields: sectionFields }],
-          is_default: true,
-        })
-        .select()
-        .single();
-      if (formResult.error) throw new Error(`Failed to create form layout: ${formResult.error.message}`);
-
-      for (const a of state.actions) {
-        const actionResult = await meta()
-          .from("erp_doctype_actions")
-          .insert({
-            doctype_key: state.doctype_key,
-            action_key: a.action_key,
-            permission_key: a.permission_key,
-          })
-          .select()
-          .single();
-        if (actionResult.error) throw new Error(`Failed to create action ${a.action_key}: ${actionResult.error.message}`);
-      }
-
-      const itemKey = state.doctype_key;
-      const wsResult = await meta()
-        .from("erp_workspace_items")
-        .insert({
-          workspace_key: state.workspace_key,
-          item_key: itemKey,
-          label: state.workspace_item_label,
-          item_type: "doctype",
-          target: state.doctype_key,
-          required_permission_key: state.actions.find((a) => a.action_key === "read")?.permission_key ?? null,
-          is_active: true,
-        })
-        .select()
-        .single();
-      if (wsResult.error) throw new Error(`Failed to create workspace item: ${wsResult.error.message}`);
+      await createCustomDocTypeBundle({
+        doctype_key: state.doctype_key,
+        module_key: state.module_key,
+        label: state.label,
+        description: state.description || null,
+        route: state.route || null,
+        storage_strategy: state.storage_strategy,
+        is_company_scoped: state.is_company_scoped,
+        fields: state.fields,
+        actions: state.actions,
+        workspace_key: state.workspace_key,
+        workspace_item_label: state.workspace_item_label,
+      });
 
       setCreated(true);
       onCreated?.();
@@ -430,6 +344,7 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
             set("label", v);
             set("doctype_key", toSnakeCase(v));
             set("route", toSnakeCase(v));
+            set("workspace_item_label", pluralize(v));
           }}
           style={inputStyle}
           placeholder="e.g. Supplier"

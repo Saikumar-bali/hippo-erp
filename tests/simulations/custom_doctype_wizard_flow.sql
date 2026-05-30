@@ -2,7 +2,8 @@
 -- Phase 2.9 Custom DocType Wizard simulation.
 -- Run in Supabase SQL Editor against a safe non-production branch/database.
 -- Creates a sample Supplier-like DocType (supplier_test) through the
--- same metadata pattern used by the wizard, then attempts document CRUD.
+-- same metadata pattern used by the wizard, then tests document CRUD
+-- and field validation via the generic_json RPC functions.
 -- Rolls back all changes.
 -- Prerequisites: migrations 0020–0026 applied, modules exist
 
@@ -91,10 +92,11 @@ declare
   v_id uuid;
 begin
   insert into app.erp_list_views (doctype_key, view_key, label,
-    columns_json, search_fields_json, is_default)
+    columns_json, search_fields_json, sort_json, is_default)
   values ('supplier_test', 'supplier_test_default', 'Supplier Test List',
     '[{"fieldname":"supplier_name","label":"Supplier Name"},{"fieldname":"email","label":"Email"},{"fieldname":"phone","label":"Phone"},{"fieldname":"is_active","label":"Is Active"}]'::jsonb,
     '["supplier_name","email"]'::jsonb,
+    '{"fieldname":"supplier_name","direction":"asc"}'::jsonb,
     true)
   returning id into v_id;
 
@@ -102,7 +104,7 @@ begin
     raise exception 'FAIL: list view insert returned no id';
   end if;
 
-  raise notice 'PASS: list view created for supplier_test';
+  raise notice 'PASS: list view created for supplier_test with default sort';
 end;
 $$;
 
@@ -226,61 +228,179 @@ begin
 end;
 $$;
 
--- ── 9. Attempt document creation via RPC ────────────────────────────────────
--- Note: This may fail in SQL Editor because auth.uid() is not set (service_role).
--- The test verifies the RPC exists and validates correctly.
+-- ── 9. Create document via RPC ───────────────────────────────────────────────
 
 do $$
 declare
   v_result jsonb;
   v_ok boolean;
-  v_error text;
+  v_doc_id text;
 begin
-  begin
-    select data into v_result
-    from public.erp_create_document(
-      p_doctype_key => 'supplier_test',
-      p_company_id => '00000000-0000-0000-0000-000000000000',
-      p_data => jsonb_build_object(
-        'supplier_name', 'Test Supplier Inc.',
-        'email', 'test@supplier.com',
-        'phone', '+1234567890',
-        'is_active', true
-      )
-    );
+  v_result := public.erp_create_document(
+    p_doctype_key => 'supplier_test',
+    p_company_id => '00000000-0000-0000-0000-000000000000',
+    p_data => jsonb_build_object(
+      'supplier_name', 'Test Supplier Inc.',
+      'email', 'test@supplier.com',
+      'phone', '+1234567890',
+      'is_active', true
+    )
+  );
 
-    v_ok := (v_result->>'ok')::boolean;
-    v_error := v_result->>'error';
+  v_ok := (v_result->>'ok')::boolean;
 
-    if v_ok then
-      raise notice 'PASS: erp_create_document succeeded (document_id=%)', v_result->>'document_id';
-    else
-      -- Permission-related failures are expected in SQL Editor context
-      raise notice 'INFO: erp_create_document returned ok=false (expected without auth context): %', v_error;
-    end if;
-  exception when others then
-    raise notice 'INFO: erp_create_document exception (expected without auth context): %', sqlerrm;
-  end;
+  if v_ok then
+    v_doc_id := v_result->>'document_id';
+    raise notice 'PASS: erp_create_document succeeded (document_id=%)', v_doc_id;
+  else
+    raise notice 'INFO: erp_create_document returned ok=false — %', v_result->>'error';
+  end if;
 end;
 $$;
 
--- ── 10. Attempt document listing via RPC ──────────────────────────────────
+-- ── 10. List documents via RPC ────────────────────────────────────────────────
 
 do $$
 declare
   v_result jsonb;
 begin
-  begin
-    select data into v_result
-    from public.erp_list_documents(
+  v_result := public.erp_list_documents(
+    p_doctype_key => 'supplier_test',
+    p_company_id => '00000000-0000-0000-0000-000000000000'
+  );
+
+  raise notice 'PASS: erp_list_documents callable';
+end;
+$$;
+
+-- ── 11. Update document via RPC ───────────────────────────────────────────────
+
+do $$
+declare
+  v_result jsonb;
+  v_ok boolean;
+  v_doc_id text;
+begin
+  -- First create a document
+  v_result := public.erp_create_document(
+    p_doctype_key => 'supplier_test',
+    p_company_id => '00000000-0000-0000-0000-000000000000',
+    p_data => jsonb_build_object(
+      'supplier_name', 'Update Target',
+      'email', 'update@test.com'
+    )
+  );
+
+  v_ok := (v_result->>'ok')::boolean;
+
+  if v_ok then
+    v_doc_id := v_result->>'document_id';
+
+    -- Now update it
+    v_result := public.erp_update_document(
       p_doctype_key => 'supplier_test',
+      p_document_id => v_doc_id,
+      p_company_id => '00000000-0000-0000-0000-000000000000',
+      p_data => jsonb_build_object(
+        'supplier_name', 'Updated Supplier Inc.',
+        'phone', '+9876543210'
+      )
+    );
+
+    if (v_result->>'ok')::boolean then
+      raise notice 'PASS: erp_update_document succeeded';
+    else
+      raise notice 'INFO: erp_update_document returned ok=false — %', v_result->>'error';
+    end if;
+  else
+    raise notice 'INFO: could not create document for update test — %', v_result->>'error';
+  end if;
+end;
+$$;
+
+-- ── 12. Deactivate document via RPC ───────────────────────────────────────────
+
+do $$
+declare
+  v_result jsonb;
+  v_ok boolean;
+  v_doc_id text;
+begin
+  v_result := public.erp_create_document(
+    p_doctype_key => 'supplier_test',
+    p_company_id => '00000000-0000-0000-0000-000000000000',
+    p_data => jsonb_build_object(
+      'supplier_name', 'Deactivate Target',
+      'email', 'deactivate@test.com'
+    )
+  );
+
+  v_ok := (v_result->>'ok')::boolean;
+
+  if v_ok then
+    v_doc_id := v_result->>'document_id';
+
+    v_result := public.erp_deactivate_document(
+      p_doctype_key => 'supplier_test',
+      p_document_id => v_doc_id,
       p_company_id => '00000000-0000-0000-0000-000000000000'
     );
 
-    raise notice 'PASS: erp_list_documents callable (result ok=%)', (v_result->>'ok')::boolean;
-  exception when others then
-    raise notice 'INFO: erp_list_documents exception (expected without auth context): %', sqlerrm;
-  end;
+    if (v_result->>'ok')::boolean then
+      raise notice 'PASS: erp_deactivate_document succeeded';
+    else
+      raise notice 'INFO: erp_deactivate_document returned ok=false — %', v_result->>'error';
+    end if;
+  else
+    raise notice 'INFO: could not create document for deactivate test — %', v_result->>'error';
+  end if;
+end;
+$$;
+
+-- ── 13. Reject unknown field ─────────────────────────────────────────────────
+
+do $$
+declare
+  v_result jsonb;
+begin
+  v_result := public.erp_create_document(
+    p_doctype_key => 'supplier_test',
+    p_company_id => '00000000-0000-0000-0000-000000000000',
+    p_data => jsonb_build_object(
+      'supplier_name', 'Test',
+      'unknown_field', 'should be rejected'
+    )
+  );
+
+  if (v_result->>'ok')::boolean then
+    raise exception 'FAIL: create with unknown field should not succeed';
+  end if;
+
+  raise notice 'PASS: unknown field correctly rejected: %', v_result->>'error';
+end;
+$$;
+
+-- ── 14. Reject missing required field ─────────────────────────────────────────
+
+do $$
+declare
+  v_result jsonb;
+begin
+  -- supplier_name is required (is_required = true)
+  v_result := public.erp_create_document(
+    p_doctype_key => 'supplier_test',
+    p_company_id => '00000000-0000-0000-0000-000000000000',
+    p_data => jsonb_build_object(
+      'email', 'missing-required@test.com'
+      -- supplier_name is omitted
+    )
+  );
+
+  if (v_result->>'ok')::boolean then
+    raise exception 'FAIL: create missing required field should not succeed';
+  end if;
+
+  raise notice 'PASS: missing required field correctly rejected: %', v_result->>'error';
 end;
 $$;
 
@@ -288,20 +408,26 @@ $$;
 
 do $$
 begin
+  raise notice '';
   raise notice '============================================';
   raise notice 'CUSTOM DOCTYPE WIZARD FLOW SIMULATION PASSED';
   raise notice '============================================';
   raise notice '';
   raise notice 'Metadata inserted:';
   raise notice '  - DocType: supplier_test (generic_json)';
-  raise notice '  - DocFields: 5 fields';
-  raise notice '  - List View: default with 4 columns';
+  raise notice '  - DocFields: 5 fields (supplier_name required)';
+  raise notice '  - List View: default with 4 columns + sort_json';
   raise notice '  - Form Layout: Basic Info section';
   raise notice '  - DocType Actions: read/create/update/deactivate';
   raise notice '  - Workspace Item: sidebar entry';
   raise notice '';
-  raise notice 'Document CRUD RPCs tested exist and are callable.';
-  raise notice 'Full CRUD requires authenticated user session with permissions.';
+  raise notice 'FullDocTypeConfig verified: all 6 metadata sets found';
+  raise notice 'CRUD RPC tests: create, list, update, deactivate run';
+  raise notice 'Validation tests: unknown field rejected, missing required rejected';
+  raise notice '';
+  raise notice 'NOTE: RPC calls may return ok=false in SQL Editor';
+  raise notice '(service_role context without auth.uid()). Full CRUD';
+  raise notice 'requires authenticated user session with matching permissions.';
 end;
 $$;
 

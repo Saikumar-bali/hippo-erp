@@ -257,6 +257,130 @@ export async function listAllModules() {
   return listAllFrom("modules");
 }
 
+// ── Wizard bundle types ──────────────────────────────────────────────────────
+
+export type WizardFieldInput = {
+  fieldname: string;
+  label: string;
+  fieldtype: string;
+  is_required: boolean;
+  in_list_view: boolean;
+  in_standard_filter: boolean;
+  sort_order: number;
+};
+
+export type WizardActionInput = {
+  action_key: string;
+  permission_key: string;
+};
+
+export type WizardBundleInput = {
+  doctype_key: string;
+  module_key: string;
+  label: string;
+  description: string | null;
+  route: string | null;
+  storage_strategy: "generic_json" | "physical_rpc";
+  is_company_scoped: boolean;
+  fields: WizardFieldInput[];
+  actions: WizardActionInput[];
+  workspace_key: string;
+  workspace_item_label: string;
+};
+
+// ── createCustomDocTypeBundle ─────────────────────────────────────────────────
+
+export async function createCustomDocTypeBundle(input: WizardBundleInput) {
+  const m = meta();
+
+  const doctypeResult = await m.from("erp_doctypes").insert({
+    doctype_key: input.doctype_key,
+    module_key: input.module_key,
+    label: input.label,
+    description: input.description,
+    schema_name: "app",
+    table_name: "erp_documents",
+    route: input.route,
+    storage_strategy: input.storage_strategy,
+    is_company_scoped: input.is_company_scoped,
+    is_submittable: false,
+    is_child_table: false,
+    is_single: false,
+    is_active: true,
+  }).select().single();
+  if (doctypeResult.error) throw new Error(`DocType: ${doctypeResult.error.message}`);
+
+  for (const f of input.fields) {
+    const r = await m.from("erp_docfields").insert({
+      doctype_key: input.doctype_key,
+      fieldname: f.fieldname,
+      label: f.label,
+      fieldtype: f.fieldtype,
+      is_required: f.is_required,
+      in_list_view: f.in_list_view,
+      in_standard_filter: f.in_standard_filter,
+      sort_order: f.sort_order,
+      is_hidden: false,
+      is_readonly: false,
+      is_unique: false,
+    }).select().single();
+    if (r.error) throw new Error(`Field ${f.fieldname}: ${r.error.message}`);
+  }
+
+  const listViewColumns = input.fields
+    .filter((f) => f.in_list_view)
+    .map((f) => ({ fieldname: f.fieldname, label: f.label }));
+  const searchFields = input.fields
+    .filter((f) => f.fieldtype === "Data" || f.fieldtype === "Text")
+    .map((f) => f.fieldname);
+  const sortField = listViewColumns.length > 0
+    ? { fieldname: listViewColumns[0].fieldname, direction: "asc" as const }
+    : null;
+
+  const lvResult = await m.from("erp_list_views").insert({
+    doctype_key: input.doctype_key,
+    view_key: `${input.doctype_key}_default`,
+    label: `${input.label} List`,
+    columns_json: listViewColumns,
+    search_fields_json: searchFields,
+    sort_json: sortField ?? {},
+    is_default: true,
+  }).select().single();
+  if (lvResult.error) throw new Error(`List view: ${lvResult.error.message}`);
+
+  const sectionFields = input.fields.map((f) => f.fieldname);
+  const flResult = await m.from("erp_form_layouts").insert({
+    doctype_key: input.doctype_key,
+    layout_key: `${input.doctype_key}_default`,
+    label: `${input.label} Form`,
+    sections_json: [{ section: "Basic Info", columns: 1, fields: sectionFields }],
+    is_default: true,
+  }).select().single();
+  if (flResult.error) throw new Error(`Form layout: ${flResult.error.message}`);
+
+  for (const a of input.actions) {
+    const r = await m.from("erp_doctype_actions").insert({
+      doctype_key: input.doctype_key,
+      action_key: a.action_key,
+      permission_key: a.permission_key,
+    }).select().single();
+    if (r.error) throw new Error(`Action ${a.action_key}: ${r.error.message}`);
+  }
+
+  const wsResult = await m.from("erp_workspace_items").insert({
+    workspace_key: input.workspace_key,
+    item_key: input.doctype_key,
+    label: input.workspace_item_label,
+    item_type: "doctype",
+    target: input.doctype_key,
+    required_permission_key: input.actions.find((a) => a.action_key === "read")?.permission_key ?? null,
+    is_active: true,
+  }).select().single();
+  if (wsResult.error) throw new Error(`Workspace item: ${wsResult.error.message}`);
+
+  return { doctype_key: input.doctype_key, label: input.label };
+}
+
 // ── Create ────────────────────────────────────────────────────────────────────
 
 export async function createRecord(tableKey: string, values: Record<string, unknown>) {

@@ -112,6 +112,67 @@ Each with DocFields, Actions (mapped to permission keys), List Views, and Form L
 3. **Add audit columns** (optional): Add `created_by`/`updated_by` to child hierarchy tables for consistency.
 4. **Update doctype-api-map**: Register warehouse DocType APIs in the frontend bridge.
 
+## Phase 2.9: Custom DocType Wizard
+
+### Purpose
+
+The Custom DocType Wizard provides a guided 7-step flow for creating working `generic_json` DocTypes from the Metadata Studio UI, eliminating the need to manually insert rows into 6 separate metadata tables.
+
+### Architecture
+
+```
+Metadata Studio Home
+  │
+  ├─ "Create Custom DocType"  (primary action)
+  │     │
+  │     └─ CustomDocTypeWizard
+  │           │
+  │           ├─ Step 1: Basic Info        →  erp_doctypes row
+  │           ├─ Step 2: Fields            →  erp_docfields rows
+  │           ├─ Step 3: List View         →  erp_list_views row
+  │           ├─ Step 4: Form Layout       →  erp_form_layouts row
+  │           ├─ Step 5: Actions           →  erp_doctype_actions rows
+  │           ├─ Step 6: Workspace         →  erp_workspace_items row
+  │           └─ Step 7: Preview & Create  →  createCustomDocTypeBundle()
+  │
+  └─ "Advanced Metadata Tables"  (secondary)
+        └─ Raw metadata inspection pages
+```
+
+### Bundle Insert Pattern
+
+The `createCustomDocTypeBundle()` function in `metadata-studio-api.ts` inserts all 6 metadata sets in dependency order:
+
+1. `erp_doctypes` — DocType definition
+2. `erp_docfields` — Field definitions (FK to doctype_key)
+3. `erp_list_views` — List view config (FK to doctype_key)
+4. `erp_form_layouts` — Form layout config (FK to doctype_key)
+5. `erp_doctype_actions` — Action-to-permission mappings (FK to doctype_key)
+6. `erp_workspace_items` — Sidebar navigation entry (FK to workspace_key)
+
+Each insert is sequential to respect FK constraints. If any insert fails, the error propagates and earlier inserts remain (manual cleanup or future RPC transaction).
+
+### Wizard Steps vs Metadata
+
+| Step | Metadata Created | Auto-generated |
+|------|-----------------|----------------|
+| Basic Info | `erp_doctypes` | doctype_key (snake_case from label), route |
+| Fields | `erp_docfields` (multiple rows) | fieldname (snake_case from label), sort_order |
+| List View | `erp_list_views` | columns from in_list_view fields, search from Data fields, sort from first column |
+| Form Layout | `erp_form_layouts` | Basic Info section with all fields |
+| Actions | `erp_doctype_actions` (4 rows) | action keys: read, create, update, deactivate |
+| Workspace | `erp_workspace_items` | target = doctype_key, permission = read action key |
+| Preview & Create | All inserts via bundle API | Summary table before confirmation |
+
+### Constraints
+
+- `storage_strategy` must be `generic_json` for custom DocTypes
+- `physical_rpc` is disabled in the wizard (migration-only)
+- All keys must be lowercase snake_case
+- At least one Data or Text field required (serves as name/title)
+- At least one field must be in list view
+- No duplicate fieldnames within a DocType
+
 ## Phase 2.6: Workspace Navigation Layer
 
 ### New Metadata Tables
