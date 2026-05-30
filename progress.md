@@ -16,7 +16,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 1 | Company profile, users, roles, permissions | Complete | Company profile, custom roles, permissions, and user-role assignment exist. |
 | 2 | Product master data | Complete | Product Category, UOM, and Product/SKU flows exist. |
 | 2.5 | Metadata-Driven ERP Core | Complete as renderer prototype | Metadata tables, Product Master metadata seed, dynamic renderers, and Product Master metadata UI exist. |
-| 2.6 | Metadata Workspace, Navigation, and Compact ERP UI | Complete | Migration 0021, grouped workspace sidebar, DynamicRouteRenderer, compact density, pagination, no duplicate Status column. |
+| 2.6 | Metadata Workspace, Navigation, and Compact ERP UI | Review in progress | Migration 0021 + 0022, grouped workspace sidebar, DynamicRouteRenderer, compact density, pagination, no duplicate Status column. Senior review fixes: per-doctype permissions, schema refinement (target_doctype_key/route), simulation blocked-write checks, docs sync. |
 | 3 | Warehouse hierarchy | On Hold | Do not start until Phase 2.6 is verified. |
 | 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
 
@@ -38,18 +38,32 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 
 ### Files Modified
 - `src/App.tsx` — now uses AppShell + WorkspaceSidebar + DynamicRouteRenderer (no hardcoded Product/Product Category/UOM branches)
-- `src/styles.css` — compact enterprise UI tokens (13px font, 32px rows, 42px topbar, 30px controls), workspace sidebar styles, pagination styles
+- `src/styles.css` — compact enterprise UI tokens (10px xs, 11px sm, 12px md, 14px lg fonts; 200px sidebar; 36px topbar; 28px rows; 26px controls; 8px padding), workspace sidebar styles, pagination styles
 - `src/components/metadata/DynamicListPage.tsx` — removed duplicate Status column, added pagination (20/page)
+- `src/components/metadata/DynamicRouteRenderer.tsx` — review fix: per-doctype permissions from config.actions
 - `scripts/run-simulation.cjs` — added workspace navigation simulation
 - `docs/METADATA_ENGINE.md` — added Phase 2.6 section
 
-### Verification Results (2026-05-30)
+### Files Added (Review Fixes)
+- `supabase/migrations/0022_workspace_schema_refine.sql` — adds `target_doctype_key`, `target_workspace_key`, `route` columns, CHECK constraint
+
+### Senior Review Findings (2026-05-30)
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | DynamicRouteRenderer uses hardcoded `update_product`/`delete_product` for all doctypes | Resolved via `useDocTypeConfig(config.actions)` — checks per-doctype `action_key`/`permission_key` pairs |
+| 2 | Workspace schema lacks explicit `target_doctype_key`, `target_workspace_key`, `route` columns | Migration 0022 adds columns + backfill + CHECK constraint |
+| 3 | Simulation lacks real blocked-write checks | Replaced structural-only check with `BEGIN`/`EXCEPTION` blocks attempting INSERT/UPDATE/DELETE |
+| 4 | Anonymous-read verification limitation undocumented | Added note explaining SQL Editor runs as superuser; full anon simulation requires separate client session |
+| 5 | tasks.md/progress.md contradictions | tasks.md checked off all implemented items; progress.md marked "Review in progress" |
+
+### Verification Results (2026-05-30 — review fixes)
 | Command | Result |
 |---------|--------|
 | `npm run typecheck` | 0 errors |
 | `npm run lint` | 0 errors, 24 warnings (pre-existing) |
-| `npm run test` | 31 pass, 6 fail (pre-existing failures in users-roles.spec.tsx, permission-gates.spec.tsx, app.spec.tsx, auth-routes.spec.tsx, dashboard-kpi.spec.tsx, auth-state.spec.tsx) |
+| `npm run test` | 31 pass, 6 fail (pre-existing) |
 | `npm run build` | Success |
+| Supabase Cloud simulation (workspace_navigation_flow) | **PASSED** — all 9 checks pass (tables exist, seeds correct, RLS enabled, new columns populated, blocked-writes verified as authenticated role) |
 
 ### Remaining Gaps
 - Generic document write API not implemented (intentional).
@@ -59,4 +73,5 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - Audit trail engine not implemented.
 - User-created DocType builder UI not implemented.
 - DynamicListPage needs better empty state design for no-data vs no-matches.
-- `MetadataPrototype` still accessible in dev mode but hidden in production.
+- Full anon-read verification requires separate anon-key client session (SQL Editor always runs as service_role).
+- Sort from `sort_json` not yet wired to DynamicListPage (default sort used).

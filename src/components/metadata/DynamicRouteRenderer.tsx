@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import type { WorkspaceItemMeta } from "../../lib/metadata/workspace-types";
 import type { PermissionChecker } from "../../lib/permission-access";
+import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { DynamicListPage } from "./DynamicListPage";
 import { CompanyProfileView } from "../CompanyProfileView";
 import { UsersRolesView } from "../UsersRolesView";
@@ -17,6 +19,48 @@ const can = (fn: (key: string) => boolean) => (required: string | readonly strin
   return required.some((k) => fn(k));
 };
 
+function DocTypeListPage({
+  doctypeKey,
+  tenantId,
+  permissions,
+}: {
+  doctypeKey: string;
+  tenantId: string;
+  permissions: PermissionChecker;
+}) {
+  const { config } = useDocTypeConfig(doctypeKey);
+
+  const canUpdate = useMemo(() => {
+    if (!config?.actions?.length) return false;
+    return config.actions.some(
+      (a) =>
+        (a.action_key === "update" || a.action_key === "edit") &&
+        permissions.can(a.permission_key),
+    );
+  }, [config, permissions]);
+
+  const canDelete = useMemo(() => {
+    if (!config?.actions?.length) return false;
+    return config.actions.some(
+      (a) =>
+        (a.action_key === "deactivate" ||
+          a.action_key === "delete" ||
+          a.action_key === "remove") &&
+        permissions.can(a.permission_key),
+    );
+  }, [config, permissions]);
+
+  return (
+    <DynamicListPage
+      doctypeKey={doctypeKey}
+      tenantId={tenantId}
+      canUpdate={canUpdate}
+      canDelete={canDelete}
+      permissionChecker={(key: string) => permissions.can(key)}
+    />
+  );
+}
+
 export function DynamicRouteRenderer({ selectedItem, tenantId, permissions }: Props) {
   if (!selectedItem) {
     return (
@@ -31,12 +75,10 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions }: Pr
 
   if (itemType === "doctype") {
     return (
-      <DynamicListPage
+      <DocTypeListPage
         doctypeKey={target}
         tenantId={tenantId}
-        canUpdate={permissions.can("update_product")}
-        canDelete={permissions.can("delete_product")}
-        permissionChecker={(key: string) => permissions.can(key)}
+        permissions={permissions}
       />
     );
   }

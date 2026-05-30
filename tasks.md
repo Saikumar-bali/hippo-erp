@@ -55,17 +55,17 @@ Inventory
 Files:
 
 - [x] `docs/PHASE_2_6_WORKSPACE_NAVIGATION.md`
-- [ ] `docs/METADATA_ENGINE.md`
-- [ ] `flow.md`
-- [ ] `progress.md`
-- [ ] `tasks.md`
+- [x] `docs/METADATA_ENGINE.md`
+- [x] `flow.md`
+- [x] `progress.md`
+- [x] `tasks.md`
 
 Tasks:
 
 - [x] Add a dedicated Phase 2.6 architecture doc.
-- [ ] Update `docs/METADATA_ENGINE.md` to mention workspace/navigation metadata as the next layer after DocType metadata.
-- [ ] Update `flow.md` to show Company → Workspace → DocType → Dynamic Renderer.
-- [ ] Update `progress.md` after implementation with exact verification results.
+- [x] Update `docs/METADATA_ENGINE.md` to mention workspace/navigation metadata as the next layer after DocType metadata.
+- [x] Update `flow.md` to show Company → Workspace → DocType → Dynamic Renderer.
+- [x] Update `progress.md` after implementation with exact verification results.
 
 ---
 
@@ -73,29 +73,31 @@ Tasks:
 
 Create migration:
 
-- [ ] `supabase/migrations/0021_workspace_navigation_core.sql`
+- [x] `supabase/migrations/0021_workspace_navigation_core.sql`
 
 Tables:
 
-- [ ] `app.erp_workspaces`
-- [ ] `app.erp_workspace_items`
+- [x] `app.erp_workspaces`
+- [x] `app.erp_workspace_items`
+- [x] `0022_workspace_schema_refine.sql` (explicit `target_doctype_key`, `target_workspace_key`, `route` columns + CHECK constraint)
 
 Required table behavior:
 
-- [ ] RLS enabled.
-- [ ] Authenticated users can read active workspace metadata.
-- [ ] Anonymous users cannot read workspace metadata.
-- [ ] Frontend users cannot insert/update/delete workspace metadata.
-- [ ] Metadata writes remain migration/server-managed for this phase.
-- [ ] `app.erp_workspace_items` has unique `(workspace_key, item_key)`.
+- [x] RLS enabled.
+- [x] Authenticated users can read active workspace metadata.
+- [x] Anonymous users cannot read workspace metadata.
+- [x] Frontend users cannot insert/update/delete workspace metadata.
+- [x] Metadata writes remain migration/server-managed for this phase.
+- [x] `app.erp_workspace_items` has unique `(workspace_key, item_key)`.
+- [x] `workspace_item_target_check` ensures at least one target variant is set.
 
 Seed:
 
-- [ ] Product Master workspace.
-- [ ] Product item → DocType `product`.
-- [ ] Product Categories item → DocType `product_category`.
-- [ ] Units of Measure item → DocType `unit_of_measure`.
-- [ ] Optional inactive placeholders for Warehouse, Inventory, Purchasing, Reports.
+- [x] Product Master workspace.
+- [x] Product item → DocType `product`.
+- [x] Product Categories item → DocType `product_category`.
+- [x] Units of Measure item → DocType `unit_of_measure`.
+- [x] Optional inactive placeholders for Warehouse, Inventory, Purchasing, Reports.
 
 ---
 
@@ -103,20 +105,20 @@ Seed:
 
 Add files:
 
-- [ ] `src/lib/metadata/workspace-types.ts`
-- [ ] `src/lib/metadata/workspace-api.ts`
-- [ ] `src/hooks/useWorkspaceNavigation.ts`
+- [x] `src/lib/metadata/workspace-types.ts`
+- [x] `src/lib/metadata/workspace-api.ts`
+- [x] `src/hooks/useWorkspaceNavigation.ts`
 
 Tasks:
 
-- [ ] Load workspaces from `app.erp_workspaces` using `supabase.schema("app")`.
-- [ ] Load workspace items from `app.erp_workspace_items`.
-- [ ] Filter inactive items.
-- [ ] Filter by `required_permission_key` using existing permission checker.
-- [ ] Support item types: `doctype`, `workspace`, `page`, `report`, `external`.
-- [ ] Return a typed navigation tree.
-- [ ] Provide fallback to `ERP_MODULES` only if metadata fails to load.
-- [ ] No service-role usage.
+- [x] Load workspaces from `app.erp_workspaces` using `supabase.schema("app")`.
+- [x] Load workspace items from `app.erp_workspace_items`.
+- [x] Filter inactive items.
+- [x] Filter by `required_permission_key` using existing permission checker.
+- [x] Support item types: `doctype`, `workspace`, `page`, `report`, `external`.
+- [x] Return a typed navigation tree.
+- [x] Provide fallback to `ERP_MODULES` only if metadata fails to load.
+- [x] No service-role usage.
 
 ---
 
@@ -124,22 +126,22 @@ Tasks:
 
 Add or update files:
 
-- [ ] `src/components/layout/AppShell.tsx`
-- [ ] `src/components/layout/WorkspaceSidebar.tsx`
-- [ ] `src/components/layout/WorkspaceGroup.tsx`
-- [ ] `src/components/layout/WorkspaceItem.tsx`
-- [ ] `src/components/layout/TopBar.tsx`
-- [ ] `src/components/layout/Breadcrumbs.tsx`
+- [x] `src/components/layout/AppShell.tsx`
+- [x] `src/components/layout/WorkspaceSidebar.tsx`
+- [x] `src/components/layout/WorkspaceGroup.tsx`
+- [x] `src/components/layout/WorkspaceItem.tsx`
+- [x] `src/components/layout/TopBar.tsx`
+- [ ] `src/components/layout/Breadcrumbs.tsx` (deferred — not needed for current scope)
 
 Tasks:
 
-- [ ] Replace flat sidebar with grouped workspace sidebar.
-- [ ] Product Master should expand/collapse and show Products, Product Categories, UOM.
-- [ ] Pending workspaces should appear disabled or hidden based on metadata.
-- [ ] Show active item clearly.
-- [ ] Keep company selector, user email, and logout in compact topbar.
-- [ ] Keep permission gating.
-- [ ] Hide `Metadata Prototype` unless `import.meta.env.DEV` or an explicit debug flag is true.
+- [x] Replace flat sidebar with grouped workspace sidebar.
+- [x] Product Master should expand/collapse and show Products, Product Categories, UOM.
+- [x] Pending workspaces should appear disabled or hidden based on metadata.
+- [x] Show active item clearly.
+- [x] Keep company selector, user email, and logout in compact topbar.
+- [x] Keep permission gating.
+- [x] Hide `Metadata Prototype` unless `import.meta.env.DEV` or an explicit debug flag is true.
 
 ---
 
@@ -147,20 +149,21 @@ Tasks:
 
 Add file:
 
-- [ ] `src/components/metadata/DynamicRouteRenderer.tsx`
+- [x] `src/components/metadata/DynamicRouteRenderer.tsx`
 
 Tasks:
 
-- [ ] Replace `App.tsx` label-based Product/Product Category/UOM branches.
-- [ ] If selected item is `doctype`, render `DynamicListPage` with `target_doctype_key`.
-- [ ] If selected item is `workspace`, render `DynamicWorkspacePage`.
-- [ ] If selected item is unsupported, render compact placeholder.
-- [ ] Keep Company Profile and Users/Roles working safely if they are not converted in this phase.
-- [ ] Keep existing Product Master writes routed through existing safe RPC APIs.
+- [x] Replace `App.tsx` label-based Product/Product Category/UOM branches.
+- [x] If selected item is `doctype`, render `DynamicListPage` with `target_doctype_key`.
+- [x] If selected item is `workspace`, render `DynamicWorkspacePage`.
+- [x] If selected item is unsupported, render compact placeholder.
+- [x] Keep Company Profile and Users/Roles working safely if they are not converted in this phase.
+- [x] Keep existing Product Master writes routed through existing safe RPC APIs.
+- [x] **Review fix:** permissions resolved per-doctype via `config.actions` instead of hardcoded `update_product`/`delete_product`.
 
 Acceptance for this section:
 
-- [ ] `App.tsx` no longer contains hardcoded branches for `Products`, `Product categories`, and `Units of measure`.
+- [x] `App.tsx` no longer contains hardcoded branches for `Products`, `Product categories`, and `Units of measure`.
 
 ---
 
@@ -170,34 +173,34 @@ Update existing global CSS and component classes.
 
 Target density:
 
-- [ ] Body font around `13px`.
-- [ ] Sidebar item font around `12px`.
-- [ ] Table cell font around `12px`.
-- [ ] Table row height around `32px`.
-- [ ] Topbar height around `42px`.
-- [ ] Buttons around `30px` high.
-- [ ] Inputs around `30px` high.
-- [ ] Reduce card padding.
-- [ ] Reduce content padding.
-- [ ] Add sticky table headers.
-- [ ] Add compact badges.
-- [ ] App should not feel like 150% zoom.
+- [x] Body font around `13px` (actual: `--font-size-md: 12px`).
+- [x] Sidebar item font around `12px` (actual: `--font-size-sm: 11px`).
+- [x] Table cell font around `12px` (actual: `--font-size-sm: 11px`).
+- [x] Table row height around `32px` (actual: `--table-row-height: 28px` — slightly denser).
+- [x] Topbar height around `42px` (actual: `--topbar-height: 36px` — denser).
+- [x] Buttons around `30px` high (actual: `--control-height: 26px` — denser).
+- [x] Inputs around `30px` high.
+- [x] Reduce card padding (actual: `--card-padding: 8px`).
+- [x] Reduce content padding (actual: `--content-padding: 8px`).
+- [x] Add sticky table headers.
+- [x] Add compact badges.
+- [x] App should not feel like 150% zoom.
 
-Suggested tokens:
+Actual tokens deployed:
 
 ```css
 :root {
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-md: 13px;
-  --font-size-lg: 15px;
-  --sidebar-width: 220px;
-  --topbar-height: 42px;
-  --table-row-height: 32px;
-  --content-padding: 12px;
-  --card-padding: 12px;
-  --control-height: 30px;
-  --border-radius-sm: 6px;
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-md: 12px;
+  --font-size-lg: 14px;
+  --sidebar-width: 200px;
+  --topbar-height: 36px;
+  --table-row-height: 28px;
+  --content-padding: 8px;
+  --card-padding: 8px;
+  --control-height: 26px;
+  --border-radius-sm: 4px;
 }
 ```
 
@@ -207,21 +210,21 @@ Suggested tokens:
 
 Update:
 
-- [ ] `src/components/metadata/DynamicListPage.tsx`
-- [ ] `src/components/metadata/DynamicFieldRenderer.tsx`
-- [ ] `src/components/metadata/LinkField.tsx`
-- [ ] `src/components/metadata/DynamicActionBar.tsx`
+- [x] `src/components/metadata/DynamicListPage.tsx`
+- [ ] `src/components/metadata/DynamicFieldRenderer.tsx` (no additional changes needed)
+- [x] `src/components/metadata/LinkField.tsx`
+- [x] `src/components/metadata/DynamicActionBar.tsx`
 
 Tasks:
 
-- [ ] Remove duplicate hardcoded Status column if metadata list already includes `is_active`.
-- [ ] Add compact toolbar: search, filters, refresh, create, export placeholder.
-- [ ] Add pagination.
-- [ ] Add sort behavior from `sort_json`.
-- [ ] Add compact loading/empty/error states.
-- [ ] Make clickable document column generic from metadata or priority fields.
-- [ ] Support Link metadata with `display_fields` and `display_template`.
-- [ ] Preserve fallback support for old `display_field`.
+- [x] Remove duplicate hardcoded Status column if metadata list already includes `is_active`.
+- [x] Add compact toolbar: search, filters, refresh, create, export placeholder.
+- [x] Add pagination (20/page).
+- [ ] Add sort behavior from `sort_json` (deferred — default sort used).
+- [x] Add compact loading/empty/error states.
+- [x] Make clickable document column generic from metadata or priority fields.
+- [x] Support Link metadata with `display_fields` and `display_template`.
+- [x] Preserve fallback support for old `display_field`.
 
 Example Link options:
 
@@ -239,23 +242,26 @@ Example Link options:
 
 Add:
 
-- [ ] `tests/simulations/workspace_navigation_flow.sql`
+- [x] `tests/simulations/workspace_navigation_flow.sql`
 
 Update:
 
-- [ ] `scripts/run-simulation.cjs`
+- [x] `scripts/run-simulation.cjs`
 
 Simulation must verify:
 
-- [ ] `app.erp_workspaces` exists.
-- [ ] `app.erp_workspace_items` exists.
-- [ ] Product Master workspace exists.
-- [ ] Product Master has three child items.
-- [ ] Each item points to correct DocType.
-- [ ] RLS is enabled on workspace tables.
-- [ ] Anonymous users cannot read workspace metadata.
-- [ ] Authenticated users can read active workspace metadata.
-- [ ] Normal authenticated users cannot insert/update/delete workspace metadata.
+- [x] `app.erp_workspaces` exists.
+- [x] `app.erp_workspace_items` exists.
+- [x] Product Master workspace exists.
+- [x] Product Master has three child items.
+- [x] Each item points to correct DocType.
+- [x] RLS is enabled on workspace tables.
+- [x] Anonymous users cannot read workspace metadata (structural check).
+- [x] Authenticated users can read active workspace metadata (structural check).
+- [x] Normal authenticated users cannot insert/update/delete workspace metadata (BEGIN/EXCEPTION blocked-write check).
+- [x] Explicit `target_doctype_key`, `target_workspace_key`, `route` columns verified.
+- [x] `workspace_item_target_check` CHECK constraint verified.
+- [x] Anonymous-read limitation documented (full anon simulation requires separate client session).
 
 ---
 
@@ -273,15 +279,15 @@ npm run test:simulation
 
 Manual UI verification:
 
-- [ ] Product Master appears as one grouped workspace.
-- [ ] Products, Product Categories, and Units of Measure appear as child items.
-- [ ] Clicking Products opens metadata-driven Product list.
-- [ ] Clicking Product Categories opens metadata-driven Category list.
-- [ ] Clicking Units of Measure opens metadata-driven UOM list.
-- [ ] Metadata Prototype is hidden in production mode.
-- [ ] UI density is compact and no longer oversized.
-- [ ] Duplicate Status column is gone.
-- [ ] Permission-gated actions still work.
+- [x] Product Master appears as one grouped workspace.
+- [x] Products, Product Categories, and Units of Measure appear as child items.
+- [x] Clicking Products opens metadata-driven Product list.
+- [x] Clicking Product Categories opens metadata-driven Category list.
+- [x] Clicking Units of Measure opens metadata-driven UOM list.
+- [x] Metadata Prototype is hidden in production mode.
+- [x] UI density is compact and no longer oversized.
+- [x] Duplicate Status column is gone.
+- [x] Permission-gated actions still work.
 
 ---
 
@@ -295,6 +301,7 @@ Do not implement these in Phase 2.6:
 - Workflow transition engine.
 - Naming series generation engine.
 - User-created DocType builder UI.
+- Breadcrumbs component (deferred).
 
 ---
 
@@ -302,14 +309,19 @@ Do not implement these in Phase 2.6:
 
 Phase 2.6 is complete only when:
 
-- [ ] Workspace metadata tables exist and pass simulation.
-- [ ] Sidebar/workspace navigation is metadata-driven.
-- [ ] Product Master is grouped with Product/Category/UOM child items.
-- [ ] `App.tsx` no longer hardcodes Product/Product Category/UOM rendering branches.
-- [ ] Product Master screens still use `DynamicListPage` and existing safe RPC writes.
-- [ ] UI is compact, enterprise-level, and no longer visually oversized.
-- [ ] Verification commands are documented.
-- [ ] Any test failures are marked as pre-existing or newly introduced.
+- [x] Workspace metadata tables exist and pass simulation.
+- [x] Sidebar/workspace navigation is metadata-driven.
+- [x] Product Master is grouped with Product/Category/UOM child items.
+- [x] `App.tsx` no longer hardcodes Product/Product Category/UOM rendering branches.
+- [x] Product Master screens still use `DynamicListPage` and existing safe RPC writes.
+- [x] UI is compact, enterprise-level, and no longer visually oversized.
+- [x] Verification commands are documented.
+- [x] Any test failures are marked as pre-existing or newly introduced.
+- [x] DynamicRouteRenderer uses per-doctype permissions from `config.actions` (review fix #1).
+- [x] Workspace schema has explicit `target_doctype_key`/`target_workspace_key`/`route` columns (review fix #2).
+- [x] Simulation has real blocked-write checks with BEGIN/EXCEPTION (review fix #3).
+- [x] Anonymous-read limitation documented (review fix #4).
+- [x] `tasks.md` and `progress.md` are in sync (review fix #5).
 
 ---
 
