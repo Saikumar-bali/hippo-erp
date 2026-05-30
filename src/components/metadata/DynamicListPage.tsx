@@ -41,9 +41,13 @@ export function DynamicListPage({
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
 
   const loadAll = useMemo(() => async () => {
-    if (!api) return;
     setDataLoading(true);
     setError("");
+    if (!api) {
+      setRecords([]);
+      setDataLoading(false);
+      return;
+    }
     try {
       const data = await api.list(tenantId);
       setRecords(data as Record<string, unknown>[]);
@@ -181,6 +185,21 @@ export function DynamicListPage({
 
   if (metaError) return <div className="card state-error">{metaError}</div>;
   if (!config) return <div className="card state-error">Unknown DocType: {doctypeKey}</div>;
+  if (!api) {
+    return (
+      <div className="card state-info">
+        <h3>{config.doctype.label}</h3>
+        <p>
+          This DocType exists as metadata, but it is not connected to a data API yet.
+        </p>
+        <p>
+          To make it usable in the ERP menu, add DocFields, List View, Form Layout,
+          DocType Actions, a Workspace Item, and either a registered API in
+          <code> doctype-api-map.ts </code> or a future generic document storage API.
+        </p>
+      </div>
+    );
+  }
   if (error) return <div className="card state-error">{error}</div>;
 
   if (creating) {
