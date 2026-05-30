@@ -35,6 +35,8 @@ export function DynamicListPage({
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkLabels, setLinkLabels] = useState<Record<string, Record<string, string>>>({});
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
 
@@ -91,6 +93,8 @@ export function DynamicListPage({
   const searchFields = useMemo(() => listView?.search_fields_json ?? [] as string[], [listView?.search_fields_json]);
   const actions = config?.actions ?? [];
 
+  const hasStatusColumn = columns.some((c) => c.fieldname === "is_active");
+
   const clickableColumns = (() => {
     const priority = ["sku", "code", "name", "title", "label"];
     for (const p of priority) {
@@ -124,6 +128,16 @@ export function DynamicListPage({
     }
     return list;
   }, [records, search, filterValues, searchFields]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length]);
+  const paginated = useMemo(() => {
+    const start = page * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  useEffect(() => {
+    if (page >= totalPages) setPage(Math.max(0, totalPages - 1));
+  }, [page, totalPages]);
 
   const selectedRecord = useMemo(
     () => records.find((r) => r.id === selectedId) ?? null,
@@ -228,10 +242,8 @@ export function DynamicListPage({
         )}
 
         {filtered.length === 0 ? (
-          <div className="state-info card state-note">
-            {records.length === 0
-              ? `No ${config.doctype.label.toLowerCase()} records yet.`
-              : "No records match the current filters."}
+          <div className="empty-state">
+            <strong>{records.length === 0 ? `No ${config.doctype.label.toLowerCase()} records yet.` : "No records match the current filters."}</strong>
           </div>
         ) : (
           <div className="table-wrap">
@@ -243,12 +255,12 @@ export function DynamicListPage({
                       {col.label}
                     </th>
                   ))}
-                  <th>Status</th>
+                  {!hasStatusColumn && <th>Status</th>}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((record) => (
+                {paginated.map((record) => (
                   <tr key={getRowKey(record)}>
                     {columns.map((col) => {
                       const field = fieldMap.get(col.fieldname);
@@ -265,9 +277,11 @@ export function DynamicListPage({
                         </td>
                       );
                     })}
-                    <td>
-                      <StatusField value={record.is_active as boolean} />
-                    </td>
+                    {!hasStatusColumn && (
+                      <td>
+                        <StatusField value={record.is_active as boolean} />
+                      </td>
+                    )}
                     <td>
                       <div className="action-group">
                         <button className="logout" onClick={() => setSelectedId(record.id as string)}>View</button>
@@ -294,6 +308,13 @@ export function DynamicListPage({
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>Prev</button>
+                <span className="page-info">{page + 1} / {totalPages}</span>
+                <button disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>Next</button>
+              </div>
+            )}
           </div>
         )}
       </div>

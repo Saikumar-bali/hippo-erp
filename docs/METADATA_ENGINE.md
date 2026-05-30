@@ -112,6 +112,41 @@ Each with DocFields, Actions (mapped to permission keys), List Views, and Form L
 3. **Add audit columns** (optional): Add `created_by`/`updated_by` to child hierarchy tables for consistency.
 4. **Update doctype-api-map**: Register warehouse DocType APIs in the frontend bridge.
 
+## Phase 2.6: Workspace Navigation Layer
+
+### New Metadata Tables
+
+- `app.erp_workspaces` — workspace groups (e.g., "Product Master", "Warehouse")
+- `app.erp_workspace_items` — items within workspaces (doctype, page, report, external links)
+
+### Frontend Components
+
+- `WorkspaceSidebar` — replaces hardcoded flat sidebar with grouped workspace navigation
+- `WorkspaceGroup` — expandable/collapsible workspace group
+- `WorkspaceItem` — clickable navigation item
+- `DynamicRouteRenderer` — replaces `App.tsx` hardcoded label-based conditional rendering
+- `AppShell` — layout wrapper that composes sidebar + topbar + content
+
+### Flow
+
+```
+App.tsx
+  → useWorkspaceNavigation() fetches app.erp_workspaces + app.erp_workspace_items
+  → WorkspaceSidebar renders grouped navigation
+  → User clicks item → DynamicRouteRenderer renders appropriate view:
+      - doctype → DynamicListPage
+      - page   → hardcoded component (CompanyProfile, UsersRoles, MetadataPrototype, ModuleView)
+      - report → ModuleView
+```
+
+### Fallback
+
+If workspace metadata fails to load or is empty, the hook falls back to `ERP_MODULES` from `erp-modules.ts` grouped into Product Master / Administration / Other.
+
+### Production Mode
+
+`MetadataPrototype` is hidden unless `import.meta.env.DEV` is true.
+
 ### Hierarchy UI Consideration
 
 The 6-level tree hierarchy benefits from a dedicated tree-builder component rather than 6 separate list/detail pages. Design options:

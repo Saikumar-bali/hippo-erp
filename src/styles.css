@@ -1744,3 +1744,312 @@ a {
   padding-bottom: 0.25rem;
   border-bottom: 1px solid #e2e8f0;
 }
+
+/* ── Compact Enterprise UI Tokens ──────────────────────────────────────────── */
+
+:root {
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 15px;
+  --sidebar-width: 220px;
+  --topbar-height: 42px;
+  --table-row-height: 32px;
+  --content-padding: 12px;
+  --card-padding: 12px;
+  --control-height: 30px;
+  --border-radius-sm: 6px;
+}
+
+.app-shell {
+  font-size: var(--font-size-md);
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  padding: 10px;
+}
+
+.sidebar .brand {
+  margin-bottom: 10px;
+  font-size: var(--font-size-sm);
+}
+
+.nav-item {
+  min-height: var(--control-height);
+  padding: 5px 8px;
+  font-size: var(--font-size-sm);
+}
+
+.nav-item-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.nav-item-label {
+  font-size: var(--font-size-sm);
+}
+
+.nav-item-meta {
+  font-size: var(--font-size-xs);
+}
+
+.topbar {
+  height: var(--topbar-height);
+  padding: 4px 12px;
+}
+
+.content {
+  padding: var(--content-padding);
+}
+
+.content h1 {
+  font-size: var(--font-size-lg);
+  margin: 0 0 4px;
+}
+
+.content > p {
+  font-size: var(--font-size-sm);
+  margin: 0 0 8px;
+}
+
+.card {
+  padding: var(--card-padding);
+  border-radius: var(--border-radius-sm);
+  min-height: auto;
+}
+
+.card-head {
+  margin-bottom: 0.5rem;
+}
+
+.card-head h3 {
+  font-size: var(--font-size-md);
+}
+
+.erp-table {
+  margin-top: 6px;
+  font-size: var(--font-size-sm);
+}
+
+.erp-table th,
+.erp-table td {
+  padding: 6px 8px;
+  font-size: var(--font-size-sm);
+}
+
+.erp-table th {
+  font-size: var(--font-size-xs);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.erp-table tbody tr {
+  height: var(--table-row-height);
+}
+
+.primary-action {
+  min-height: var(--control-height);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.logout {
+  font-size: var(--font-size-sm);
+  padding: 4px 8px;
+  min-height: var(--control-height);
+  border-radius: var(--border-radius-sm);
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  min-height: var(--control-height);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+  padding: 0 10px;
+}
+
+.filter-bar .search-input {
+  font-size: var(--font-size-sm);
+  padding: 4px 8px;
+  min-height: var(--control-height);
+}
+
+.filter-bar select {
+  font-size: var(--font-size-sm);
+  padding: 4px 8px;
+  min-height: var(--control-height);
+}
+
+.module-stack {
+  gap: 8px;
+}
+
+.action-group {
+  gap: 4px;
+}
+
+.mini-badge {
+  font-size: var(--font-size-xs);
+  padding: 3px 6px;
+}
+
+.detail-grid {
+  gap: 0.5rem;
+}
+
+.detail-field {
+  gap: 2px;
+}
+
+.detail-value {
+  font-size: var(--font-size-sm);
+}
+
+/* ── Workspace Sidebar ─────────────────────────────────────────────────────── */
+
+.ws-home-btn {
+  all: unset;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 800;
+  letter-spacing: 0;
+  padding: 4px 4px 8px 4px;
+  cursor: pointer;
+  color: #dce8ff;
+  width: 100%;
+}
+
+.ws-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ws-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-group-toggle {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  cursor: pointer;
+  color: #b0c8e0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.ws-group-toggle:hover {
+  color: #dce8ff;
+}
+
+.ws-group-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ws-group-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: 4px;
+}
+
+.ws-item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #c8daf0;
+  font-size: var(--font-size-sm);
+  border-radius: 6px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.ws-item--active {
+  background: rgba(15, 138, 131, 0.2);
+  color: #fff;
+  font-weight: 600;
+}
+
+.ws-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Pagination ────────────────────────────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: var(--font-size-sm);
+  color: #506277;
+}
+
+.pagination button {
+  min-height: var(--control-height);
+  padding: 2px 8px;
+  border: 1px solid #c2d1ec;
+  background: #f8fbff;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination .page-info {
+  padding: 0 6px;
+}
+
+/* ── Compact Empty State ───────────────────────────────────────────────────── */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 12px;
+  color: #64748b;
+  font-size: var(--font-size-sm);
+}
+
+.empty-state strong {
+  font-size: var(--font-size-md);
+  color: #334155;
+}
