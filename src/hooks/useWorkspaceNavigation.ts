@@ -72,6 +72,8 @@ export function useWorkspaceNavigation() {
         });
       }
 
+      if (mod.moduleKey === "metadata_prototype" && !import.meta.env.DEV) continue;
+
       const entry = workspaceMap.get(workspaceKey)!;
       entry.items.push({
         id: mod.moduleKey,

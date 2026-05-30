@@ -61,6 +61,11 @@ Deno.serve(async (req: Request) => {
   }
 
   const client = createClient(supabaseUrl, serviceRoleKey, {
+    global: {
+      headers: {
+        Authorization: authHeader,
+      },
+    },
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -102,7 +107,11 @@ Deno.serve(async (req: Request) => {
   });
 
   if (inviteError) {
-    return json(400, { error: inviteError.message });
+    const normalizedMessage =
+      inviteError.message === "User not allowed"
+        ? "This email already has an auth account or pending invite. Remove the existing account first, then resend the invite."
+        : inviteError.message;
+    return json(400, { error: normalizedMessage, details: inviteError.details ?? null, hint: inviteError.hint ?? null });
   }
 
   const invitedUser = inviteData.user;

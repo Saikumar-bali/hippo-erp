@@ -66,16 +66,27 @@ export function DynamicListPage({
     const loadAllLabels = async () => {
       const allLabels: Record<string, Record<string, string>> = {};
       for (const lf of linkFields) {
-        const linkTo = (lf.options as Record<string, unknown>)?.link_to as string | undefined;
-        const displayField = (lf.options as Record<string, unknown>)?.display_field as string ?? "name";
+        const opts = lf.options as Record<string, unknown>;
+        const linkTo = opts?.link_to as string | undefined;
         if (!linkTo) continue;
+        const displayFields = opts?.display_fields as string[] | undefined;
+        const displayTemplate = opts?.display_template as string | undefined;
+        const displayField = opts?.display_field as string ?? "name";
         const linkApi = getDocTypeApi(linkTo);
         if (!linkApi?.list) continue;
         try {
           const linkedRecords = await linkApi.list(tenantId) as Record<string, unknown>[];
           const map: Record<string, string> = {};
           for (const lr of linkedRecords) {
-            map[lr.id as string] = String(lr[displayField] ?? lr.id);
+            if (displayTemplate && displayFields) {
+              let label = displayTemplate;
+              for (const df of displayFields) {
+                label = label.replace(`{${df}}`, String(lr[df] ?? ""));
+              }
+              map[lr.id as string] = label;
+            } else {
+              map[lr.id as string] = String(lr[displayField] ?? lr.id);
+            }
           }
           allLabels[lf.fieldname] = map;
         } catch {

@@ -1745,45 +1745,52 @@ a {
   border-bottom: 1px solid #e2e8f0;
 }
 
-/* ── Compact Enterprise UI Tokens ──────────────────────────────────────────── */
+/* ── Compact Enterprise UI ─────────────────────────────────────────────────── */
 
 :root {
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-md: 13px;
-  --font-size-lg: 15px;
-  --sidebar-width: 220px;
-  --topbar-height: 42px;
-  --table-row-height: 32px;
-  --content-padding: 12px;
-  --card-padding: 12px;
-  --control-height: 30px;
-  --border-radius-sm: 6px;
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-md: 12px;
+  --font-size-lg: 14px;
+  --sidebar-width: 200px;
+  --topbar-height: 36px;
+  --table-row-height: 28px;
+  --content-padding: 8px;
+  --card-padding: 8px;
+  --control-height: 26px;
+  --border-radius-sm: 4px;
+}
+
+body {
+  font-size: var(--font-size-md);
 }
 
 .app-shell {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   font-size: var(--font-size-md);
 }
 
 .sidebar {
-  width: var(--sidebar-width);
-  padding: 10px;
+  padding: 6px;
 }
 
 .sidebar .brand {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   font-size: var(--font-size-sm);
 }
 
 .nav-item {
   min-height: var(--control-height);
-  padding: 5px 8px;
+  padding: 3px 6px;
   font-size: var(--font-size-sm);
+  margin: 1px 0;
+  gap: 6px;
 }
 
 .nav-item-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
 }
 
 .nav-item-label {
@@ -1791,12 +1798,18 @@ a {
 }
 
 .nav-item-meta {
-  font-size: var(--font-size-xs);
+  font-size: 9px;
+}
+
+.nav-item-status {
+  padding: 1px 4px;
 }
 
 .topbar {
   height: var(--topbar-height);
-  padding: 4px 12px;
+  min-height: var(--topbar-height);
+  padding: 2px 8px;
+  gap: 8px;
 }
 
 .content {
@@ -1805,12 +1818,12 @@ a {
 
 .content h1 {
   font-size: var(--font-size-lg);
-  margin: 0 0 4px;
+  margin: 0 0 2px;
 }
 
 .content > p {
   font-size: var(--font-size-sm);
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .card {
@@ -1820,21 +1833,27 @@ a {
 }
 
 .card-head {
-  margin-bottom: 0.5rem;
+  margin-bottom: 6px;
 }
 
 .card-head h3 {
   font-size: var(--font-size-md);
+  margin: 0;
+}
+
+.card-note {
+  padding: 4px 8px !important;
+  font-size: var(--font-size-sm) !important;
 }
 
 .erp-table {
-  margin-top: 6px;
+  margin-top: 4px;
   font-size: var(--font-size-sm);
 }
 
 .erp-table th,
 .erp-table td {
-  padding: 6px 8px;
+  padding: 4px 6px;
   font-size: var(--font-size-sm);
 }
 
@@ -1853,13 +1872,18 @@ a {
   min-height: var(--control-height);
   font-size: var(--font-size-sm);
   border-radius: var(--border-radius-sm);
+  padding: 2px 8px;
 }
 
 .logout {
   font-size: var(--font-size-sm);
-  padding: 4px 8px;
+  padding: 2px 6px;
   min-height: var(--control-height);
   border-radius: var(--border-radius-sm);
+}
+
+.form-grid {
+  gap: 6px;
 }
 
 .form-grid input,
@@ -1868,44 +1892,147 @@ a {
   min-height: var(--control-height);
   font-size: var(--font-size-sm);
   border-radius: var(--border-radius-sm);
-  padding: 0 10px;
+  padding: 0 8px;
+}
+
+.form-grid .primary-action {
+  min-height: var(--control-height);
+  font-size: var(--font-size-sm);
+}
+
+.filter-bar {
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .filter-bar .search-input {
   font-size: var(--font-size-sm);
-  padding: 4px 8px;
+  padding: 3px 6px;
   min-height: var(--control-height);
 }
 
 .filter-bar select {
   font-size: var(--font-size-sm);
-  padding: 4px 8px;
+  padding: 3px 6px;
   min-height: var(--control-height);
 }
 
 .module-stack {
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-group {
-  gap: 4px;
+  gap: 3px;
 }
 
 .mini-badge {
-  font-size: var(--font-size-xs);
-  padding: 3px 6px;
+  font-size: 9px;
+  padding: 2px 5px;
 }
 
 .detail-grid {
-  gap: 0.5rem;
+  gap: 6px;
 }
 
 .detail-field {
-  gap: 2px;
+  gap: 1px;
 }
 
 .detail-value {
   font-size: var(--font-size-sm);
+}
+
+.detail-label {
+  font-size: 9px;
+}
+
+.field {
+  font-size: var(--font-size-sm);
+  gap: 3px;
+}
+
+.field > span:first-child {
+  font-size: var(--font-size-xs);
+}
+
+.form-actions {
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.invite-field input,
+.invite-field select {
+  min-height: var(--control-height);
+  font-size: var(--font-size-sm);
+  padding: 0 8px;
+}
+
+.invite-summary {
+  gap: 6px;
+}
+
+.invite-summary article {
+  padding: 6px 8px;
+}
+
+.invite-summary span {
+  font-size: 9px;
+}
+
+.invite-summary strong {
+  font-size: var(--font-size-sm);
+}
+
+.invite-card {
+  padding: var(--card-padding);
+}
+
+.role-form-grid {
+  gap: 6px;
+}
+
+.role-form-grid label {
+  font-size: var(--font-size-xs);
+}
+
+.roles-list-head h3,
+.role-editor-head h3 {
+  font-size: var(--font-size-md);
+}
+
+.assignment-field {
+  font-size: var(--font-size-xs);
+}
+
+.assignment-field select {
+  min-height: var(--control-height);
+}
+
+.tenant-selector {
+  font-size: var(--font-size-sm);
+  padding: 2px 6px;
+}
+
+.user {
+  font-size: var(--font-size-sm);
+}
+
+.permission-pill {
+  font-size: 9px;
+  padding: 3px 5px;
+}
+
+.user-item {
+  padding: 6px 8px;
+}
+
+.user-item strong {
+  font-size: var(--font-size-sm);
+}
+
+.user-item span,
+.user-item small {
+  font-size: var(--font-size-xs);
 }
 
 /* ── Workspace Sidebar ─────────────────────────────────────────────────────── */
