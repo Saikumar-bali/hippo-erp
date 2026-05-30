@@ -10,7 +10,7 @@ Add a guided 7-step wizard that creates a working `generic_json` custom DocType 
 `c90b729 Add AI run report folder guidance`
 
 ## Final Commit
-`<pending>`
+`a087f22`
 
 ## Files Created (4)
 | File | Purpose |
