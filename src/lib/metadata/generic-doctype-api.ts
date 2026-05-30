@@ -15,6 +15,26 @@ function handleSingleRpcResponse(response: unknown): Record<string, unknown> {
   return r.data ?? {};
 }
 
+function splitSystemFields(payload: Record<string, unknown>, tenantId?: string) {
+  const {
+    tenant_id,
+    company_id,
+    id,
+    doctype_key,
+    document_number,
+    created_at,
+    updated_at,
+    created_by,
+    updated_by,
+    ...data
+  } = payload;
+
+  return {
+    companyId: tenantId ?? (company_id as string | undefined) ?? (tenant_id as string | undefined),
+    data,
+  };
+}
+
 export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
   return {
     list: async (tenantId: string) => {
@@ -37,10 +57,13 @@ export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
     },
 
     create: async (payload: Record<string, unknown>) => {
+      const { companyId, data: cleanData } = splitSystemFields(payload);
+      if (!companyId) throw new Error("Missing company context for generic document create.");
+
       const { data, error } = await supabase.rpc("erp_create_document", {
         p_doctype_key: doctypeKey,
-        p_company_id: payload.tenant_id as string,
-        p_data: payload,
+        p_company_id: companyId,
+        p_data: cleanData,
       });
       if (error) throw new Error(error.message);
       const r = data as { ok?: boolean; document_id?: string; error?: string } | null;
@@ -49,11 +72,14 @@ export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
     },
 
     update: async (id: string, payload: Record<string, unknown>, tenantId?: string) => {
+      const { companyId, data: cleanData } = splitSystemFields(payload, tenantId);
+      if (!companyId) throw new Error("Missing company context for generic document update.");
+
       const { data, error } = await supabase.rpc("erp_update_document", {
         p_doctype_key: doctypeKey,
         p_document_id: id,
-        p_company_id: tenantId ?? (payload.tenant_id as string) ?? "00000000-0000-0000-0000-000000000000",
-        p_data: payload,
+        p_company_id: companyId,
+        p_data: cleanData,
       });
       if (error) throw new Error(error.message);
       const r = data as { ok?: boolean; error?: string } | null;
