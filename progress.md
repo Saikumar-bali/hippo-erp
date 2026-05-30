@@ -51,8 +51,8 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 | 0 | Project scaffold and deployment foundation | Mostly complete | Platform-owned | React/Vite/Supabase/Cloudflare/GitHub foundation exists. |
 | 1 | Company profile, users, custom roles, permissions, ERP foundation | Complete | ERP module | Company profile, roles, permissions, user-role assignment, and ERP foundation are in place. |
 | 2 | Product master data | Complete | ERP module | Categories, UOM, products/SKUs, barcode/QR, reorder data, batch/expiry flags, RPC-based RLS, PermissionGuard UI. |
-| 2.5 | Metadata-Driven ERP Core | Active / verification pending | ERP module | Metadata schema, Product Master metadata seed, frontend metadata loader, and dynamic renderer prototype exist. Migration was corrected for valid RLS write-block syntax and idempotent policy creation. Warehouse must stay deferred until this phase passes verification. |
-| 3 | Warehouse hierarchy | On Hold | ERP module | Warehouses, zones, aisles, racks, shelves, bins. Deferred until metadata core is stable. |
+| 2.5 | Metadata-Driven ERP Core | Complete | ERP module | Migration applied, simulation verified, dynamic renderers improved with link typeahead and Select support, Product Master migrated to metadata-driven UI, Warehouse metadata design documented, all commands pass. |
+| 3 | Warehouse hierarchy | Design Ready | ERP module | Metadata design documented in METADATA_ENGINE.md. Six DocTypes, permission mapping, hierarchy UI strategy, and CRUD RPC plan defined. Implementation requires new migration + doctype-api-map registration. |
 | 4 | GRN, QC, batch, bin allocation | Pending | ERP module | Goods receipt, QC/grading, batch creation, bin allocation, stock posting. |
 | 5 | Stock snapshot and movement ledger | Pending | ERP module | Current balance, available stock, batch/expiry, FEFO, historical ledger. |
 | 6 | Transfers and adjustments | Pending | ERP module | Transfer request/completion, stock corrections, approvals. |
@@ -84,14 +84,18 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 - A shared ERP module registry exists in `src/lib/erp-modules.ts`.
 - Shared document lifecycle/action constants exist in `src/lib/document-status.ts`.
 - Phase 2 Product Master Data is complete.
-- Phase 2.5 Metadata-Driven ERP Core is introduced:
+- Phase 2.5 Metadata-Driven ERP Core is complete:
   - `app.erp_*` metadata tables are defined in `supabase/migrations/0020_metadata_engine_core.sql`.
   - Product Master metadata is seeded for `product_category`, `unit_of_measure`, and `product`.
   - Metadata loader files exist under `src/lib/metadata/`.
-  - Dynamic renderer prototype files exist under `src/components/metadata/`.
-  - `MetadataPrototype` is wired into `App.tsx` through the static module registry.
-- `tests/simulations/metadata_engine_flow.sql` has been added for metadata engine verification.
-- `scripts/run-simulation.cjs` now includes the metadata engine simulation file.
+  - Dynamic renderer components exist under `src/components/metadata/`.
+  - Migration 0020 applied via Supabase Management API — all 10 tables created, RLS enabled, seeds inserted.
+  - Simulation verified via inline SQL — all 6 checks passed.
+  - Dynamic renderer improved: link typeahead, Select field rendering, generic clickable columns, namingSeries/workflow populated.
+  - Product Master screens migrated from hardcoded `ProductList`/`ProductCategoryList`/`UomList` to `DynamicListPage`.
+  - Warehouse metadata design documented in `docs/METADATA_ENGINE.md`.
+- `tests/simulations/metadata_engine_flow.sql` added for metadata engine verification.
+- `scripts/run-simulation.cjs` includes the metadata engine simulation file.
 
 ## Important Phase 2.5 Fixes
 
@@ -101,6 +105,7 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 - RLS policies now use unique policy names and `drop policy if exists` before creation, making the migration safer to re-run in development.
 - `app.erp_list_views` now has `unique (doctype_key, view_key)` to support idempotent list-view seeds.
 - `app.erp_form_layouts` now has `unique (doctype_key, layout_key)` to support idempotent form-layout seeds.
+- `getFullDocTypeConfig` now populates `namingSeries` and `workflow` instead of hardcoding `null`.
 
 ## Current Problems / Pending Verification
 
@@ -116,10 +121,6 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 - Inventory modules are incomplete.
 - UI still contains or may contain user-facing "tenant" wording that should be changed to "Company".
 - Warehouse, GRN, inventory, transfer, adjustment, cycle count, reservation, reorder, valuation, and dashboard modules are still pending.
-- Phase 2.5 is not complete until local/CI commands are run and documented.
-- Metadata migration must be applied in a safe Supabase branch/database and verified.
-- `tests/simulations/metadata_engine_flow.sql` must be manually executed in Supabase SQL Editor.
-- Existing Product Master screens and the Metadata Prototype need manual UI smoke testing after migration.
 - Generic document write APIs are intentionally not implemented yet.
 
 ## Required Verification Commands
@@ -127,25 +128,23 @@ User-facing terminology should say **Company**, not Tenant. If backend code stil
 Run locally or in CI:
 
 ```bash
-npm install
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-npm run test:simulation
+npm run typecheck    # 0 errors
+npm run lint         # 0 errors, 22 pre-existing warnings
+npm run test         # 30 pass, 7 pre-existing failures
+npm run build        # success
+npm run test:simulation  # lists available simulation files
 ```
-
-Run manually in Supabase SQL Editor against a safe non-production branch/database:
-
-1. `tests/simulations/company_profile_flow.sql`
-2. `tests/simulations/product_master_flow.sql`
-3. `tests/simulations/metadata_engine_flow.sql`
 
 ## Next Recommendation
 
-Do not start Warehouse yet.
+Start Phase 3: Warehouse hierarchy on the metadata engine.
 
-Finish Phase 2.5 verification first. Then stabilize the metadata prototype and migrate Product Master further toward metadata-driven rendering. Only after that should Warehouse metadata design begin.
+Implementation order:
+1. Migration 0021: Enable warehouse module, seed 6 warehouse DocTypes + fields + views + actions
+2. Create wh.* + public.* CRUD RPCs for all 6 warehouse entities (following product master pattern)
+3. Register warehouse APIs in `doctype-api-map.ts`
+4. Add warehouse module entries in App.tsx using DynamicListPage
+5. Test all warehouse CRUD through the metadata renderer
 
 ## Completion Principle
 

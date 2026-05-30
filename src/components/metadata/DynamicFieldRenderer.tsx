@@ -28,6 +28,12 @@ export function DynamicFieldRenderer({ field, value, linkLabels, asLink }: Props
     return <StatusField value={value as boolean} />;
   }
 
+  if (field.fieldtype === "Select") {
+    const opts = (field.options as Record<string, unknown>)?.options as string[] | undefined;
+    const selectedLabel = opts?.find((o) => o === value) ?? value;
+    return <span className="mini-badge mini-badge--muted">{String(selectedLabel ?? "—")}</span>;
+  }
+
   const display = getFieldDisplayValue(field.fieldname, value, linkLabels);
 
   if (field.fieldtype === "Datetime" && value) {
@@ -36,6 +42,10 @@ export function DynamicFieldRenderer({ field, value, linkLabels, asLink }: Props
 
   if (field.fieldtype === "Date" && value) {
     return <span>{new Date(value as string).toLocaleDateString()}</span>;
+  }
+
+  if ((field.fieldtype === "Float" || field.fieldtype === "Int") && value !== null && value !== undefined) {
+    return <span style={{ textAlign: "right", display: "block" }}>{String(value)}</span>;
   }
 
   return <span>{display}</span>;

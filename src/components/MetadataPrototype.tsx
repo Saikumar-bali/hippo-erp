@@ -7,22 +7,14 @@ type Props = {
   permissions: PermissionChecker;
 };
 
-type DocTypeTab = "product" | "product_category" | "unit_of_measure";
-
-const tabs: Array<{ key: DocTypeTab; label: string }> = [
-  { key: "product", label: "Products (Dynamic)" },
-  { key: "product_category", label: "Categories (Dynamic)" },
-  { key: "unit_of_measure", label: "UOM (Dynamic)" },
+const tabs: Array<{ doctypeKey: string; label: string }> = [
+  { doctypeKey: "product", label: "Products (Dynamic)" },
+  { doctypeKey: "product_category", label: "Categories (Dynamic)" },
+  { doctypeKey: "unit_of_measure", label: "UOM (Dynamic)" },
 ];
 
 export function MetadataPrototype({ tenantId, permissions }: Props) {
-  const [activeTab, setActiveTab] = useState<DocTypeTab>("product");
-
-  const doctypeKeys: Record<DocTypeTab, string> = {
-    product: "product",
-    product_category: "product_category",
-    unit_of_measure: "unit_of_measure",
-  };
+  const [activeTab, setActiveTab] = useState(tabs[0].doctypeKey);
 
   return (
     <div className="module-stack">
@@ -34,16 +26,16 @@ export function MetadataPrototype({ tenantId, permissions }: Props) {
           </span>
         </div>
         <p className="card-note" style={{ padding: "8px 16px", color: "#666" }}>
-          This prototype renders the same Product Master data from metadata (app.erp_* tables).
+          This prototype renders Product Master data from metadata (app.erp_* tables).
           Existing Product screens still work — this is a side-by-side comparison.
         </p>
         <div className="filter-bar" style={{ borderTop: "1px solid #e0e7ef", padding: "8px 16px" }}>
           {tabs.map((tab) => (
             <button
-              key={tab.key}
-              className={`logout ${activeTab === tab.key ? "logout--active" : ""}`}
-              onClick={() => setActiveTab(tab.key)}
-              style={activeTab === tab.key ? { background: "#142033", color: "#fff" } : {}}
+              key={tab.doctypeKey}
+              className={`logout ${activeTab === tab.doctypeKey ? "logout--active" : ""}`}
+              onClick={() => setActiveTab(tab.doctypeKey)}
+              style={activeTab === tab.doctypeKey ? { background: "#142033", color: "#fff" } : {}}
             >
               {tab.label}
             </button>
@@ -53,7 +45,7 @@ export function MetadataPrototype({ tenantId, permissions }: Props) {
 
       <DynamicListPage
         key={activeTab}
-        doctypeKey={doctypeKeys[activeTab]}
+        doctypeKey={activeTab}
         tenantId={tenantId}
         canUpdate={permissions.can("update_product")}
         canDelete={permissions.can("delete_product")}

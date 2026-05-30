@@ -38,7 +38,7 @@ export function DynamicListPage({
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
 
-  const loadAll = async () => {
+  const loadAll = useMemo(() => async () => {
     if (!api) return;
     setDataLoading(true);
     setError("");
@@ -52,9 +52,9 @@ export function DynamicListPage({
     } finally {
       setDataLoading(false);
     }
-  };
+  }, [api, tenantId]);
 
-  useEffect(() => { void loadAll(); }, [tenantId, doctypeKey]);
+  useEffect(() => { void loadAll(); }, [loadAll]);
 
   useEffect(() => {
     if (!api || records.length === 0 || !config) return;
@@ -86,10 +86,18 @@ export function DynamicListPage({
   }, [api, records, config, tenantId]);
 
   const listView = config?.listView;
-  const columns: ListViewColumn[] = listView?.columns_json ?? [];
-  const filterConfig = listView?.filters_json ?? [];
-  const searchFields = listView?.search_fields_json ?? [];
+  const columns = useMemo(() => listView?.columns_json ?? [] as ListViewColumn[], [listView?.columns_json]);
+  const filterConfig = useMemo(() => listView?.filters_json ?? [], [listView?.filters_json]);
+  const searchFields = useMemo(() => listView?.search_fields_json ?? [] as string[], [listView?.search_fields_json]);
   const actions = config?.actions ?? [];
+
+  const clickableColumns = (() => {
+    const priority = ["sku", "code", "name", "title", "label"];
+    for (const p of priority) {
+      if (columns.some((c) => c.fieldname === p)) return new Set([p]);
+    }
+    return new Set<string>();
+  })();
 
   const fieldMap = useMemo(() => {
     const m = new Map<string, DocFieldMeta>();
@@ -247,7 +255,7 @@ export function DynamicListPage({
                       if (!field) return <td key={col.fieldname}>—</td>;
                       return (
                         <td key={col.fieldname}>
-                          {col.fieldname === "sku" || col.fieldname === "code" || col.fieldname === "name" ? (
+                          {clickableColumns.has(col.fieldname) ? (
                             <button className="link-button" onClick={() => setSelectedId(record.id as string)}>
                               {renderCell(field, record)}
                             </button>

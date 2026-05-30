@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { getDocTypeApi } from "./doctype-api-map";
@@ -27,6 +27,9 @@ export function DynamicFormPage({
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [linkOptions, setLinkOptions] = useState<Record<string, Array<{ id: string; label: string }>>>({});
+  const [linkSearch, setLinkSearch] = useState<Record<string, string>>({});
+  const [linkFocus, setLinkFocus] = useState<Record<string, boolean>>({});
+  const linkRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
 
@@ -54,12 +57,12 @@ export function DynamicFormPage({
       const opts: Record<string, Array<{ id: string; label: string }>> = {};
       for (const lf of linkFields) {
         const linkTo = (lf.options as Record<string, unknown>)?.link_to as string | undefined;
-        const displayField = (lf.options as Record<string, unknown>)?.display_field as string ?? "name";
         if (!linkTo) continue;
         const linkApi = getDocTypeApi(linkTo);
         if (!linkApi?.list) continue;
         try {
           const items = await linkApi.list(tenantId) as Array<Record<string, unknown>>;
+          const displayField = (lf.options as Record<string, unknown>)?.display_field as string ?? "name";
           opts[lf.fieldname] = items.map((item) => ({
             id: String(item.id),
             label: `${String(item[displayField] ?? "")} - ${String(item.name ?? item.code ?? "")}`,
@@ -67,11 +70,18 @@ export function DynamicFormPage({
         } catch {
           opts[lf.fieldname] = [];
         }
+        const currentValue = record?.[lf.fieldname] as string | undefined;
+        if (currentValue && opts[lf.fieldname]) {
+          const match = opts[lf.fieldname].find((o) => o.id === currentValue);
+          if (match) {
+            setLinkSearch((prev) => ({ ...prev, [lf.fieldname]: match.label }));
+          }
+        }
       }
       setLinkOptions(opts);
     };
     void loadOptions();
-  }, [config, tenantId]);
+  }, [config, tenantId, record]);
 
   const fieldMap = useMemo(() => {
     const m = new Map<string, DocFieldMeta>();
@@ -100,6 +110,9 @@ export function DynamicFormPage({
         value = fd.get(f.fieldname) === "on";
       } else if (f.fieldtype === "Float" || f.fieldtype === "Int") {
         value = raw ? Number(raw) : 0;
+      } else if (f.fieldtype === "Link") {
+        const linkInput = fd.get(`${f.fieldname}_id`);
+        value = linkInput ?? raw;
       }
 
       if (f.is_required && (value === "" || value === null || value === undefined)) {
@@ -165,20 +178,57 @@ export function DynamicFormPage({
 
     if (field.fieldtype === "Link") {
       const options = linkOptions[field.fieldname] ?? [];
+      const search = linkSearch[field.fieldname] ?? "";
+      const focused = linkFocus[field.fieldname] ?? false;
+      const filtered = focused && search.length > 0
+        ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
+        : options;
+
       return (
-        <label key={field.fieldname} className="field">
+        <label key={field.fieldname} className="field field--link">
           <span>{field.label}{field.is_required ? " *" : ""}</span>
-          <select
-            name={field.fieldname}
-            defaultValue={(currentValue as string) ?? ""}
-            required={field.is_required}
-            disabled={isReadonly}
+          <div
+            ref={(el) => { linkRefs.current[field.fieldname] = el; }}
+            style={{ position: "relative" }}
           >
-            <option value="">Select {field.label}…</option>
-            {options.map((opt) => (
-              <option key={opt.id} value={opt.id}>{opt.label}</option>
-            ))}
-          </select>
+            <input
+              type="text"
+              name={`${field.fieldname}_display`}
+              placeholder={`Search ${field.label}…`}
+              value={search}
+              onChange={(e) => setLinkSearch((prev) => ({ ...prev, [field.fieldname]: e.target.value }))}
+              onFocus={() => setLinkFocus((prev) => ({ ...prev, [field.fieldname]: true }))}
+              onBlur={() => setTimeout(() => setLinkFocus((prev) => ({ ...prev, [field.fieldname]: false })), 200)}
+              required={field.is_required}
+              disabled={isReadonly}
+              autoComplete="off"
+            />
+            <input type="hidden" name={`${field.fieldname}_id`} value={(currentValue as string) ?? ""} />
+            {focused && filtered.length > 0 && (
+              <div
+                className="typeahead-dropdown"
+                style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: "#fff", border: "1px solid #e0e7ef", maxHeight: 200, overflowY: "auto" }}
+              >
+                {filtered.slice(0, 50).map((opt) => (
+                  <div
+                    key={opt.id}
+                    className="typeahead-item"
+                    style={{ padding: "6px 10px", cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                    onMouseDown={() => {
+                      setLinkSearch((prev) => ({ ...prev, [field.fieldname]: opt.label }));
+                      setLinkFocus((prev) => ({ ...prev, [field.fieldname]: false }));
+                      const hiddenInput = document.querySelector<HTMLInputElement>(`input[name="${field.fieldname}_id"]`);
+                      if (hiddenInput) hiddenInput.value = opt.id;
+                      const displayInput = document.querySelector<HTMLInputElement>(`input[name="${field.fieldname}_display"]`);
+                      if (displayInput) displayInput.value = opt.label;
+                    }}
+                  >
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           {errors[field.fieldname] && <span className="field-error">{errors[field.fieldname]}</span>}
         </label>
       );

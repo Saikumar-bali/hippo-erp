@@ -66,3 +66,55 @@ Supabase / (future Node Metadata API)
 ## Current Phase Scope
 
 Phase 2.5 seeds metadata for the existing Product Master (products, categories, UOM) and provides dynamic renderer prototypes that run alongside the existing hand-coded screens. This proves the metadata engine works before migrating existing or building new modules.
+
+## Phase 3: Warehouse Hierarchy (Design)
+
+### Warehouse Entity Model
+
+The warehouse hierarchy follows a strict 6-level tree:
+
+```
+Warehouse → Zone → Aisle → Rack → Shelf → Bin
+```
+
+Each level is company-scoped (`tenant_id`), has a unique code within its parent, and supports `is_active` deactivation. Only `warehouses` has `created_by`/`updated_by` audit columns (child tables lack them — may need migration to add).
+
+### Permissions
+
+| Permission Key | warehouse_manager | stock_operator | viewer |
+|---|---|---|---|
+| `view_warehouses` | ✓ | ✓ | ✓ |
+| `create_warehouse` | ✓ | | |
+| `update_warehouse` | ✓ | | |
+| `delete_warehouse` | | | |
+| `manage_bins` | ✓ | | |
+
+Frontend modules: `"Warehouse hierarchy builder"` (for warehouse/zone/aisle/rack/shelf/bin CRUD), `"Bin management"` (for bin-specific operations).
+
+### DocTypes to Seed
+
+Six DocTypes in `app.erp_doctypes`:
+- `warehouse` → `wh.warehouses`
+- `warehouse_zone` → `wh.warehouse_zones`
+- `warehouse_aisle` → `wh.warehouse_aisles`
+- `warehouse_rack` → `wh.warehouse_racks`
+- `warehouse_shelf` → `wh.warehouse_shelves`
+- `warehouse_bin` → `wh.warehouse_bins`
+
+Each with DocFields, Actions (mapped to permission keys), List Views, and Form Layouts.
+
+### Backend Requirements (before metadata activation)
+
+1. **Enable warehouse module**: Set `app.erp_modules.is_active = true` for module_key `'warehouse'`.
+2. **Create CRUD RPCs**: Following the product master pattern (migrations 0015-0019), create `wh.*` + `public.*` functions for each warehouse entity:
+   - `wh.get_warehouses()`, `wh.create_warehouse()`, `wh.update_warehouse()`, `wh.deactivate_warehouse()` (+ reactivate)
+   - Same pattern for zones, aisles, racks, shelves, bins
+3. **Add audit columns** (optional): Add `created_by`/`updated_by` to child hierarchy tables for consistency.
+4. **Update doctype-api-map**: Register warehouse DocType APIs in the frontend bridge.
+
+### Hierarchy UI Consideration
+
+The 6-level tree hierarchy benefits from a dedicated tree-builder component rather than 6 separate list/detail pages. Design options:
+- **Option A**: Single tree component that loads all levels and allows inline CRUD (better UX, more complex).
+- **Option B**: Six separate DynamicListPage instances with parent-as-filter (simpler, consistent with Product Master pattern).
+- **Recommendation**: Start with Option B using metadata-driven DynamicListPage, add tree component later if hierarchy navigation proves painful.

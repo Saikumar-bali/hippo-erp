@@ -8,9 +8,7 @@ import { ModuleView } from "./components/ModuleView";
 import { MetadataPrototype } from "./components/MetadataPrototype";
 import { CompanyProfileView } from "./components/CompanyProfileView";
 import { UsersRolesView } from "./components/UsersRolesView";
-import { ProductList } from "./components/products/ProductList";
-import { ProductCategoryList } from "./components/products/ProductCategoryList";
-import { UomList } from "./components/products/UomList";
+import { DynamicListPage } from "./components/metadata/DynamicListPage";
 import { PermissionGate } from "./components/PermissionGate";
 import { usePermissions } from "./hooks/usePermissions";
 import { ERP_MODULES } from "./lib/erp-modules";
@@ -145,25 +143,28 @@ export default function App() {
                   canDeleteRole={permissions.can("delete_role")}
                 />
               ) : selected === "Products" ? (
-                <ProductList
+                <DynamicListPage
+                  doctypeKey="product"
                   tenantId={localStorage.getItem("tenant_id") ?? ""}
-                  canCreate={permissions.can("create_product")}
                   canUpdate={permissions.can("update_product")}
                   canDelete={permissions.can("delete_product")}
+                  permissionChecker={(key: string) => permissions.can(key)}
                 />
               ) : selected === "Product categories" ? (
-                <ProductCategoryList
+                <DynamicListPage
+                  doctypeKey="product_category"
                   tenantId={localStorage.getItem("tenant_id") ?? ""}
-                  canCreate={permissions.can("create_product")}
                   canUpdate={permissions.can("update_product")}
                   canDelete={permissions.can("delete_product")}
+                  permissionChecker={(key: string) => permissions.can(key)}
                 />
               ) : selected === "Units of measure" ? (
-                <UomList
+                <DynamicListPage
+                  doctypeKey="unit_of_measure"
                   tenantId={localStorage.getItem("tenant_id") ?? ""}
-                  canCreate={permissions.can("create_product")}
                   canUpdate={permissions.can("update_product")}
                   canDelete={permissions.can("delete_product")}
+                  permissionChecker={(key: string) => permissions.can(key)}
                 />
               ) : selected === "Metadata Prototype" ? (
                 <MetadataPrototype

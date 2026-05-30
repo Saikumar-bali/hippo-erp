@@ -92,15 +92,17 @@ export async function getDefaultFormLayout(doctypeKey: string): Promise<FormLayo
   return mapRow<FormLayoutMeta>(data);
 }
 
-export async function getFullDocTypeConfig(doctypeKey: string): Promise<FullDocTypeConfig | null> {
+export async function getFullDocTypeConfig(doctypeKey: string, companyId?: string): Promise<FullDocTypeConfig | null> {
   const doctype = await getDocTypeMeta(doctypeKey);
   if (!doctype) return null;
 
-  const [fields, actions, listView, formLayout] = await Promise.all([
+  const [fields, actions, listView, formLayout, namingSeries, workflows] = await Promise.all([
     getDocFields(doctypeKey),
     getDocTypeActions(doctypeKey),
     getDefaultListView(doctypeKey),
     getDefaultFormLayout(doctypeKey),
+    companyId ? getNamingSeries(doctypeKey, companyId) : Promise.resolve(null),
+    getWorkflows(doctypeKey),
   ]);
 
   return {
@@ -109,8 +111,8 @@ export async function getFullDocTypeConfig(doctypeKey: string): Promise<FullDocT
     actions,
     listView,
     formLayout,
-    namingSeries: null,
-    workflow: null,
+    namingSeries,
+    workflow: workflows.length > 0 ? workflows[0] : null,
   };
 }
 
