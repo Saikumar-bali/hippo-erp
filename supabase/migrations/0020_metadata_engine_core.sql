@@ -88,7 +88,8 @@ create table if not exists app.erp_list_views (
   sort_json jsonb not null default '{}'::jsonb,
   is_default boolean not null default false,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (doctype_key, view_key)
 );
 
 -- ── 6. ERP Form Layouts ──────────────────────────────────────────────────────────
@@ -101,7 +102,8 @@ create table if not exists app.erp_form_layouts (
   sections_json jsonb not null,
   is_default boolean not null default false,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (doctype_key, layout_key)
 );
 
 -- ── 7. ERP Naming Series ─────────────────────────────────────────────────────────
@@ -166,81 +168,112 @@ alter table app.erp_workflow_states enable row level security;
 alter table app.erp_workflow_transitions enable row level security;
 
 -- ── RLS: Read Policies ──────────────────────────────────────────────────────────
--- Any authenticated user can read metadata (metadata is global, not company-specific)
+-- Metadata is global configuration. Authenticated users may read it, while writes
+-- are migration/server-only in Phase 2.5.
 
-create policy erp_modules_read on app.erp_modules for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_modules_read on app.erp_modules;
+create policy erp_modules_read on app.erp_modules for select using (auth.role() = 'authenticated');
 
-create policy erp_doctypes_read on app.erp_doctypes for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_doctypes_read on app.erp_doctypes;
+create policy erp_doctypes_read on app.erp_doctypes for select using (auth.role() = 'authenticated');
 
-create policy erp_docfields_read on app.erp_docfields for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_docfields_read on app.erp_docfields;
+create policy erp_docfields_read on app.erp_docfields for select using (auth.role() = 'authenticated');
 
-create policy erp_doctype_actions_read on app.erp_doctype_actions for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_doctype_actions_read on app.erp_doctype_actions;
+create policy erp_doctype_actions_read on app.erp_doctype_actions for select using (auth.role() = 'authenticated');
 
-create policy erp_list_views_read on app.erp_list_views for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_list_views_read on app.erp_list_views;
+create policy erp_list_views_read on app.erp_list_views for select using (auth.role() = 'authenticated');
 
-create policy erp_form_layouts_read on app.erp_form_layouts for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_form_layouts_read on app.erp_form_layouts;
+create policy erp_form_layouts_read on app.erp_form_layouts for select using (auth.role() = 'authenticated');
 
-create policy erp_naming_series_read on app.erp_naming_series for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_naming_series_read on app.erp_naming_series;
+create policy erp_naming_series_read on app.erp_naming_series for select using (auth.role() = 'authenticated');
 
-create policy erp_workflows_read on app.erp_workflows for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_workflows_read on app.erp_workflows;
+create policy erp_workflows_read on app.erp_workflows for select using (auth.role() = 'authenticated');
 
-create policy erp_workflow_states_read on app.erp_workflow_states for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_workflow_states_read on app.erp_workflow_states;
+create policy erp_workflow_states_read on app.erp_workflow_states for select using (auth.role() = 'authenticated');
 
-create policy erp_workflow_transitions_read on app.erp_workflow_transitions for select
-  using (auth.role() = 'authenticated');
+drop policy if exists erp_workflow_transitions_read on app.erp_workflow_transitions;
+create policy erp_workflow_transitions_read on app.erp_workflow_transitions for select using (auth.role() = 'authenticated');
 
--- ── RLS: Write Policies ─────────────────────────────────────────────────────────
--- Metadata writes are restricted to platform owners/admins only in this phase.
--- Data is seeded through migrations; no UI writes allowed.
+-- ── RLS: Explicit Write Blocks ───────────────────────────────────────────────────
+-- RLS already denies writes without an allow policy. These policies make that
+-- design obvious and syntactically valid for INSERT/UPDATE/DELETE.
 
-create policy erp_modules_write_owner on app.erp_modules for insert using (false);
-create policy erp_modules_write_owner on app.erp_modules for update using (false);
-create policy erp_modules_write_owner on app.erp_modules for delete using (false);
+drop policy if exists erp_modules_insert_blocked on app.erp_modules;
+create policy erp_modules_insert_blocked on app.erp_modules for insert with check (false);
+drop policy if exists erp_modules_update_blocked on app.erp_modules;
+create policy erp_modules_update_blocked on app.erp_modules for update using (false) with check (false);
+drop policy if exists erp_modules_delete_blocked on app.erp_modules;
+create policy erp_modules_delete_blocked on app.erp_modules for delete using (false);
 
-create policy erp_doctypes_write_owner on app.erp_doctypes for insert using (false);
-create policy erp_doctypes_write_owner on app.erp_doctypes for update using (false);
-create policy erp_doctypes_write_owner on app.erp_doctypes for delete using (false);
+drop policy if exists erp_doctypes_insert_blocked on app.erp_doctypes;
+create policy erp_doctypes_insert_blocked on app.erp_doctypes for insert with check (false);
+drop policy if exists erp_doctypes_update_blocked on app.erp_doctypes;
+create policy erp_doctypes_update_blocked on app.erp_doctypes for update using (false) with check (false);
+drop policy if exists erp_doctypes_delete_blocked on app.erp_doctypes;
+create policy erp_doctypes_delete_blocked on app.erp_doctypes for delete using (false);
 
-create policy erp_docfields_write_owner on app.erp_docfields for insert using (false);
-create policy erp_docfields_write_owner on app.erp_docfields for update using (false);
-create policy erp_docfields_write_owner on app.erp_docfields for delete using (false);
+drop policy if exists erp_docfields_insert_blocked on app.erp_docfields;
+create policy erp_docfields_insert_blocked on app.erp_docfields for insert with check (false);
+drop policy if exists erp_docfields_update_blocked on app.erp_docfields;
+create policy erp_docfields_update_blocked on app.erp_docfields for update using (false) with check (false);
+drop policy if exists erp_docfields_delete_blocked on app.erp_docfields;
+create policy erp_docfields_delete_blocked on app.erp_docfields for delete using (false);
 
-create policy erp_doctype_actions_write_owner on app.erp_doctype_actions for insert using (false);
-create policy erp_doctype_actions_write_owner on app.erp_doctype_actions for update using (false);
-create policy erp_doctype_actions_write_owner on app.erp_doctype_actions for delete using (false);
+drop policy if exists erp_doctype_actions_insert_blocked on app.erp_doctype_actions;
+create policy erp_doctype_actions_insert_blocked on app.erp_doctype_actions for insert with check (false);
+drop policy if exists erp_doctype_actions_update_blocked on app.erp_doctype_actions;
+create policy erp_doctype_actions_update_blocked on app.erp_doctype_actions for update using (false) with check (false);
+drop policy if exists erp_doctype_actions_delete_blocked on app.erp_doctype_actions;
+create policy erp_doctype_actions_delete_blocked on app.erp_doctype_actions for delete using (false);
 
-create policy erp_list_views_write_owner on app.erp_list_views for insert using (false);
-create policy erp_list_views_write_owner on app.erp_list_views for update using (false);
-create policy erp_list_views_write_owner on app.erp_list_views for delete using (false);
+drop policy if exists erp_list_views_insert_blocked on app.erp_list_views;
+create policy erp_list_views_insert_blocked on app.erp_list_views for insert with check (false);
+drop policy if exists erp_list_views_update_blocked on app.erp_list_views;
+create policy erp_list_views_update_blocked on app.erp_list_views for update using (false) with check (false);
+drop policy if exists erp_list_views_delete_blocked on app.erp_list_views;
+create policy erp_list_views_delete_blocked on app.erp_list_views for delete using (false);
 
-create policy erp_form_layouts_write_owner on app.erp_form_layouts for insert using (false);
-create policy erp_form_layouts_write_owner on app.erp_form_layouts for update using (false);
-create policy erp_form_layouts_write_owner on app.erp_form_layouts for delete using (false);
+drop policy if exists erp_form_layouts_insert_blocked on app.erp_form_layouts;
+create policy erp_form_layouts_insert_blocked on app.erp_form_layouts for insert with check (false);
+drop policy if exists erp_form_layouts_update_blocked on app.erp_form_layouts;
+create policy erp_form_layouts_update_blocked on app.erp_form_layouts for update using (false) with check (false);
+drop policy if exists erp_form_layouts_delete_blocked on app.erp_form_layouts;
+create policy erp_form_layouts_delete_blocked on app.erp_form_layouts for delete using (false);
 
-create policy erp_naming_series_write_owner on app.erp_naming_series for insert using (false);
-create policy erp_naming_series_write_owner on app.erp_naming_series for update using (false);
-create policy erp_naming_series_write_owner on app.erp_naming_series for delete using (false);
+drop policy if exists erp_naming_series_insert_blocked on app.erp_naming_series;
+create policy erp_naming_series_insert_blocked on app.erp_naming_series for insert with check (false);
+drop policy if exists erp_naming_series_update_blocked on app.erp_naming_series;
+create policy erp_naming_series_update_blocked on app.erp_naming_series for update using (false) with check (false);
+drop policy if exists erp_naming_series_delete_blocked on app.erp_naming_series;
+create policy erp_naming_series_delete_blocked on app.erp_naming_series for delete using (false);
 
-create policy erp_workflows_write_owner on app.erp_workflows for insert using (false);
-create policy erp_workflows_write_owner on app.erp_workflows for update using (false);
-create policy erp_workflows_write_owner on app.erp_workflows for delete using (false);
+drop policy if exists erp_workflows_insert_blocked on app.erp_workflows;
+create policy erp_workflows_insert_blocked on app.erp_workflows for insert with check (false);
+drop policy if exists erp_workflows_update_blocked on app.erp_workflows;
+create policy erp_workflows_update_blocked on app.erp_workflows for update using (false) with check (false);
+drop policy if exists erp_workflows_delete_blocked on app.erp_workflows;
+create policy erp_workflows_delete_blocked on app.erp_workflows for delete using (false);
 
-create policy erp_workflow_states_write_owner on app.erp_workflow_states for insert using (false);
-create policy erp_workflow_states_write_owner on app.erp_workflow_states for update using (false);
-create policy erp_workflow_states_write_owner on app.erp_workflow_states for delete using (false);
+drop policy if exists erp_workflow_states_insert_blocked on app.erp_workflow_states;
+create policy erp_workflow_states_insert_blocked on app.erp_workflow_states for insert with check (false);
+drop policy if exists erp_workflow_states_update_blocked on app.erp_workflow_states;
+create policy erp_workflow_states_update_blocked on app.erp_workflow_states for update using (false) with check (false);
+drop policy if exists erp_workflow_states_delete_blocked on app.erp_workflow_states;
+create policy erp_workflow_states_delete_blocked on app.erp_workflow_states for delete using (false);
 
-create policy erp_workflow_transitions_write_owner on app.erp_workflow_transitions for insert using (false);
-create policy erp_workflow_transitions_write_owner on app.erp_workflow_transitions for update using (false);
-create policy erp_workflow_transitions_write_owner on app.erp_workflow_transitions for delete using (false);
+drop policy if exists erp_workflow_transitions_insert_blocked on app.erp_workflow_transitions;
+create policy erp_workflow_transitions_insert_blocked on app.erp_workflow_transitions for insert with check (false);
+drop policy if exists erp_workflow_transitions_update_blocked on app.erp_workflow_transitions;
+create policy erp_workflow_transitions_update_blocked on app.erp_workflow_transitions for update using (false) with check (false);
+drop policy if exists erp_workflow_transitions_delete_blocked on app.erp_workflow_transitions;
+create policy erp_workflow_transitions_delete_blocked on app.erp_workflow_transitions for delete using (false);
 
 -- ── Seed: ERP Modules ───────────────────────────────────────────────────────────
 
@@ -336,73 +369,18 @@ insert into app.erp_doctype_actions (doctype_key, action_key, permission_key) va
   ('product', 'deactivate', 'delete_product')
 on conflict (doctype_key, action_key) do nothing;
 
--- ── Seed: List Views - product_category ──────────────────────────────────────────
+-- ── Seed: List Views ─────────────────────────────────────────────────────────────
 
 insert into app.erp_list_views (doctype_key, view_key, label, columns_json, filters_json, search_fields_json, sort_json, is_default) values
-  ('product_category', 'default', 'Default', '[
-    {"fieldname": "code", "label": "Code", "width": 120},
-    {"fieldname": "name", "label": "Name", "width": 200},
-    {"fieldname": "description", "label": "Description", "width": 250},
-    {"fieldname": "is_active", "label": "Status", "width": 80}
-  ]', '[{"fieldname": "is_active", "label": "Status", "type": "select", "options": ["all","active","inactive"]}]',
-  '["code","name"]', '{"fieldname": "code", "direction": "asc"}', true)
+  ('product_category', 'default', 'Default', '[{"fieldname":"code","label":"Code","width":120},{"fieldname":"name","label":"Name","width":200},{"fieldname":"description","label":"Description","width":250},{"fieldname":"is_active","label":"Status","width":80}]', '[{"fieldname":"is_active","label":"Status","type":"select","options":["all","active","inactive"]}]', '["code","name"]', '{"fieldname":"code","direction":"asc"}', true),
+  ('unit_of_measure', 'default', 'Default', '[{"fieldname":"code","label":"Code","width":100},{"fieldname":"name","label":"Name","width":200},{"fieldname":"description","label":"Description","width":250},{"fieldname":"is_active","label":"Status","width":80}]', '[{"fieldname":"is_active","label":"Status","type":"select","options":["all","active","inactive"]}]', '["code","name"]', '{"fieldname":"code","direction":"asc"}', true),
+  ('product', 'default', 'Default', '[{"fieldname":"sku","label":"SKU","width":120},{"fieldname":"name","label":"Name","width":200},{"fieldname":"category_id","label":"Category","width":120},{"fieldname":"uom_id","label":"UOM","width":80},{"fieldname":"reorder_point","label":"ROP","width":60},{"fieldname":"reorder_quantity","label":"ROQ","width":60},{"fieldname":"batch_tracking","label":"Batch","width":70},{"fieldname":"expiry_tracking","label":"Expiry","width":70},{"fieldname":"is_active","label":"Status","width":80}]', '[{"fieldname":"is_active","label":"Status","type":"select","options":["all","active","inactive"]},{"fieldname":"category_id","label":"Category","type":"link","doctype":"product_category"}]', '["sku","name","barcode"]', '{"fieldname":"sku","direction":"asc"}', true)
 on conflict (doctype_key, view_key) do nothing;
 
--- ── Seed: List Views - unit_of_measure ───────────────────────────────────────────
-
-insert into app.erp_list_views (doctype_key, view_key, label, columns_json, filters_json, search_fields_json, sort_json, is_default) values
-  ('unit_of_measure', 'default', 'Default', '[
-    {"fieldname": "code", "label": "Code", "width": 100},
-    {"fieldname": "name", "label": "Name", "width": 200},
-    {"fieldname": "description", "label": "Description", "width": 250},
-    {"fieldname": "is_active", "label": "Status", "width": 80}
-  ]', '[{"fieldname": "is_active", "label": "Status", "type": "select", "options": ["all","active","inactive"]}]',
-  '["code","name"]', '{"fieldname": "code", "direction": "asc"}', true)
-on conflict (doctype_key, view_key) do nothing;
-
--- ── Seed: List Views - product ───────────────────────────────────────────────────
-
-insert into app.erp_list_views (doctype_key, view_key, label, columns_json, filters_json, search_fields_json, sort_json, is_default) values
-  ('product', 'default', 'Default', '[
-    {"fieldname": "sku", "label": "SKU", "width": 120},
-    {"fieldname": "name", "label": "Name", "width": 200},
-    {"fieldname": "category_id", "label": "Category", "width": 120},
-    {"fieldname": "uom_id", "label": "UOM", "width": 80},
-    {"fieldname": "reorder_point", "label": "ROP", "width": 60},
-    {"fieldname": "reorder_quantity", "label": "ROQ", "width": 60},
-    {"fieldname": "batch_tracking", "label": "Batch", "width": 70},
-    {"fieldname": "expiry_tracking", "label": "Expiry", "width": 70},
-    {"fieldname": "is_active", "label": "Status", "width": 80}
-  ]', '[{"fieldname": "is_active", "label": "Status", "type": "select", "options": ["all","active","inactive"]}, {"fieldname": "category_id", "label": "Category", "type": "link", "doctype": "product_category"}]',
-  '["sku","name","barcode"]', '{"fieldname": "sku", "direction": "asc"}', true)
-on conflict (doctype_key, view_key) do nothing;
-
--- ── Seed: Form Layouts - product_category ────────────────────────────────────────
+-- ── Seed: Form Layouts ──────────────────────────────────────────────────────────
 
 insert into app.erp_form_layouts (doctype_key, layout_key, label, sections_json, is_default) values
-  ('product_category', 'default', 'Default', '[
-    {"section": "Basic Info", "columns": 2, "fields": ["code", "name", "description", "parent_category_id", "sort_order", "category_type", "is_active"]},
-    {"section": "Audit", "columns": 2, "fields": ["created_by", "updated_by", "created_at", "updated_at"]}
-  ]', true)
-on conflict (doctype_key, layout_key) do nothing;
-
--- ── Seed: Form Layouts - unit_of_measure ─────────────────────────────────────────
-
-insert into app.erp_form_layouts (doctype_key, layout_key, label, sections_json, is_default) values
-  ('unit_of_measure', 'default', 'Default', '[
-    {"section": "Basic Info", "columns": 2, "fields": ["code", "name", "description", "symbol", "decimal_precision", "uom_type", "is_active"]},
-    {"section": "Audit", "columns": 2, "fields": ["created_by", "updated_by", "created_at", "updated_at"]}
-  ]', true)
-on conflict (doctype_key, layout_key) do nothing;
-
--- ── Seed: Form Layouts - product ─────────────────────────────────────────────────
-
-insert into app.erp_form_layouts (doctype_key, layout_key, label, sections_json, is_default) values
-  ('product', 'default', 'Default', '[
-    {"section": "Basic Info", "columns": 2, "fields": ["sku", "name", "description", "category_id", "uom_id"]},
-    {"section": "Identification", "columns": 2, "fields": ["barcode", "qr_value"]},
-    {"section": "Reorder Planning", "columns": 2, "fields": ["reorder_point", "reorder_quantity"]},
-    {"section": "Tracking", "columns": 2, "fields": ["batch_tracking", "expiry_tracking"]},
-    {"section": "Audit", "columns": 2, "fields": ["created_by", "updated_by", "created_at", "updated_at"]}
-  ]', true)
+  ('product_category', 'default', 'Default', '[{"section":"Basic Info","columns":2,"fields":["code","name","description","parent_category_id","sort_order","category_type","is_active"]},{"section":"Audit","columns":2,"fields":["created_by","updated_by","created_at","updated_at"]}]', true),
+  ('unit_of_measure', 'default', 'Default', '[{"section":"Basic Info","columns":2,"fields":["code","name","description","symbol","decimal_precision","uom_type","is_active"]},{"section":"Audit","columns":2,"fields":["created_by","updated_by","created_at","updated_at"]}]', true),
+  ('product', 'default', 'Default', '[{"section":"Basic Info","columns":2,"fields":["sku","name","description","category_id","uom_id"]},{"section":"Identification","columns":2,"fields":["barcode","qr_value"]},{"section":"Reorder Planning","columns":2,"fields":["reorder_point","reorder_quantity"]},{"section":"Tracking","columns":2,"fields":["batch_tracking","expiry_tracking"]},{"section":"Audit","columns":2,"fields":["created_by","updated_by","created_at","updated_at"]}]', true)
 on conflict (doctype_key, layout_key) do nothing;
