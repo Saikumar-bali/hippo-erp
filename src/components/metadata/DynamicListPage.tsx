@@ -7,6 +7,7 @@ import { DynamicActionBar } from "./DynamicActionBar";
 import { DynamicDetailPage } from "./DynamicDetailPage";
 import { StatusField } from "./StatusField";
 import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
+import type { DocTypeApi } from "./doctype-api-map";
 import { DynamicFormPage } from "./DynamicFormPage";
 import type { DocFieldMeta, ListViewColumn } from "../../lib/metadata/types";
 
@@ -38,18 +39,48 @@ export function DynamicListPage({
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
-
+  const registeredApi = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
+  const [api, setApi] = useState<DocTypeApi | null>(registeredApi);
   const [apiReady, setApiReady] = useState(false);
 
   useEffect(() => {
-    if (api) { setApiReady(true); return; }
     let cancelled = false;
-    detectAndRegisterGenericDocTypeApi(doctypeKey).then((detected) => {
-      if (!cancelled) setApiReady(!!detected);
-    });
+
+    const resolveApi = async () => {
+      setApiReady(false);
+      setError("");
+      setRecords([]);
+      setDataLoading(true);
+
+      const existingApi = getDocTypeApi(doctypeKey);
+      if (existingApi) {
+        if (!cancelled) {
+          setApi(existingApi);
+          setApiReady(true);
+        }
+        return;
+      }
+
+      try {
+        const detected = await detectAndRegisterGenericDocTypeApi(doctypeKey);
+        if (!cancelled) {
+          setApi(detected);
+          setApiReady(true);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setApi(null);
+          setApiReady(true);
+          const msg = err instanceof Error ? err.message : "Failed to resolve DocType API";
+          setError(msg);
+        }
+      }
+    };
+
+    void resolveApi();
+
     return () => { cancelled = true; };
-  }, [doctypeKey, api]);
+  }, [doctypeKey, registeredApi]);
 
   const loadAll = useMemo(() => async () => {
     setDataLoading(true);
@@ -192,20 +223,12 @@ export function DynamicListPage({
     }
   };
 
-  if (metaLoading || dataLoading) {
+  if (metaLoading || !apiReady || dataLoading) {
     return <div className="card state-info">Loading {doctypeKey} list…</div>;
   }
 
   if (metaError) return <div className="card state-error">{metaError}</div>;
   if (!config) return <div className="card state-error">Unknown DocType: {doctypeKey}</div>;
-  if (!apiReady) {
-    return (
-      <div className="card state-info">
-        <h3>{config.doctype.label}</h3>
-        <p>Connecting to data API…</p>
-      </div>
-    );
-  }
   if (!api) {
     return (
       <div className="card state-info">
