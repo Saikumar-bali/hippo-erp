@@ -1,147 +1,252 @@
-# Phase 2.10 Tasks: Custom DocType Wizard Hardening And Real UI Verification
+# Phase 3 Tasks: Warehouse Hierarchy
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Harden the Phase 2.9 Custom DocType Wizard so a real authenticated user can create a custom DocType, see it in the sidebar, open it, create a record, edit it, and deactivate it.
+Goal: Build the Warehouse hierarchy master data module using the metadata-driven ERP framework created in Phases 2.5–2.10.
 
-## Why This Phase Exists
+Warehouse hierarchy is master data only in this phase. Do not implement GRN, stock ledger posting, transfers, adjustments, reservations, valuation, or reports yet.
 
-Phase 2.9 created the wizard and generic metadata bundle creation. But before Warehouse starts, the custom DocType flow must be reliable.
+## Why This Phase Starts Now
 
-Current gaps:
+Phase 2.10 proved the framework foundation:
 
-1. Permission keys can be mapped but not created/granted.
-2. Real authenticated CRUD was not fully verified.
-3. Duplicate DocType key detection is weak.
-4. Sidebar refresh after creation may require manual reload.
-5. Final success state needs a clear completion checklist.
+- Workspace/sidebar metadata works.
+- DynamicListPage can render metadata-driven DocTypes.
+- Custom DocType Wizard can create generic JSON DocTypes.
+- Generic JSON document CRUD works for custom master data.
+- Product Master physical RPC DocTypes still work.
 
----
-
-# A. Planning And Docs
-
-- [x] Add GPT review report: `docs/ai-runs/2026-05-30_gpt-review-phase-2-9-wizard.md`
-- [ ] Create `docs/PHASE_2_10_CUSTOM_DOCTYPE_WIZARD_HARDENING.md`
-- [ ] Update `docs/METADATA_ENGINE.md` with wizard hardening requirements
-- [ ] Update `progress.md` briefly after implementation
+Warehouse can now be built on the metadata foundation.
 
 ---
 
-# B. Permission Handling
+# A. Architecture And Docs
 
-Problem: The wizard can generate permission keys, but if those keys do not exist in the permission catalog or are not assigned to the current role, the new DocType may not appear or may not allow CRUD.
+Create/update:
 
-Tasks:
+- [ ] `docs/PHASE_3_WAREHOUSE_HIERARCHY.md`
+- [ ] `docs/METADATA_ENGINE.md`
+- [ ] `progress.md`
+- [x] GPT review approval report: `docs/ai-runs/2026-05-30_gpt-review-phase-2-10-hardening.md`
 
-- [ ] Inspect existing permission tables and role-permission functions.
-- [ ] Add safe helper/RPC if needed to create custom DocType permissions:
-  - `view_<doctype_key>`
-  - `create_<doctype_key>`
-  - `update_<doctype_key>`
-  - `delete_<doctype_key>`
-- [ ] Grant generated permissions to owner/admin roles by default, if this matches existing role model.
-- [ ] Do not grant broad permissions to normal users automatically.
-- [ ] Wizard Step 5 must clearly show whether permissions will be:
-  - created
-  - reused
-  - assigned to owner/admin
-  - still requiring manual role setup
-- [ ] Update simulation to verify permission keys exist and are granted to owner/admin roles.
+Document:
+
+- [ ] Warehouse hierarchy structure
+- [ ] Which entities are master data
+- [ ] Why stock-changing actions are out of scope
+- [ ] Metadata-driven vs explicit transactional logic boundary
+- [ ] Supabase Cloud verification steps
 
 ---
 
-# C. Duplicate And Validation Hardening
+# B. Warehouse Hierarchy Model
 
-Tasks:
+Implement master data hierarchy:
 
-- [ ] Before final create, check if `doctype_key` already exists.
-- [ ] Check if workspace item key already exists in selected workspace.
-- [ ] Check duplicate fieldnames client-side.
-- [ ] Show friendly validation errors before submit.
-- [ ] Validate generated route is unique enough or warn if it conflicts.
-- [ ] Normalize labels into lowercase snake_case keys consistently.
-- [ ] Prevent uppercase custom DocType keys like `Supplier`.
+```text
+Warehouse
+  Zone
+    Aisle
+      Rack
+        Shelf
+          Bin
+```
 
----
+DocTypes:
 
-# D. Transaction Safety
+- [ ] `warehouse`
+- [ ] `warehouse_zone`
+- [ ] `warehouse_aisle`
+- [ ] `warehouse_rack`
+- [ ] `warehouse_shelf`
+- [ ] `warehouse_bin`
 
-Current frontend bundle insert may partially create metadata if one insert fails.
+Recommended storage strategy for Phase 3:
 
-Tasks:
-
-- [ ] Prefer a single safe RPC transaction for wizard bundle creation:
-  - `public.erp_create_custom_doctype_bundle(...)`
-- [ ] The RPC should insert DocType, DocFields, List View, Form Layout, Actions, Workspace Item, and permission catalog entries atomically.
-- [ ] If RPC is too large for this phase, implement best-effort cleanup and clearly document the limitation.
-- [ ] Do not use service-role in frontend.
-- [ ] Do not allow physical table creation.
-- [ ] Only allow `generic_json` storage for wizard-created DocTypes.
-
----
-
-# E. Sidebar Refresh / Open Created DocType
-
-Tasks:
-
-- [ ] After successful wizard creation, refresh workspace navigation without requiring browser reload if practical.
-- [ ] Add an `Open Created DocType` button.
-- [ ] If live refresh is not practical, show exact instruction: `Refresh the page, then open Workspace → Item`.
-- [ ] Final success state should show:
-  - DocType created
-  - Fields created
-  - List View created
-  - Form Layout created
-  - Actions created
-  - Permissions created/granted
-  - Workspace Item created
-  - Ready to create records
+- [ ] Use `generic_json` first unless there is a strong reason for physical tables.
+- [ ] Do not create stock movement/ledger tables in this phase.
+- [ ] Do not put quantity/valuation logic inside warehouse master records.
 
 ---
 
-# F. Real UI Verification
+# C. Metadata Seed / Bundle Creation
 
-CLI-AI must verify in the running app using an authenticated user session connected to Supabase Cloud.
+Create migration or seed file:
 
-Manual flow to verify:
+- [ ] `supabase/migrations/0028_warehouse_hierarchy_metadata.sql`
 
-- [ ] Open Metadata Studio
-- [ ] Click Create Custom DocType
-- [ ] Create a test DocType like `supplier_ui_test`
-- [ ] Add fields:
-  - `supplier_code` Data required list view
-  - `supplier_name` Data required list view
-  - `phone` Data list view
-  - `email` Data
-  - `is_active` Check list view
-- [ ] Add it to an active workspace
-- [ ] Confirm it appears in sidebar after refresh/open action
-- [ ] Open it
-- [ ] Create first record
-- [ ] Confirm list displays record
-- [ ] Edit record
-- [ ] Deactivate record
-- [ ] Record all results in AI run report
+Seed:
+
+- [ ] Warehouse workspace or use existing inactive Warehouse workspace and activate it.
+- [ ] Workspace items for all six Warehouse hierarchy DocTypes.
+- [ ] DocTypes with `storage_strategy = generic_json`.
+- [ ] DocFields for all six DocTypes.
+- [ ] List Views.
+- [ ] Form Layouts.
+- [ ] DocType Actions.
+- [ ] Permission catalog keys.
+- [ ] Owner/admin grants.
+
+Preferred permission keys:
+
+```text
+view_warehouses
+create_warehouse
+update_warehouse
+delete_warehouse
+view_warehouse_zones
+create_warehouse_zone
+update_warehouse_zone
+delete_warehouse_zone
+view_warehouse_bins
+create_warehouse_bin
+update_warehouse_bin
+delete_warehouse_bin
+```
+
+Use consistent pattern for aisle/rack/shelf too.
+
+---
+
+# D. Required Fields
+
+## warehouse
+
+- [ ] `warehouse_code` Data required list
+- [ ] `warehouse_name` Data required list
+- [ ] `warehouse_type` Select list/filter
+- [ ] `address` Text
+- [ ] `is_active` Check list/filter
+
+## warehouse_zone
+
+- [ ] `zone_code` Data required list
+- [ ] `zone_name` Data required list
+- [ ] `warehouse_id` Link to `warehouse` required list/filter
+- [ ] `zone_type` Select list/filter
+- [ ] `is_active` Check list/filter
+
+## warehouse_aisle
+
+- [ ] `aisle_code` Data required list
+- [ ] `aisle_name` Data list
+- [ ] `warehouse_id` Link to `warehouse` required filter
+- [ ] `zone_id` Link to `warehouse_zone` required list/filter
+- [ ] `is_active` Check list/filter
+
+## warehouse_rack
+
+- [ ] `rack_code` Data required list
+- [ ] `rack_name` Data list
+- [ ] `warehouse_id` Link to `warehouse` required filter
+- [ ] `zone_id` Link to `warehouse_zone` required filter
+- [ ] `aisle_id` Link to `warehouse_aisle` required list/filter
+- [ ] `is_active` Check list/filter
+
+## warehouse_shelf
+
+- [ ] `shelf_code` Data required list
+- [ ] `shelf_name` Data list
+- [ ] `warehouse_id` Link to `warehouse` required filter
+- [ ] `zone_id` Link to `warehouse_zone` required filter
+- [ ] `aisle_id` Link to `warehouse_aisle` required filter
+- [ ] `rack_id` Link to `warehouse_rack` required list/filter
+- [ ] `is_active` Check list/filter
+
+## warehouse_bin
+
+- [ ] `bin_code` Data required list
+- [ ] `bin_name` Data list
+- [ ] `warehouse_id` Link to `warehouse` required filter
+- [ ] `zone_id` Link to `warehouse_zone` required filter
+- [ ] `aisle_id` Link to `warehouse_aisle` required filter
+- [ ] `rack_id` Link to `warehouse_rack` required filter
+- [ ] `shelf_id` Link to `warehouse_shelf` required list/filter
+- [ ] `bin_type` Select list/filter
+- [ ] `capacity` Float
+- [ ] `is_active` Check list/filter
+
+---
+
+# E. Link Field UI Requirements
+
+Because hierarchy uses many Link fields, improve or verify Link behavior:
+
+- [ ] Link fields should show readable labels, not raw UUIDs.
+- [ ] Support `display_fields` and `display_template`.
+- [ ] Example: `{warehouse_code} - {warehouse_name}`.
+- [ ] For child levels, show parent context clearly.
+- [ ] If dependent filtering is not implemented yet, document limitation.
+
+Recommended metadata options:
+
+```json
+{
+  "link_to": "warehouse",
+  "display_fields": ["warehouse_code", "warehouse_name"],
+  "display_template": "{warehouse_code} - {warehouse_name}"
+}
+```
+
+---
+
+# F. Frontend Expectations
+
+The Warehouse module should appear in the sidebar as:
+
+```text
+Warehouse
+  Warehouses
+  Zones
+  Aisles
+  Racks
+  Shelves
+  Bins
+```
+
+Each item should open a DynamicListPage.
+
+Required UI checks:
+
+- [ ] Warehouse workspace appears only for permitted users.
+- [ ] Six child items appear.
+- [ ] Each list opens.
+- [ ] Each list has compact table layout.
+- [ ] Create form works for each level.
+- [ ] Link dropdowns load parent records.
+- [ ] Records list with readable parent labels.
+- [ ] Edit works.
+- [ ] Deactivate works.
 
 ---
 
 # G. Simulation Test
 
-Update or create:
+Add:
 
-- [ ] `tests/simulations/custom_doctype_wizard_hardening_flow.sql`
+- [ ] `tests/simulations/warehouse_hierarchy_flow.sql`
 
 Simulation must verify:
 
-- [ ] Custom DocType bundle creation path
-- [ ] Permission keys created
-- [ ] Permission keys granted to owner/admin or equivalent role
-- [ ] Duplicate DocType key is rejected
-- [ ] Duplicate workspace item key is rejected
-- [ ] Required-field validation works
-- [ ] Unknown-field validation works
-- [ ] Generic document CRUD works where auth context allows
-- [ ] Rollback or cleanup at end
+- [ ] Warehouse workspace active.
+- [ ] Six Warehouse DocTypes exist with `generic_json`.
+- [ ] All required DocFields exist.
+- [ ] List Views exist.
+- [ ] Form Layouts exist.
+- [ ] DocType Actions exist.
+- [ ] Permission keys exist.
+- [ ] Owner/admin grants exist.
+- [ ] Workspace Items exist.
+- [ ] Create sample Warehouse document through `erp_create_document`.
+- [ ] Create sample Zone linked to Warehouse.
+- [ ] Create sample Aisle linked to Zone.
+- [ ] Create sample Rack linked to Aisle.
+- [ ] Create sample Shelf linked to Rack.
+- [ ] Create sample Bin linked to Shelf.
+- [ ] List all records.
+- [ ] Update one record.
+- [ ] Deactivate one record.
+- [ ] Rollback or cleanup at end.
 
 Update:
 
@@ -149,22 +254,49 @@ Update:
 
 ---
 
-# H. UI Review Requirements
+# H. Real Browser UI Verification
 
-CLI-AI must review and report:
+CLI-AI must verify with browser automation or document why unavailable.
 
-- [ ] Wizard is not too large or marketing-like
-- [ ] Each step has helper text
-- [ ] Permission step is understandable
-- [ ] Success screen gives clear next action
-- [ ] Error messages are helpful
-- [ ] Advanced metadata tables remain secondary
-- [ ] Sidebar remains compact
-- [ ] DynamicListPage empty states are clear
+Manual flow:
+
+- [ ] Open Warehouse workspace.
+- [ ] Create Warehouse: `MAIN-WH`, `Main Warehouse`.
+- [ ] Create Zone linked to Warehouse: `RAW-ZONE`, `Raw Material Zone`.
+- [ ] Create Aisle linked to Zone.
+- [ ] Create Rack linked to Aisle.
+- [ ] Create Shelf linked to Rack.
+- [ ] Create Bin linked to Shelf.
+- [ ] Confirm each list shows readable parent labels.
+- [ ] Edit Bin capacity.
+- [ ] Deactivate Bin.
+
+Screenshots should be committed if possible under:
+
+```text
+docs/ai-runs/screenshots/phase-3-warehouse/
+```
+
+If screenshots are captured locally but not committed, the report must say that explicitly.
 
 ---
 
-# I. Verification Commands
+# I. UI Review Requirements
+
+Review and report:
+
+- [ ] Warehouse hierarchy sidebar clarity
+- [ ] Link dropdown usability
+- [ ] Parent-child context readability
+- [ ] Table density
+- [ ] Empty states
+- [ ] Form labels/helper text
+- [ ] Error states
+- [ ] Any raw UUID leakage
+
+---
+
+# J. Verification Commands
 
 Run and document exact output:
 
@@ -178,18 +310,18 @@ npm run test:simulation
 
 Supabase Cloud verification required:
 
-- [ ] Apply any needed migration/seeds to Supabase Cloud
-- [ ] Run hardening simulation on Supabase Cloud
+- [ ] Apply migration/seed to Supabase Cloud
+- [ ] Run `warehouse_hierarchy_flow.sql` on Supabase Cloud
 - [ ] Record PASS/FAIL in `progress.md`
-- [ ] Add detailed report in `docs/ai-runs/`
+- [ ] Add detailed report under `docs/ai-runs/`
 
 ---
 
-# J. AI Run Report
+# K. AI Run Report
 
 Create:
 
-- [ ] `docs/ai-runs/2026-05-30_phase-2-10-custom-doctype-wizard-hardening.md`
+- [ ] `docs/ai-runs/2026-05-30_phase-3-warehouse-hierarchy.md`
 
 Must include:
 
@@ -201,6 +333,7 @@ Must include:
 - [ ] Supabase Cloud changes
 - [ ] Simulation results
 - [ ] Real UI verification
+- [ ] Screenshot paths or note that screenshots were local-only
 - [ ] UI review
 - [ ] Command results
 - [ ] Known gaps
@@ -208,32 +341,35 @@ Must include:
 
 ---
 
-# K. Out Of Scope
+# L. Out Of Scope
 
 Do not implement in this phase:
 
-- [ ] Warehouse CRUD
 - [ ] GRN
 - [ ] Stock Ledger
-- [ ] Physical table creation from UI
-- [ ] Generic storage for stock-changing transactional DocTypes
-- [ ] Workflow transition engine
-- [ ] Naming series generation engine
+- [ ] Stock quantity calculations
+- [ ] Inventory valuation
+- [ ] Stock transfers
+- [ ] Stock adjustments
+- [ ] Reservations
+- [ ] Reorder alerts
+- [ ] Workflow engine
+- [ ] Naming series engine
 
 ---
 
-# L. Acceptance Criteria
+# M. Acceptance Criteria
 
-Phase 2.10 is complete only when:
+Phase 3 is complete only when:
 
-- [ ] Wizard checks duplicates before create
-- [ ] Wizard handles permissions clearly and safely
-- [ ] Created custom DocType appears in sidebar or provides one-click/open instruction
-- [ ] Created custom DocType can create/list/edit/deactivate a real record in authenticated UI
-- [ ] Metadata bundle creation is transaction-safe or limitation is documented
-- [ ] Supabase Cloud simulation passes
-- [ ] Real UI verification is documented
-- [ ] Build/typecheck/lint/test results are documented
-- [ ] Detailed AI run report exists under `docs/ai-runs/`
+- [ ] Warehouse workspace is active and visible.
+- [ ] All six hierarchy DocTypes exist and open with DynamicListPage.
+- [ ] Records can be created for Warehouse → Zone → Aisle → Rack → Shelf → Bin.
+- [ ] Parent Link fields show readable labels.
+- [ ] Edit/deactivate works.
+- [ ] Supabase Cloud simulation passes.
+- [ ] Real browser UI verification is documented.
+- [ ] Build/typecheck/lint/test results are documented.
+- [ ] Detailed AI run report exists under `docs/ai-runs/`.
 
-Only after Phase 2.10 should Warehouse Phase 3 begin.
+Only after Phase 3 should GRN or Stock Ledger planning begin.
