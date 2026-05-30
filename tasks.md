@@ -1,150 +1,329 @@
-# Phase 2.5 Tasks: Metadata-Driven ERP Core — COMPLETE
+# Phase 2.6 Tasks: Metadata Workspace, Navigation, and Compact ERP UI
 
 Active branch: `phase-2.5-metadata-engine`
 
-All Phase 2.5 items are verified and complete. The branch has been pushed to GitHub.
+Goal: convert the app shell, sidebar, Product Master grouping, and compact enterprise UI into a Frappe-inspired metadata-driven workspace/navigation layer.
+
+Phase 2.5 proved metadata-driven Product Master rendering. Phase 2.6 must remove the remaining hardcoded navigation shape and make Product Master behave like a professional ERP workspace.
+
+## Senior Architecture Rule
+
+Do not jump to Warehouse implementation yet. First make the workspace/navigation engine metadata-driven. Warehouse should later be added by metadata, not by another hardcoded `App.tsx` branch.
+
+## Frappe-Inspired Target
+
+Frappe treats DocType metadata as the model/view description for data, and Workspaces as the Desk navigation/landing layer. Hippo ERP should mirror the architecture pattern without copying Frappe code or installing Frappe.
+
+Target structure:
+
+```text
+Product Master
+  Products
+  Product Categories
+  Units of Measure
+
+Warehouse
+  Warehouses
+  Zones
+  Aisles
+  Racks
+  Shelves
+  Bins
+
+Inventory
+  Current Stock
+  Batches
+  Movements Ledger
+  Reservations
+  Reorder Alerts
+```
+
+## Current Problems To Fix
+
+- `src/lib/erp-modules.ts` still hardcodes the sidebar.
+- `src/App.tsx` still hardcodes Product/Product Category/UOM component branches.
+- Product Master appears as separate top-level entries instead of a grouped workspace.
+- `Metadata Prototype` appears as a normal sidebar item.
+- UI feels too large, like browser zoom is around 150%.
+- Table has duplicate `STATUS` columns.
+- List page lacks compact enterprise toolbar/pagination/density.
 
 ---
 
-## A. Planning Docs
-
-Status: Complete.
-
-- [x] `docs/METADATA_ENGINE.md` (updated with Warehouse Phase 3 design)
-- [x] `docs/DOCUMENT_API_STRATEGY.md`
-- [x] `docs/NODE_METADATA_SERVICE.md`
-- [x] `flow.md`
-- [x] `progress.md`
-- [x] `tasks.md`
-
----
-
-## B. Metadata Database Schema
-
-Status: Applied and verified.
-
-- [x] Migration 0020 applied via Supabase Management API
-- [x] All 10 `app.erp_*` tables created with RLS enabled
-- [x] Seeds inserted: 5 modules, 3 doctypes, 44 docfields, 12 actions, 3 list views, 3 form layouts
-- [x] `app` schema added to PostgREST `db_schema` (was: `public,graphql_public` → now: `public,graphql_public,app`)
-- [x] `supabase/config.toml` updated with `app` in schemas list
-- [x] `metadata-api.ts` fixed to use `.schema('app')` for all Supabase queries
-
----
-
-## C. Product Master Metadata Seed
-
-Status: Verified.
-
-- [x] 3 DocTypes seeded: `product_category`, `unit_of_measure`, `product`
-- [x] DocFields, Actions, List Views, Form Layouts all seeded
-- [x] Link field metadata configured (display_field for category_id, uom_id)
-- [x] Simulation query passed: DocTypes(3), DocFields(18), Actions(12), ListViews(3), FormLayouts(3), Modules(2 active)
-
----
-
-## D. Frontend Metadata Layer
-
-Status: Complete.
-
-- [x] `src/lib/metadata/types.ts` — all TypeScript interfaces
-- [x] `src/lib/metadata/field-types.ts` — field type metadata
-- [x] `src/lib/metadata/metadata-api.ts` — Supabase queries with `.schema('app')`
-- [x] `src/lib/metadata/doctype-registry.ts` — DocType config cache
-- [x] No service-role usage
-- [x] `getFullDocTypeConfig` populates `namingSeries` and `workflow`
-
----
-
-## E. Dynamic Renderer
-
-Status: Improved and deployed.
-
-- [x] Product/UOM/Category list, form, and detail pages render from metadata
-- [x] Create/update/deactivate/reactivate delegate to existing product APIs
-- [x] Permission-aware action rendering
-- [x] Link fields display readable values instead of UUIDs
-- [x] **Link typeahead search** — DynamicFormPage now has searchable dropdown
-- [x] **Select field rendering** — added to DynamicFieldRenderer
-- [x] **Generic clickable columns** — DynamicListPage uses priority-based detection (sku/code/name/title/label)
-- [x] **Float/Int right-alignment** — added to DynamicFieldRenderer
+# A. Planning And Docs
 
 Files:
-- [x] `src/components/metadata/DynamicListPage.tsx`
-- [x] `src/components/metadata/DynamicFormPage.tsx`
-- [x] `src/components/metadata/DynamicDetailPage.tsx`
-- [x] `src/components/metadata/DynamicFieldRenderer.tsx`
-- [x] `src/components/metadata/DynamicFilterBar.tsx`
-- [x] `src/components/metadata/DynamicActionBar.tsx`
-- [x] `src/components/metadata/LinkField.tsx`
-- [x] `src/components/metadata/StatusField.tsx`
-- [x] `src/components/metadata/doctype-api-map.ts`
+
+- [x] `docs/PHASE_2_6_WORKSPACE_NAVIGATION.md`
+- [ ] `docs/METADATA_ENGINE.md`
+- [ ] `flow.md`
+- [ ] `progress.md`
+- [ ] `tasks.md`
+
+Tasks:
+
+- [x] Add a dedicated Phase 2.6 architecture doc.
+- [ ] Update `docs/METADATA_ENGINE.md` to mention workspace/navigation metadata as the next layer after DocType metadata.
+- [ ] Update `flow.md` to show Company → Workspace → DocType → Dynamic Renderer.
+- [ ] Update `progress.md` after implementation with exact verification results.
 
 ---
 
-## F. Integration
+# B. Database: Workspace Navigation Metadata
 
-Status: Complete.
+Create migration:
 
-- [x] `MetadataPrototype` module active in sidebar
-- [x] **Product Master screens migrated to metadata-driven** — App.tsx now uses `DynamicListPage` for Products, Categories, and UOM
-- [x] Metadata Prototype available as side-by-side comparison
-- [x] Warehouse/GRN/Stock remain deferred
+- [ ] `supabase/migrations/0021_workspace_navigation_core.sql`
 
----
+Tables:
 
-## G. Simulation Tests
+- [ ] `app.erp_workspaces`
+- [ ] `app.erp_workspace_items`
 
-Status: Verified.
+Required table behavior:
 
-- [x] `tests/simulations/metadata_engine_flow.sql` added
-- [x] `scripts/run-simulation.cjs` includes metadata engine file
-- [x] Inline simulation verified all 6 checks via Supabase Management API
+- [ ] RLS enabled.
+- [ ] Authenticated users can read active workspace metadata.
+- [ ] Anonymous users cannot read workspace metadata.
+- [ ] Frontend users cannot insert/update/delete workspace metadata.
+- [ ] Metadata writes remain migration/server-managed for this phase.
+- [ ] `app.erp_workspace_items` has unique `(workspace_key, item_key)`.
 
----
+Seed:
 
-## H. Build Verification
-
-Status: Documented.
-
-- [x] `npm run typecheck` — 0 errors
-- [x] `npm run lint` — 0 errors, 22 pre-existing warnings
-- [x] `npm run test` — 30 pass, 7 pre-existing failures
-- [x] `npm run build` — success
-- [x] `npm run test:simulation` — lists available simulation files
+- [ ] Product Master workspace.
+- [ ] Product item → DocType `product`.
+- [ ] Product Categories item → DocType `product_category`.
+- [ ] Units of Measure item → DocType `unit_of_measure`.
+- [ ] Optional inactive placeholders for Warehouse, Inventory, Purchasing, Reports.
 
 ---
 
-## I. Acceptance Criteria
+# C. Frontend Metadata Workspace Loader
 
-All acceptance criteria met:
+Add files:
 
-- [x] Migration 0020 applies cleanly — applied via Management API
-- [x] Product Master metadata seed passes simulation — verified
-- [x] Existing Product Master screens work — now metadata-driven via DynamicListPage
-- [x] Metadata Prototype works — available as side-by-side
-- [x] No service-role key exposed in frontend
-- [x] No broad generic write API introduced
-- [x] Typecheck, lint, test, build, simulation results documented
-- [x] Warehouse remains deferred — design documented
+- [ ] `src/lib/metadata/workspace-types.ts`
+- [ ] `src/lib/metadata/workspace-api.ts`
+- [ ] `src/hooks/useWorkspaceNavigation.ts`
 
----
+Tasks:
 
-## J. Warehouse Design (Phase 3 Preparation)
-
-Design documented in `docs/METADATA_ENGINE.md`. Key requirements:
-
-1. Six new DocTypes: warehouse, warehouse_zone, warehouse_aisle, warehouse_rack, warehouse_shelf, warehouse_bin
-2. Need CRUD RPCs for each (following product master pattern)
-3. Need permission helper function
-4. Option B recommended: start with six DynamicListPage instances
-5. Warehouse module (`is_active = false`) must be enabled
+- [ ] Load workspaces from `app.erp_workspaces` using `supabase.schema("app")`.
+- [ ] Load workspace items from `app.erp_workspace_items`.
+- [ ] Filter inactive items.
+- [ ] Filter by `required_permission_key` using existing permission checker.
+- [ ] Support item types: `doctype`, `workspace`, `page`, `report`, `external`.
+- [ ] Return a typed navigation tree.
+- [ ] Provide fallback to `ERP_MODULES` only if metadata fails to load.
+- [ ] No service-role usage.
 
 ---
 
-## Critical Fix This Session
+# D. App Shell And Sidebar Refactor
 
-- **Schema bug**: `metadata-api.ts` was querying `app.erp_*` tables without schema qualification. Supabase JS client defaults to `public` schema, so `supabase.from("erp_modules")` was looking for `public.erp_modules` (which doesn't exist). Fixed by:
-  1. Adding `app` to PostgREST `db_schema` via Management API
-  2. Updating `metadata-api.ts` to use `supabase.schema("app").from(...)` 
-  3. Updating `supabase/config.toml` for local development consistency
+Add or update files:
+
+- [ ] `src/components/layout/AppShell.tsx`
+- [ ] `src/components/layout/WorkspaceSidebar.tsx`
+- [ ] `src/components/layout/WorkspaceGroup.tsx`
+- [ ] `src/components/layout/WorkspaceItem.tsx`
+- [ ] `src/components/layout/TopBar.tsx`
+- [ ] `src/components/layout/Breadcrumbs.tsx`
+
+Tasks:
+
+- [ ] Replace flat sidebar with grouped workspace sidebar.
+- [ ] Product Master should expand/collapse and show Products, Product Categories, UOM.
+- [ ] Pending workspaces should appear disabled or hidden based on metadata.
+- [ ] Show active item clearly.
+- [ ] Keep company selector, user email, and logout in compact topbar.
+- [ ] Keep permission gating.
+- [ ] Hide `Metadata Prototype` unless `import.meta.env.DEV` or an explicit debug flag is true.
+
+---
+
+# E. Dynamic Route Renderer
+
+Add file:
+
+- [ ] `src/components/metadata/DynamicRouteRenderer.tsx`
+
+Tasks:
+
+- [ ] Replace `App.tsx` label-based Product/Product Category/UOM branches.
+- [ ] If selected item is `doctype`, render `DynamicListPage` with `target_doctype_key`.
+- [ ] If selected item is `workspace`, render `DynamicWorkspacePage`.
+- [ ] If selected item is unsupported, render compact placeholder.
+- [ ] Keep Company Profile and Users/Roles working safely if they are not converted in this phase.
+- [ ] Keep existing Product Master writes routed through existing safe RPC APIs.
+
+Acceptance for this section:
+
+- [ ] `App.tsx` no longer contains hardcoded branches for `Products`, `Product categories`, and `Units of measure`.
+
+---
+
+# F. Compact Enterprise UI Density
+
+Update existing global CSS and component classes.
+
+Target density:
+
+- [ ] Body font around `13px`.
+- [ ] Sidebar item font around `12px`.
+- [ ] Table cell font around `12px`.
+- [ ] Table row height around `32px`.
+- [ ] Topbar height around `42px`.
+- [ ] Buttons around `30px` high.
+- [ ] Inputs around `30px` high.
+- [ ] Reduce card padding.
+- [ ] Reduce content padding.
+- [ ] Add sticky table headers.
+- [ ] Add compact badges.
+- [ ] App should not feel like 150% zoom.
+
+Suggested tokens:
+
+```css
+:root {
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 15px;
+  --sidebar-width: 220px;
+  --topbar-height: 42px;
+  --table-row-height: 32px;
+  --content-padding: 12px;
+  --card-padding: 12px;
+  --control-height: 30px;
+  --border-radius-sm: 6px;
+}
+```
+
+---
+
+# G. Dynamic List Improvements
+
+Update:
+
+- [ ] `src/components/metadata/DynamicListPage.tsx`
+- [ ] `src/components/metadata/DynamicFieldRenderer.tsx`
+- [ ] `src/components/metadata/LinkField.tsx`
+- [ ] `src/components/metadata/DynamicActionBar.tsx`
+
+Tasks:
+
+- [ ] Remove duplicate hardcoded Status column if metadata list already includes `is_active`.
+- [ ] Add compact toolbar: search, filters, refresh, create, export placeholder.
+- [ ] Add pagination.
+- [ ] Add sort behavior from `sort_json`.
+- [ ] Add compact loading/empty/error states.
+- [ ] Make clickable document column generic from metadata or priority fields.
+- [ ] Support Link metadata with `display_fields` and `display_template`.
+- [ ] Preserve fallback support for old `display_field`.
+
+Example Link options:
+
+```json
+{
+  "link_to": "product_category",
+  "display_fields": ["code", "name"],
+  "display_template": "{code} - {name}"
+}
+```
+
+---
+
+# H. Simulation Test
+
+Add:
+
+- [ ] `tests/simulations/workspace_navigation_flow.sql`
+
+Update:
+
+- [ ] `scripts/run-simulation.cjs`
+
+Simulation must verify:
+
+- [ ] `app.erp_workspaces` exists.
+- [ ] `app.erp_workspace_items` exists.
+- [ ] Product Master workspace exists.
+- [ ] Product Master has three child items.
+- [ ] Each item points to correct DocType.
+- [ ] RLS is enabled on workspace tables.
+- [ ] Anonymous users cannot read workspace metadata.
+- [ ] Authenticated users can read active workspace metadata.
+- [ ] Normal authenticated users cannot insert/update/delete workspace metadata.
+
+---
+
+# I. Verification Commands
+
+Run and document exact output in `progress.md`:
+
+```bash
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+npm run test:simulation
+```
+
+Manual UI verification:
+
+- [ ] Product Master appears as one grouped workspace.
+- [ ] Products, Product Categories, and Units of Measure appear as child items.
+- [ ] Clicking Products opens metadata-driven Product list.
+- [ ] Clicking Product Categories opens metadata-driven Category list.
+- [ ] Clicking Units of Measure opens metadata-driven UOM list.
+- [ ] Metadata Prototype is hidden in production mode.
+- [ ] UI density is compact and no longer oversized.
+- [ ] Duplicate Status column is gone.
+- [ ] Permission-gated actions still work.
+
+---
+
+# J. Out Of Scope
+
+Do not implement these in Phase 2.6:
+
+- Generic document write API.
+- Warehouse CRUD implementation.
+- GRN or Stock Ledger.
+- Workflow transition engine.
+- Naming series generation engine.
+- User-created DocType builder UI.
+
+---
+
+# K. Acceptance Criteria
+
+Phase 2.6 is complete only when:
+
+- [ ] Workspace metadata tables exist and pass simulation.
+- [ ] Sidebar/workspace navigation is metadata-driven.
+- [ ] Product Master is grouped with Product/Category/UOM child items.
+- [ ] `App.tsx` no longer hardcodes Product/Product Category/UOM rendering branches.
+- [ ] Product Master screens still use `DynamicListPage` and existing safe RPC writes.
+- [ ] UI is compact, enterprise-level, and no longer visually oversized.
+- [ ] Verification commands are documented.
+- [ ] Any test failures are marked as pre-existing or newly introduced.
+
+---
+
+# L. CLI-AI Required Final Report
+
+CLI-AI must report and commit the following into `progress.md`:
+
+1. Files inspected.
+2. Files changed.
+3. Migration added.
+4. Workspace metadata seeded.
+5. Frontend navigation changes.
+6. UI density changes.
+7. Simulation results.
+8. Typecheck/lint/test/build results.
+9. Remaining gaps.
+10. Commit hash pushed to `phase-2.5-metadata-engine`.
