@@ -173,6 +173,72 @@ Each insert is sequential to respect FK constraints. If any insert fails, the er
 - At least one field must be in list view
 - No duplicate fieldnames within a DocType
 
+## Phase 2.10: Custom DocType Wizard Hardening
+
+### Purpose
+
+Phase 2.10 hardens the Phase 2.9 wizard by adding:
+- Transaction-safe atomic bundle creation via `erp_create_custom_doctype_bundle` RPC
+- Duplicate key detection (doctype_key, workspace item_key)
+- Permission auto-provisioning (catalog keys + owner/admin role grants)
+- Sidebar refresh without page reload
+- Real UI verification flow
+
+### Architecture Changes
+
+```
+Before (Phase 2.9):
+createCustomDocTypeBundle()
+  └─ 6 sequential Supabase inserts (no transaction)
+
+After (Phase 2.10):
+createCustomDocTypeBundle()
+  └─ supabase.rpc("erp_create_custom_doctype_bundle", { ... })
+       └─ Single PostgreSQL transaction:
+            ├─ Duplicate checks (doctype_key, item_key)
+            ├─ Insert DocType
+            ├─ Insert DocFields
+            ├─ Insert List View
+            ├─ Insert Form Layout
+            ├─ Insert DocType Actions
+            ├─ Provision permission keys in app.permissions (if new)
+            ├─ Insert Workspace Item
+            └─ Grant permissions to owner/admin roles
+```
+
+### Bundle RPC: `erp_create_custom_doctype_bundle`
+
+- Schema: `public`
+- Security: `SECURITY DEFINER` (bypasses RLS for metadata table writes)
+- Parameters: All 6 metadata sets + `p_company_id` for permission grants
+- Returns: `jsonb` with `ok`, `doctype_key`, `label`, `permissions_created`, `grants_added`
+- On error: Returns `{ok: false, error: "message"}` — transaction auto-rolls back
+
+### Permission Auto-Provisioning
+
+When the wizard creates a DocType, the bundle RPC:
+1. Checks if each `permission_key` exists in `app.permissions`
+2. If not, inserts it with `module_key` = the DocType's module and `sort_order = 999`
+3. Finds `owner` and `admin` roles for the current company
+4. Grants each new permission key to those roles via `app.company_role_permissions`
+5. Does NOT grant to other roles (warehouse_manager, stock_operator, viewer, auditor)
+
+### Sidebar Refresh
+
+- `useWorkspaceNavigation()` now exposes a `refresh()` function
+- `App.tsx` passes it through `DynamicRouteRenderer` → `MetadataStudioRouter` → `CustomDocTypeWizard`
+- Wizard success screen shows a "Refresh Sidebar" button and an "Open Created DocType" button
+- "Open Created DocType" navigates directly to the new DocType's list view
+
+### Duplicate Validation
+
+| Check | Where | Error Message |
+|-------|-------|---------------|
+| doctype_key exists | Client-side (API) + RPC | "DocType key already exists" |
+| workspace item_key exists | Client-side (API) + RPC | "Workspace item key already exists" |
+| Duplicate fieldnames | Client-side + RPC | Field-level error in wizard |
+| Uppercase keys | Client-side (validation) | "Uppercase characters are not allowed" |
+
 ## Phase 2.6: Workspace Navigation Layer
 
 ### New Metadata Tables

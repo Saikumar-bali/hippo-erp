@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 import { useAuth } from "./context/AuthContext";
@@ -17,7 +17,7 @@ export default function App() {
   const navigate = useNavigate();
   const [membershipToastShown, setMembershipToastShown] = useState(false);
   const permissions = usePermissions();
-  const { tree, loading: navLoading } = useWorkspaceNavigation();
+  const { tree, loading: navLoading, refresh: refreshSidebar } = useWorkspaceNavigation();
 
   const doLogout = async () => {
     setSigningOut(true);
@@ -75,6 +75,16 @@ export default function App() {
     setSelectedItem(null);
   };
 
+  const handleNavigateToDocType = useCallback((doctypeKey: string) => {
+    for (const ws of tree) {
+      const found = ws.items.find((item) => item.item_key === doctypeKey);
+      if (found) {
+        setSelectedItem(found);
+        return;
+      }
+    }
+  }, [tree]);
+
   const tenantId = localStorage.getItem("tenant_id") ?? "";
 
   return (
@@ -101,6 +111,8 @@ export default function App() {
             selectedItem={selectedItem}
             tenantId={tenantId}
             permissions={permissions}
+            onRefreshSidebar={refreshSidebar}
+            onNavigateToDocType={handleNavigateToDocType}
           />
         }
       />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getWorkspaceTree } from "../lib/metadata/workspace-api";
 import { ERP_MODULES } from "../lib/erp-modules";
 import type { WorkspaceTreeItem } from "../lib/metadata/workspace-types";
@@ -12,29 +12,26 @@ export function useWorkspaceNavigation() {
   const [error, setError] = useState<string | null>(null);
   const permissions = usePermissions();
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setState("loading");
-      try {
-        const result = await getWorkspaceTree();
-        if (cancelled) return;
-        if (result.length > 0) {
-          setTree(result);
-          setState("loaded");
-        } else {
-          setState("fallback");
-        }
-      } catch (err: unknown) {
-        if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Failed to load workspaces";
-        setError(msg);
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const result = await getWorkspaceTree();
+      if (result.length > 0) {
+        setTree(result);
+        setState("loaded");
+      } else {
         setState("fallback");
       }
-    };
-    void load();
-    return () => { cancelled = true; };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load workspaces";
+      setError(msg);
+      setState("fallback");
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const fallbackTree = useMemo<WorkspaceTreeItem[]>(() => {
     const workspaceMap = new Map<string, WorkspaceTreeItem>();
@@ -115,5 +112,6 @@ export function useWorkspaceNavigation() {
     state,
     error,
     loading: state === "loading" || permissions.loading,
+    refresh: load,
   };
 }

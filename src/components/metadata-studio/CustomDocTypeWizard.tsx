@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { loadModuleKeys, loadWorkspaceKeys, createCustomDocTypeBundle } from "../../lib/metadata/metadata-studio-api";
+import {
+  loadModuleKeys,
+  loadWorkspaceKeys,
+  loadExistingPermissionKeys,
+  checkDuplicateDoctypeKey,
+  checkDuplicateWorkspaceItem,
+  createCustomDocTypeBundle,
+} from "../../lib/metadata/metadata-studio-api";
 
 type WizardField = {
   fieldname: string;
@@ -82,9 +89,11 @@ function getInitialState(): WizardState {
 type Props = {
   onClose: () => void;
   onCreated?: () => void;
+  onSidebarRefresh?: () => void;
+  onDocTypeCreated?: (doctypeKey: string) => void;
 };
 
-export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
+export function CustomDocTypeWizard({ onClose, onCreated, onSidebarRefresh, onDocTypeCreated }: Props) {
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(getInitialState);
   const [modules, setModules] = useState<{ value: string; label: string }[]>([]);
@@ -93,11 +102,33 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
   const [created, setCreated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [duplicateDocTypeKey, setDuplicateDocTypeKey] = useState(false);
+  const [duplicateWorkspaceItem, setDuplicateWorkspaceItem] = useState(false);
+  const [existingPermissionKeys, setExistingPermissionKeys] = useState<Set<string>>(new Set());
+  const [bundleResult, setBundleResult] = useState<{ permissions_created: number; grants_added: number } | null>(null);
+  const [sidebarRefreshed, setSidebarRefreshed] = useState(false);
 
   useEffect(() => {
     loadModuleKeys().then(setModules).catch(() => {});
     loadWorkspaceKeys().then(setWorkspaces).catch(() => {});
+    loadExistingPermissionKeys()
+      .then((keys) => setExistingPermissionKeys(new Set(keys)))
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!state.doctype_key) { setDuplicateDocTypeKey(false); return; }
+    let cancelled = false;
+    checkDuplicateDoctypeKey(state.doctype_key).then((dup) => { if (!cancelled) setDuplicateDocTypeKey(dup); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [state.doctype_key]);
+
+  useEffect(() => {
+    if (!state.workspace_key || !state.doctype_key) { setDuplicateWorkspaceItem(false); return; }
+    let cancelled = false;
+    checkDuplicateWorkspaceItem(state.workspace_key, state.doctype_key).then((dup) => { if (!cancelled) setDuplicateWorkspaceItem(dup); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [state.workspace_key, state.doctype_key]);
 
   const set = useCallback(<K extends keyof WizardState>(key: K, val: WizardState[K]) => {
     setState((prev) => ({ ...prev, [key]: val }));
@@ -153,6 +184,10 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
       if (!state.doctype_key.trim()) newErrors.doctype_key = "DocType key is required";
       else if (!/^[a-z][a-z0-9_]*$/.test(state.doctype_key))
         newErrors.doctype_key = "Must be lowercase snake_case starting with a letter";
+      else if (state.doctype_key !== state.doctype_key.toLowerCase())
+        newErrors.doctype_key = "Uppercase characters are not allowed";
+      else if (duplicateDocTypeKey)
+        newErrors.doctype_key = "This DocType key already exists";
       if (!state.module_key) newErrors.module_key = "Module is required";
       if (state.storage_strategy !== "generic_json")
         newErrors.storage_strategy = "Custom DocTypes must use generic_json";
@@ -191,6 +226,8 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
 
     if (stepNum === 5) {
       if (!state.workspace_key) newErrors.workspace_key = "Workspace is required";
+      else if (duplicateWorkspaceItem)
+        newErrors.workspace_key = "A workspace item with this key already exists in this workspace";
       if (!state.workspace_item_label.trim())
         newErrors.workspace_item_label = "Workspace item label is required";
     }
@@ -209,11 +246,13 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
 
   async function handleCreate() {
     if (!validateStep(6)) return;
+    if (duplicateDocTypeKey) { setError("DocType key already exists — choose a different key"); return; }
+    if (duplicateWorkspaceItem) { setError("Workspace item key already exists — choose a different key"); return; }
     setCreating(true);
     setError(null);
 
     try {
-      await createCustomDocTypeBundle({
+      const result = await createCustomDocTypeBundle({
         doctype_key: state.doctype_key,
         module_key: state.module_key,
         label: state.label,
@@ -227,12 +266,30 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
         workspace_item_label: state.workspace_item_label,
       });
 
+      setBundleResult({
+        permissions_created: result.permissions_created,
+        grants_added: result.grants_added,
+      });
       setCreated(true);
       onCreated?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Creation failed");
     } finally {
       setCreating(false);
+    }
+  }
+
+  function handleOpenCreated() {
+    if (onDocTypeCreated) {
+      onDocTypeCreated(state.doctype_key);
+    }
+    onClose();
+  }
+
+  async function handleRefreshSidebar() {
+    if (onSidebarRefresh) {
+      await onSidebarRefresh();
+      setSidebarRefreshed(true);
     }
   }
 
@@ -264,21 +321,69 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
   };
 
   if (created) {
+    const checklist = [
+      { label: "DocType created", done: true },
+      { label: "Fields created", done: true },
+      { label: "List View created", done: true },
+      { label: "Form Layout created", done: true },
+      { label: "Actions created", done: true },
+      { label: "Permissions created/granted", done: (bundleResult?.permissions_created ?? 0) > 0 || (bundleResult?.grants_added ?? 0) > 0 },
+      { label: "Workspace Item created", done: true },
+      { label: "Ready to create records", done: true },
+    ];
+
     return (
       <div className="card" style={{ padding: "var(--card-padding)", maxWidth: "600px", margin: "0 auto" }}>
         <div className="form-success" style={{ marginBottom: "12px" }}>
           Custom DocType "<strong>{state.label}</strong>" created successfully.
+          {bundleResult && (
+            <span style={{ fontSize: "var(--font-size-xs)", display: "block", marginTop: "4px" }}>
+              Permissions created: {bundleResult.permissions_created} | Grants added to owner/admin: {bundleResult.grants_added}
+            </span>
+          )}
         </div>
-        <p style={{ fontSize: "var(--font-size-sm)", color: "var(--muted)", marginBottom: "8px" }}>
-          It will appear under the selected workspace. You may need to refresh the page.
-        </p>
-        <p style={{ fontSize: "var(--font-size-sm)", color: "var(--muted)", marginBottom: "12px" }}>
-          <strong>Next action:</strong> Open the sidebar item and create the first record.
-        </p>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="btn" onClick={onClose} style={btnStyle}>
-            Close
-          </button>
+
+        <div style={{ marginBottom: "12px" }}>
+          <p style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "6px" }}>Completion Checklist:</p>
+          {checklist.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "var(--font-size-sm)", marginBottom: "3px" }}>
+              <span style={{ color: item.done ? "var(--primary, #0f5f63)" : "var(--muted)" }}>
+                {item.done ? "✓" : "○"}
+              </span>
+              <span style={{ color: item.done ? "var(--fg)" : "var(--muted)" }}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button className="btn" onClick={handleOpenCreated} style={btnStyle}>
+              Open Created DocType
+            </button>
+            <button className="btn" onClick={onClose} style={btnStyle}>
+              Close
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+              className="logout"
+              onClick={handleRefreshSidebar}
+              style={{ ...btnStyle, fontSize: "var(--font-size-xs)" }}
+              disabled={!onSidebarRefresh}
+            >
+              {sidebarRefreshed ? "✓ Sidebar Refreshed" : "Refresh Sidebar"}
+            </button>
+            {sidebarRefreshed && (
+              <span style={{ fontSize: "var(--font-size-xs)", color: "var(--primary)" }}>
+                Sidebar updated — open the workspace to find your new DocType
+              </span>
+            )}
+            {!sidebarRefreshed && (
+              <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+                Or refresh the page to see it in the sidebar
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -635,37 +740,51 @@ export function CustomDocTypeWizard({ onClose, onCreated }: Props) {
     );
   };
 
-  const renderStep4 = () => (
-    <div>
-      <p style={{ fontSize: "var(--font-size-sm)", marginBottom: "8px" }}>
-        Map each action to a permission key. For testing, use existing keys like
-        <code> view_products</code>, <code> create_product</code>, <code> update_product</code>, <code> delete_product</code>.
-        <br />
-        <span style={{ color: "var(--danger)", fontSize: "var(--font-size-xs)" }}>
-          Warning: Real permissions should be created later via Roles & Permissions.
-        </span>
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {state.actions.map((a, i) => (
-          <div key={a.action_key} style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "8px", alignItems: "center" }}>
-            <span style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, textTransform: "capitalize" }}>
-              {a.action_key}
-            </span>
-            <label style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1 }}>
-              <input
-                type="text"
-                value={a.permission_key}
-                onChange={(e) => updateAction(i, e.target.value)}
-                style={{ ...inputStyle, fontFamily: "monospace" }}
-                placeholder={`e.g. view_${state.doctype_key || "items"}`}
-              />
-              {renderFieldError(`action_${i}`)}
-            </label>
-          </div>
-        ))}
+  const renderStep4 = () => {
+    const permStatus = (key: string) => {
+      if (!key) return "";
+      return existingPermissionKeys.has(key)
+        ? " (exists in catalog — no new permission created)"
+        : " (new — will be created and granted to owner/admin)";
+    };
+
+    return (
+      <div>
+        <p style={{ fontSize: "var(--font-size-sm)", marginBottom: "8px" }}>
+          Map each action to a permission key. New keys will be auto-created in the permission
+          catalog and granted to <strong>owner</strong> and <strong>admin</strong> roles.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {state.actions.map((a, i) => (
+            <div key={a.action_key} style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "8px", alignItems: "center" }}>
+              <span style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, textTransform: "capitalize" }}>
+                {a.action_key}
+              </span>
+              <label style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1 }}>
+                <input
+                  type="text"
+                  value={a.permission_key}
+                  onChange={(e) => updateAction(i, e.target.value)}
+                  style={{ ...inputStyle, fontFamily: "monospace" }}
+                  placeholder={`e.g. view_${state.doctype_key || "items"}`}
+                />
+                {a.permission_key && (
+                  <span style={{ fontSize: "10px", color: existingPermissionKeys.has(a.permission_key) ? "var(--muted)" : "var(--primary)" }}>
+                    {permStatus(a.permission_key)}
+                  </span>
+                )}
+                {renderFieldError(`action_${i}`)}
+              </label>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", marginTop: "8px" }}>
+          Permissions are granted to owner and admin roles only. Other roles must be updated
+          manually via Roles & Permissions.
+        </p>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep5 = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

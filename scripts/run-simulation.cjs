@@ -11,6 +11,7 @@ const files = [
   { path: path.join(process.cwd(), "tests", "simulations", "metadata_studio_foundation_flow.sql"), label: "Metadata Studio foundation (Phase 2.7)" },
   { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_storage_flow.sql"), label: "Custom DocType storage (Phase 2.8)" },
   { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_wizard_flow.sql"), label: "Custom DocType wizard flow (Phase 2.9)" },
+  { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_wizard_hardening_flow.sql"), label: "Custom DocType wizard hardening (Phase 2.10)" },
 ];
 
 let missing = false;

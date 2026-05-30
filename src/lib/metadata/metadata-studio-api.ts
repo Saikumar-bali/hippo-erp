@@ -288,31 +288,53 @@ export type WizardBundleInput = {
   workspace_item_label: string;
 };
 
-// ── createCustomDocTypeBundle ─────────────────────────────────────────────────
+// ── Duplicate checks ──────────────────────────────────────────────────────────
+
+export async function checkDuplicateDoctypeKey(doctypeKey: string): Promise<boolean> {
+  const { data, error } = await meta()
+    .from("erp_doctypes")
+    .select("doctype_key")
+    .eq("doctype_key", doctypeKey)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data !== null;
+}
+
+export async function checkDuplicateWorkspaceItem(workspaceKey: string, itemKey: string): Promise<boolean> {
+  const { data, error } = await meta()
+    .from("erp_workspace_items")
+    .select("id")
+    .eq("workspace_key", workspaceKey)
+    .eq("item_key", itemKey)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data !== null;
+}
+
+// ── Permission key catalog lookup ──────────────────────────────────────────────
+
+export async function loadExistingPermissionKeys(): Promise<string[]> {
+  const { data, error } = await meta()
+    .from("permissions")
+    .select("permission_key");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => r.permission_key as string);
+}
+
+// ── createCustomDocTypeBundle (via RPC) ────────────────────────────────────────
 
 export async function createCustomDocTypeBundle(input: WizardBundleInput) {
-  const m = meta();
+  const companyId = localStorage.getItem("tenant_id");
+  if (!companyId) throw new Error("No company selected — cannot create DocType");
 
-  const doctypeResult = await m.from("erp_doctypes").insert({
-    doctype_key: input.doctype_key,
-    module_key: input.module_key,
-    label: input.label,
-    description: input.description,
-    schema_name: "app",
-    table_name: "erp_documents",
-    route: input.route,
-    storage_strategy: input.storage_strategy,
-    is_company_scoped: input.is_company_scoped,
-    is_submittable: false,
-    is_child_table: false,
-    is_single: false,
-    is_active: true,
-  }).select().single();
-  if (doctypeResult.error) throw new Error(`DocType: ${doctypeResult.error.message}`);
-
-  for (const f of input.fields) {
-    const r = await m.from("erp_docfields").insert({
-      doctype_key: input.doctype_key,
+  const { data, error } = await supabase.rpc("erp_create_custom_doctype_bundle", {
+    p_doctype_key: input.doctype_key,
+    p_module_key: input.module_key,
+    p_label: input.label,
+    p_description: input.description ?? "",
+    p_route: input.route ?? "",
+    p_is_company_scoped: input.is_company_scoped,
+    p_fields: input.fields.map((f) => ({
       fieldname: f.fieldname,
       label: f.label,
       fieldtype: f.fieldtype,
@@ -320,65 +342,27 @@ export async function createCustomDocTypeBundle(input: WizardBundleInput) {
       in_list_view: f.in_list_view,
       in_standard_filter: f.in_standard_filter,
       sort_order: f.sort_order,
-      is_hidden: false,
-      is_readonly: false,
-      is_unique: false,
-    }).select().single();
-    if (r.error) throw new Error(`Field ${f.fieldname}: ${r.error.message}`);
-  }
-
-  const listViewColumns = input.fields
-    .filter((f) => f.in_list_view)
-    .map((f) => ({ fieldname: f.fieldname, label: f.label }));
-  const searchFields = input.fields
-    .filter((f) => f.fieldtype === "Data" || f.fieldtype === "Text")
-    .map((f) => f.fieldname);
-  const sortField = listViewColumns.length > 0
-    ? { fieldname: listViewColumns[0].fieldname, direction: "asc" as const }
-    : null;
-
-  const lvResult = await m.from("erp_list_views").insert({
-    doctype_key: input.doctype_key,
-    view_key: `${input.doctype_key}_default`,
-    label: `${input.label} List`,
-    columns_json: listViewColumns,
-    search_fields_json: searchFields,
-    sort_json: sortField ?? {},
-    is_default: true,
-  }).select().single();
-  if (lvResult.error) throw new Error(`List view: ${lvResult.error.message}`);
-
-  const sectionFields = input.fields.map((f) => f.fieldname);
-  const flResult = await m.from("erp_form_layouts").insert({
-    doctype_key: input.doctype_key,
-    layout_key: `${input.doctype_key}_default`,
-    label: `${input.label} Form`,
-    sections_json: [{ section: "Basic Info", columns: 1, fields: sectionFields }],
-    is_default: true,
-  }).select().single();
-  if (flResult.error) throw new Error(`Form layout: ${flResult.error.message}`);
-
-  for (const a of input.actions) {
-    const r = await m.from("erp_doctype_actions").insert({
-      doctype_key: input.doctype_key,
+    })),
+    p_actions: input.actions.map((a) => ({
       action_key: a.action_key,
       permission_key: a.permission_key,
-    }).select().single();
-    if (r.error) throw new Error(`Action ${a.action_key}: ${r.error.message}`);
-  }
+    })),
+    p_workspace_key: input.workspace_key,
+    p_workspace_item_label: input.workspace_item_label,
+    p_company_id: companyId,
+  });
 
-  const wsResult = await m.from("erp_workspace_items").insert({
-    workspace_key: input.workspace_key,
-    item_key: input.doctype_key,
-    label: input.workspace_item_label,
-    item_type: "doctype",
-    target: input.doctype_key,
-    required_permission_key: input.actions.find((a) => a.action_key === "read")?.permission_key ?? null,
-    is_active: true,
-  }).select().single();
-  if (wsResult.error) throw new Error(`Workspace item: ${wsResult.error.message}`);
+  if (error) throw new Error(error.message);
 
-  return { doctype_key: input.doctype_key, label: input.label };
+  const result = data as Record<string, unknown>;
+  if (!result.ok) throw new Error((result.error as string) ?? "Bundle creation failed");
+
+  return {
+    doctype_key: input.doctype_key,
+    label: input.label,
+    permissions_created: result.permissions_created as number ?? 0,
+    grants_added: result.grants_added as number ?? 0,
+  };
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────

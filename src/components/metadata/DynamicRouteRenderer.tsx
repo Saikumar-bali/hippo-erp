@@ -20,6 +20,8 @@ type Props = {
   selectedItem: WorkspaceItemMeta | null;
   tenantId: string;
   permissions: PermissionChecker;
+  onRefreshSidebar?: () => Promise<void>;
+  onNavigateToDocType?: (doctypeKey: string) => void;
 };
 
 const can = (fn: (key: string) => boolean) => (required: string | readonly string[]) => {
@@ -69,7 +71,11 @@ function DocTypeListPage({
   );
 }
 
-function MetadataStudioRouter({ itemKey }: { itemKey: string }) {
+function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }: {
+  itemKey: string;
+  onRefreshSidebar?: () => Promise<void>;
+  onNavigateToDocType?: (doctypeKey: string) => void;
+}) {
   const [subPage, setSubPage] = useState<string | null>(itemKey === "metadata_studio" ? null : itemKey);
 
   if (!subPage || subPage === "metadata_studio") {
@@ -78,7 +84,13 @@ function MetadataStudioRouter({ itemKey }: { itemKey: string }) {
 
   switch (subPage) {
     case "metadata_studio_wizard":
-      return <CustomDocTypeWizard onClose={() => setSubPage("metadata_studio")} />;
+      return (
+        <CustomDocTypeWizard
+          onClose={() => setSubPage("metadata_studio")}
+          onSidebarRefresh={onRefreshSidebar}
+          onDocTypeCreated={onNavigateToDocType}
+        />
+      );
     case "metadata_studio_doctypes":
       return <DocTypeList />;
     case "metadata_studio_docfields":
@@ -102,7 +114,7 @@ function MetadataStudioRouter({ itemKey }: { itemKey: string }) {
   }
 }
 
-export function DynamicRouteRenderer({ selectedItem, tenantId, permissions }: Props) {
+export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRefreshSidebar, onNavigateToDocType }: Props) {
   if (!selectedItem) {
     return (
       <div className="card state-info">
@@ -166,7 +178,13 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions }: Pr
       if (itemKey === "metadata_studio") {
         return <MetadataStudioHome onNavigate={() => {}} />;
       }
-      return <MetadataStudioRouter itemKey={itemKey} />;
+      return (
+        <MetadataStudioRouter
+          itemKey={itemKey}
+          onRefreshSidebar={onRefreshSidebar}
+          onNavigateToDocType={onNavigateToDocType}
+        />
+      );
     }
 
     return (
