@@ -11,6 +11,7 @@ type Props = {
   onSaved: () => void;
   onCancel: () => void;
   action: "create" | "update";
+  initialRecord?: Record<string, unknown> | null;
 };
 
 export function DynamicFormPage({
@@ -20,10 +21,11 @@ export function DynamicFormPage({
   onSaved,
   onCancel,
   action,
+  initialRecord,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
-  const [record, setRecord] = useState<Record<string, unknown> | null>(null);
-  const [dataLoading, setDataLoading] = useState(false);
+  const [record, setRecord] = useState<Record<string, unknown> | null>(initialRecord ?? null);
+  const [dataLoading, setDataLoading] = useState(action === "update" && recordId && !initialRecord);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [linkOptions, setLinkOptions] = useState<Record<string, Array<{ id: string; label: string }>>>({});

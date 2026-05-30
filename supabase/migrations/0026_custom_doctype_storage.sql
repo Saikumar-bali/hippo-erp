@@ -217,7 +217,7 @@ begin
     return jsonb_build_object('ok', false, 'error', 'Document not found');
   end if;
 
-  return jsonb_build_object('ok', true, 'data', row_to_jsonb(v_doc));
+  return jsonb_build_object('ok', true, 'data', to_jsonb(v_doc));
 end;
 $$;
 

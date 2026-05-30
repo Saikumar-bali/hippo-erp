@@ -43,7 +43,11 @@ export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
         p_company_id: tenantId,
       });
       if (error) throw new Error(error.message);
-      return handleRpcResponse(data);
+      const rows = handleRpcResponse(data);
+      return rows.map((r) => ({
+        ...(r.data as Record<string, unknown>),
+        ...r,
+      }));
     },
 
     get: async (id: string, tenantId?: string) => {
@@ -53,7 +57,11 @@ export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
         p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
       });
       if (error) throw new Error(error.message);
-      return handleSingleRpcResponse(data);
+      const r = handleSingleRpcResponse(data);
+      return {
+        ...(r.data as Record<string, unknown>),
+        ...r,
+      };
     },
 
     create: async (payload: Record<string, unknown>) => {

@@ -51,6 +51,9 @@ export function DynamicListPage({
       setError("");
       setRecords([]);
       setDataLoading(true);
+      setSelectedId(null);
+      setCreating(false);
+      setEditingId(null);
 
       const existingApi = getDocTypeApi(doctypeKey);
       if (existingApi) {
@@ -217,7 +220,7 @@ export function DynamicListPage({
   const handleAction = (actionKey: string) => {
     if (actionKey === "create") setCreating(true);
     if (actionKey === "deactivate" && selectedId) {
-      api?.deactivate?.(selectedId)
+      api?.deactivate?.(selectedId, tenantId)
         .then(() => { toast.success("Deactivated"); setSelectedId(null); void loadAll(); })
         .catch((err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to deactivate"));
     }
@@ -265,6 +268,7 @@ export function DynamicListPage({
         doctypeKey={doctypeKey}
         tenantId={tenantId}
         recordId={editingId}
+        initialRecord={selectedRecord}
         onSaved={() => { setEditingId(null); setSelectedId(null); void loadAll(); }}
         onCancel={() => { setEditingId(null); }}
         action="update"
@@ -280,11 +284,12 @@ export function DynamicListPage({
         tenantId={tenantId}
         canUpdate={canUpdate}
         canDelete={canDelete}
+        initialRecord={selectedRecord}
         onEdit={() => setEditingId(selectedId)}
         onClose={() => setSelectedId(null)}
         onDeactivate={() => handleAction("deactivate")}
         onReactivate={() => {
-          api?.reactivate?.(selectedId!)
+          api?.reactivate?.(selectedId!, tenantId)
             .then(() => { toast.success("Reactivated"); setSelectedId(null); void loadAll(); })
             .catch((err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to reactivate"));
         }}
@@ -366,14 +371,14 @@ export function DynamicListPage({
                         )}
                         {canDelete && (record.is_active as boolean) && (
                           <button className="logout logout--danger" onClick={() => {
-                            api?.deactivate?.(record.id as string)
+                            api?.deactivate?.(record.id as string, tenantId)
                               .then(() => { toast.success("Deactivated"); void loadAll(); })
                               .catch((err: unknown) => toast.error(err instanceof Error ? err.message : "Failed"));
                           }}>Deactivate</button>
                         )}
                         {canUpdate && !(record.is_active as boolean) && (
                           <button className="logout" onClick={() => {
-                            api?.reactivate?.(record.id as string)
+                            api?.reactivate?.(record.id as string, tenantId)
                               .then(() => { toast.success("Reactivated"); void loadAll(); })
                               .catch((err: unknown) => toast.error(err instanceof Error ? err.message : "Failed"));
                           }}>Reactivate</button>

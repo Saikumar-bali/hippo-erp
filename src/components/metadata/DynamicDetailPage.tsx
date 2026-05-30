@@ -17,6 +17,7 @@ type Props = {
   onReactivate?: () => void;
   onBack?: () => void;
   tenantId?: string;
+  initialRecord?: Record<string, unknown> | null;
 };
 
 export function DynamicDetailPage({
@@ -30,10 +31,11 @@ export function DynamicDetailPage({
   onReactivate,
   onBack,
   tenantId,
+  initialRecord,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
-  const [record, setRecord] = useState<Record<string, unknown> | null>(null);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [record, setRecord] = useState<Record<string, unknown> | null>(initialRecord ?? null);
+  const [dataLoading, setDataLoading] = useState(!initialRecord);
   const [linkLabels, setLinkLabels] = useState<Record<string, string>>({});
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
@@ -61,7 +63,7 @@ export function DynamicDetailPage({
       })
       .finally(() => { if (!cancelled) setDataLoading(false); });
     return () => { cancelled = true; };
-  }, [api, recordId]);
+  }, [api, recordId, apiReady, tenantId]);
 
   useEffect(() => {
     if (!api || !record || !config) return;
