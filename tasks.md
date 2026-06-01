@@ -1,209 +1,256 @@
-# Phase 4.6 Tasks: Implement GRN Cancellation / Reversal
+# Phase 4.7 Tasks: Metadata Studio Manual App Builder + Permission Repair
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Implement safe cancellation for posted GRNs using reversal inventory movements. Do not start Purchase Orders, transfers, adjustments, reservations, valuation, or workflow yet.
+Goal: Make it easy to complete a manually-created menu item from the browser without guessing metadata rows. Users should be able to create a DocType/menu item, diagnose what is missing, repair permissions, and understand whether the screen should be generic metadata-driven or custom transactional UI.
 
 ## Why This Phase Exists
 
-Phase 4.5 completed the cancellation/reversal architecture. Now implement the backend and minimal UI.
+The user created a `purchase_invoice` menu item manually under Purchasing and hit permission errors. This is not just user error; it exposes a real Developer Side UX gap.
 
-A posted GRN must never be edited or deleted to correct mistakes. Cancellation must:
+Today, a working manual DocType requires many separate metadata pieces:
 
-- create reversal inventory movement rows
-- leave original movement rows unchanged
-- decrement current inventory transactionally
-- block cancellation if stock was already consumed
-- require a reason and permission
-- make cancelled GRNs read-only
+1. DocType
+2. DocFields
+3. List View
+4. Form Layout
+5. DocType Actions
+6. Permission catalog keys
+7. Role/company grants
+8. Workspace Item
+9. Correct storage strategy
+10. Correct route/API type
+
+If any one piece is missing, the page may appear in the menu but fail with permission errors or incomplete rendering.
+
+Phase 4.7 should add a guided repair/checklist experience so users do not have to debug raw metadata manually.
 
 ---
 
 # A. Review And Docs
 
-- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-5-cancellation-architecture.md`
-- [ ] Update `progress.md` after implementation
-- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-6-grn-cancellation-reversal.md`
+- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-6-cancellation.md`
+- [ ] Update `docs/ai-runs/2026-06-01_phase-4-6-grn-cancellation-reversal.md` with final commit hash `c2aa2ee4ce641cc58702bb3dc0b7e63ffb51ef44`
+- [ ] Update `progress.md` with final Phase 4.6 commit hash
+- [ ] Create `docs/PHASE_4_7_MANUAL_APP_BUILDER_PERMISSION_REPAIR.md`
+- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-7-manual-app-builder-permission-repair.md`
 
 ---
 
-# B. Migration: Cancellation / Reversal
+# B. Build A DocType Completion Checklist
 
-Create migration:
+Create a component:
 
-- [ ] `supabase/migrations/0038_grn_cancellation_reversal.sql`
+- [ ] `src/components/metadata-studio/DocTypeCompletionChecklist.tsx`
 
-Migration must include:
+The checklist must accept a `doctype_key` and show:
 
-## B1. Table changes
+- [ ] DocType exists
+- [ ] Storage strategy set (`generic_json` or `physical_rpc`)
+- [ ] At least one visible DocField exists
+- [ ] At least one required/title field exists
+- [ ] List View exists and has valid `columns_json`
+- [ ] Form Layout exists and includes fields
+- [ ] DocType Actions exist for read/create/update/deactivate
+- [ ] Permission keys exist in permission catalog
+- [ ] Permission grants exist for owner/admin
+- [ ] Workspace Item exists
+- [ ] Workspace Item is active
+- [ ] Workspace Item target matches `doctype_key`
+- [ ] Route/API can resolve
 
-Add to `wh.grns`:
+Show each item as:
 
-- [ ] `cancelled_by uuid null`
-- [ ] `cancelled_at timestamptz null`
-- [ ] `cancel_reason text null`
+```text
+PASS / WARNING / ERROR
+```
 
-Add to `wh.inventory_movements`:
-
-- [ ] `is_reversal boolean not null default false`
-- [ ] `reversal_of_movement_id uuid null references wh.inventory_movements(id)`
-
-Do not delete or mutate existing movement rows.
-
-## B2. Permission
-
-Seed permission:
-
-- [ ] `cancel_grn`
-
-Grant default access to:
-
-- [ ] owner
-- [ ] admin
-- [ ] warehouse_manager, if this role exists
-
-Do not grant by default to:
-
-- [ ] stock_operator
-- [ ] viewer
-- [ ] auditor
-
-## B3. RPC
-
-Implement:
-
-- [ ] `wh_cancel_grn(p_grn_id uuid, p_reason text)`
-
-Requirements:
-
-- [ ] SECURITY DEFINER
-- [ ] validate GRN exists
-- [ ] validate status is `posted`
-- [ ] validate reason is not empty
-- [ ] validate user has `cancel_grn`
-- [ ] lock `wh.grns` row with `FOR UPDATE`
-- [ ] lock relevant `wh.current_inventory` rows with `FOR UPDATE`
-- [ ] find original `GRN_RECEIPT` movements for each accepted line
-- [ ] handle missing original movement as error
-- [ ] handle duplicate original movement as error or deterministic safe behavior
-- [ ] ensure `on_hand_qty >= accepted_qty` and `available_qty >= accepted_qty`
-- [ ] insert `REVERSAL` movement rows with negative qty
-- [ ] set `is_reversal = true`
-- [ ] set `reversal_of_movement_id` to original movement id
-- [ ] decrement `current_inventory.on_hand_qty` and `available_qty`
-- [ ] update `last_movement_at`
-- [ ] deactivate batches created solely by this GRN
-- [ ] update GRN status to `cancelled`
-- [ ] set `cancelled_by`, `cancelled_at`, `cancel_reason`
-- [ ] block duplicate cancellation
-- [ ] return `{ ok: true, data: { grn_id, reversals_created } }`
-- [ ] return friendly structured errors
+Include a short fix message for each failed item.
 
 ---
 
-# C. API Wrapper
+# C. Add Repair Actions
+
+Where safe, add one-click repair buttons:
+
+- [ ] Create missing default actions
+- [ ] Create missing permissions
+- [ ] Grant permissions to owner/admin
+- [ ] Create default list view from fields marked `in_list_view`
+- [ ] Create default form layout from visible fields
+- [ ] Activate workspace item
+- [ ] Fix workspace item target to match DocType
+
+Do not silently create broad permissions for normal users.
+
+Repair actions must be explicit and show what will change before applying.
+
+---
+
+# D. Add Completion Flow To Metadata Studio
 
 Update:
 
-- [ ] `src/lib/grn-api.ts`
+- [ ] `src/components/metadata-studio/MetadataStudioHome.tsx`
+- [ ] `src/components/metadata-studio/DocTypeList.tsx` or relevant DocType management component
 
 Add:
 
-- [ ] `cancelGrn(grnId: string, reason: string)`
-
-Ensure:
-
-- [ ] returns typed result
-- [ ] surfaces friendly backend errors
-- [ ] does not use generic JSON CRUD
+- [ ] `Check / Repair DocType` action
+- [ ] selector to choose a DocType
+- [ ] show checklist and repair actions
+- [ ] explain: “Menu item visible does not mean the DocType is complete.”
 
 ---
 
-# D. UI: Minimal Cancellation
+# E. Purchase Invoice Manual Example Guide
+
+Create a user-facing doc:
+
+- [ ] `docs/MANUAL_DOCTYPE_CREATION_GUIDE.md`
+
+Include a full browser form-filling example for a simple `Purchase Invoice` as a **generic_json demo**, not real accounting ledger.
+
+Important warning:
+
+- [ ] A real Purchase Invoice is a transaction document and should eventually use explicit RPCs.
+- [ ] The generic_json Purchase Invoice demo is only for learning/manual app creation.
+
+Example metadata:
+
+## DocType
+
+- Label: `Purchase Invoice`
+- Key: `purchase_invoice`
+- Module: `purchasing`
+- Storage Strategy: `generic_json`
+- Company Scoped: true
+
+## Fields
+
+- `invoice_number` Data required list/filter
+- `supplier_name` Data required list/filter
+- `invoice_date` Date required list/filter
+- `due_date` Date
+- `total_amount` Float required list
+- `status` Select list/filter with Draft, Submitted, Cancelled
+- `notes` Text
+- `is_active` Check list/filter default true
+
+## List View columns
+
+- Invoice Number
+- Supplier Name
+- Invoice Date
+- Total Amount
+- Status
+- Active
+
+## Actions
+
+- read → `view_purchase_invoice`
+- create → `create_purchase_invoice`
+- update → `update_purchase_invoice`
+- deactivate → `delete_purchase_invoice`
+
+## Workspace Item
+
+- Workspace: Purchasing
+- Label: Purchase Invoices
+- Item Type: doctype
+- Target: purchase_invoice
+- Required Permission: view_purchase_invoice
+- Active: true
+
+---
+
+# F. Permission Error UX
+
+Improve user-facing permission errors in dynamic pages.
+
+Update if needed:
+
+- [ ] `src/components/metadata/DynamicListPage.tsx`
+- [ ] `src/components/metadata/DynamicRouteRenderer.tsx`
+- [ ] `src/components/metadata/DynamicActionBar.tsx`
+
+If a user sees a menu item but lacks permission, show:
+
+```text
+Permission required: view_purchase_invoice
+Open Metadata Studio → Check / Repair DocType → purchase_invoice
+```
+
+Do not show only a raw backend error.
+
+---
+
+# G. CRM Feasibility Documentation
 
 Create:
 
-- [ ] `src/components/grn/CancelGrnDialog.tsx`
+- [ ] `docs/CRM_ON_METADATA_ENGINE.md`
 
-Update:
+Explain clearly:
 
-- [ ] `src/components/grn/GrnDetailPage.tsx`
-- [ ] `src/components/grn/GrnStatusBadge.tsx`
-- [ ] `src/components/grn/InventoryMovementsPage.tsx` if needed
-
-UI requirements:
-
-- [ ] Show Cancel GRN button only for posted GRNs.
-- [ ] Ask for reason in dialog.
-- [ ] Reason is required.
-- [ ] Warn that cancellation creates reversal inventory entries.
-- [ ] Disable button while cancelling.
-- [ ] After successful cancellation, reload detail.
-- [ ] Show cancelled status badge.
-- [ ] Cancelled GRN remains read-only.
-- [ ] Movement ledger clearly shows `REVERSAL` rows.
-
-Permission note:
-
-- If frontend permission helper is readily available in this component tree, hide Cancel button unless user has `cancel_grn`.
-- If not practical in this phase, rely on backend permission and document the UI limitation.
+- [ ] CRM master/simple records can be built with metadata/generic_json:
+  - Lead
+  - Contact
+  - Account
+  - Opportunity basic tracking
+  - Follow-up Task simple records
+- [ ] CRM process-heavy features need explicit services later:
+  - email sync
+  - call logs integrations
+  - lead scoring automation
+  - pipeline forecast calculations
+  - workflow automation
+- [ ] GRN is custom/static because it changes inventory quantity.
+- [ ] CRM can start as metadata-driven because most CRM entities are normal document records.
 
 ---
 
-# E. Simulation Test
+# H. Simulation / Verification
 
-Create:
+Add or update simulation if practical:
 
-- [ ] `tests/simulations/grn_cancellation_reversal_flow.sql`
+- [ ] `tests/simulations/manual_doctype_completion_flow.sql`
 
-Update:
+Verify:
 
-- [ ] `scripts/run-simulation.cjs`
+- [ ] create incomplete purchase_invoice metadata
+- [ ] detect missing pieces
+- [ ] repair permissions/list/form/actions/workspace item
+- [ ] generic_json CRUD works after repair
+- [ ] cleanup/rollback
 
-Simulation must verify:
-
-- [ ] create and post GRN
-- [ ] positive movement exists
-- [ ] current inventory increased
-- [ ] cancel GRN with reason
-- [ ] GRN status becomes cancelled
-- [ ] reversal movement exists with negative qty
-- [ ] reversal links to original movement
-- [ ] original movement remains unchanged
-- [ ] current inventory reduced back
-- [ ] duplicate cancellation blocked
-- [ ] cancellation without reason blocked
-- [ ] cancellation of draft blocked
-- [ ] insufficient stock blocks cancellation if practical
-- [ ] cleanup/rollback at end
+If SQL simulation is too large, document browser-only verification.
 
 ---
 
-# F. Browser Verification
+# I. Browser Verification
 
-Verify against Supabase Cloud:
+Verify in browser:
 
-- [ ] open posted GRN detail
-- [ ] Cancel GRN button appears for permitted user
-- [ ] cancel without reason is blocked
-- [ ] cancel with reason succeeds
-- [ ] GRN status becomes cancelled
-- [ ] cancelled GRN is read-only
-- [ ] Current Inventory decreases
-- [ ] Movement Ledger shows REVERSAL row
-- [ ] duplicate cancellation is blocked or impossible from UI
+- [ ] Create or use incomplete `purchase_invoice`
+- [ ] Run Check / Repair DocType
+- [ ] Apply repairs
+- [ ] Confirm menu item opens
+- [ ] Confirm list columns appear
+- [ ] Create one Purchase Invoice demo record
+- [ ] Edit it
+- [ ] Deactivate it
+- [ ] Confirm no permission error remains for owner/admin
 
 Screenshots should be committed if practical under:
 
 ```text
-docs/ai-runs/screenshots/phase-4-6-grn-cancellation/
+docs/ai-runs/screenshots/phase-4-7-manual-builder/
 ```
-
-If screenshots are local-only, say so clearly.
 
 ---
 
-# G. Tests And Commands
+# J. Tests And Commands
 
 Run and document exact output:
 
@@ -215,61 +262,24 @@ npm run build
 npm run test:simulation
 ```
 
-Document known pre-existing test failures separately from new failures.
+Document known pre-existing failures separately.
 
 ---
 
-# H. AI Run Report
+# K. Acceptance Criteria
 
-Create:
+Phase 4.7 is complete only when:
 
-- [ ] `docs/ai-runs/2026-06-01_phase-4-6-grn-cancellation-reversal.md`
-
-Must include:
-
-- [ ] final commit hash
-- [ ] files created/modified
-- [ ] migration details
-- [ ] RPC implementation summary
-- [ ] simulation result
-- [ ] browser verification result
-- [ ] screenshot paths or local-only note
-- [ ] command results
-- [ ] known gaps
-- [ ] next recommended task
-
----
-
-# I. Out Of Scope
-
-Do not implement in this phase:
-
-- [ ] Purchase Orders
-- [ ] supplier invoices/payments
-- [ ] transfers
-- [ ] adjustments
-- [ ] cycle counts
-- [ ] reservations
-- [ ] valuation/FIFO/weighted average
-- [ ] full workflow engine
-- [ ] full naming series engine
-- [ ] partial GRN cancellation
-
----
-
-# J. Acceptance Criteria
-
-Phase 4.6 is complete only when:
-
-- [ ] `wh_cancel_grn` exists and passes simulation
-- [ ] cancellation creates reversal movement rows
-- [ ] original movements remain unchanged
-- [ ] current inventory decreases safely
-- [ ] duplicate/draft/no-reason cancellation is blocked
-- [ ] insufficient-stock case is handled or documented
-- [ ] minimal UI allows cancellation with reason
-- [ ] cancelled status renders correctly
-- [ ] browser verification is documented
+- [ ] DocType completion checklist exists
+- [ ] permission/list/form/action/workspace repair actions exist where safe
+- [ ] Purchase Invoice manual guide exists
+- [ ] permission error UX gives useful repair instructions
+- [ ] CRM feasibility doc exists
+- [ ] browser verification shows manual purchase_invoice works after repair
 - [ ] AI run report exists
 
-After Phase 4.6, decide whether to proceed to Phase 4.7 GRN numbering/QC polish or Phase 5 Purchase Orders.
+After Phase 4.7, decide between:
+
+- Phase 5: Purchase Orders
+- Phase 5 alternative: CRM module metadata-first proof of concept
+- Phase 4.8: GRN numbering/QC polish
