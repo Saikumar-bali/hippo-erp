@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { listAllWorkspaces } from "../../lib/metadata/metadata-studio-api";
 import { MetadataDataTable } from "./MetadataDataTable";
-import { WorkspaceItemsView } from "./WorkspaceItemsView";
+import { WorkspaceItemsManager } from "./WorkspaceItemsManager";
 
 export function WorkspaceMetadataList() {
   const fetcher = useCallback(() => listAllWorkspaces(), []);
@@ -9,5 +9,5 @@ export function WorkspaceMetadataList() {
 }
 
 export function WorkspaceItemList() {
-  return <WorkspaceItemsView />;
+  return <WorkspaceItemsManager />;
 }

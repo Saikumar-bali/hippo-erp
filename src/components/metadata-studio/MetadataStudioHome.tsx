@@ -55,52 +55,56 @@ export function MetadataStudioHome({ onNavigate }: Props) {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          padding: "12px 16px",
-          fontSize: "var(--font-size-sm)",
+          justifyContent: "center",
+          gap: "10px",
+          padding: "14px 20px",
+          fontSize: "var(--font-size-base)",
           cursor: "pointer",
           marginBottom: "16px",
-          fontWeight: 600,
+          fontWeight: 700,
           border: "none",
           borderRadius: "var(--border-radius-sm)",
           background: "var(--primary, #0f5f63)",
           color: "#fff",
           width: "100%",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
         }}
       >
-        <PlusCircle size={18} />
+        <PlusCircle size={20} />
         Create Custom DocType
       </div>
 
-      <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", marginBottom: "16px", lineHeight: 1.5 }}>
-        Use builders/wizards for normal work. Use raw tables only for advanced fixes.
+      <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", marginBottom: "24px", lineHeight: 1.6, padding: "12px", background: "var(--bg)", borderLeft: "4px solid var(--primary)", borderRadius: "4px" }}>
+        <strong>Helper:</strong> Use builders/wizards for normal work. Use raw tables only for advanced fixes.
       </p>
 
       <div style={{ marginBottom: "12px" }}>
         <h3 style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
-          <Zap size={14} /> Quick Access
+          <Zap size={14} /> Recommended Workflow
         </h3>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "8px", marginBottom: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "10px", marginBottom: "24px" }}>
         {advancedSections.filter((s) => quickKeys.has(s.key)).map((s) => (
           <button
             key={s.key}
             className="btn"
             onClick={() => onNavigate(s.key)}
-            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "var(--font-size-sm)", cursor: "pointer", textAlign: "left", border: "none", borderRadius: "var(--border-radius-sm)" }}
+            style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", fontSize: "var(--font-size-sm)", cursor: "pointer", textAlign: "left", border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", background: "var(--card-bg)" }}
           >
-            <s.icon size={16} />
+            <div style={{ padding: "8px", borderRadius: "50%", background: "var(--bg)", color: "var(--primary)" }}>
+              <s.icon size={18} />
+            </div>
             <div>
               <div style={{ fontWeight: 600 }}>{s.label}</div>
-              <div style={{ fontSize: "var(--font-size-xs)", opacity: 0.8 }}>{s.desc}</div>
+              <div style={{ fontSize: "10px", opacity: 0.7, textTransform: "uppercase", letterSpacing: "0.3px" }}>{s.desc}</div>
             </div>
           </button>
         ))}
       </div>
 
-      <div style={{ marginBottom: "8px" }}>
+      <div style={{ marginBottom: "12px", borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
         <h3 style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, color: "var(--muted)", margin: 0 }}>
-          All Metadata Tables
+          Advanced Metadata Tables
         </h3>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px" }}>
@@ -111,10 +115,10 @@ export function MetadataStudioHome({ onNavigate }: Props) {
             onClick={() => onNavigate(s.key)}
             style={buttonStyle}
           >
-            <s.icon size={16} />
+            <s.icon size={16} style={{ opacity: 0.7 }} />
             <div>
-              <div style={{ fontWeight: 600 }}>{s.label}</div>
-              <div style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>{s.desc}</div>
+              <div style={{ fontWeight: 500 }}>{s.label}</div>
+              <div style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "160px" }}>{s.desc}</div>
             </div>
           </button>
         ))}

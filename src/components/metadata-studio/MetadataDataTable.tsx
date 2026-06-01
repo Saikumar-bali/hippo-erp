@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MetadataFormDialog } from "./MetadataFormDialog";
 import { TABLES, createRecord, updateRecord, deleteRecord } from "../../lib/metadata/metadata-studio-api";
 import type { TableMeta } from "../../lib/metadata/metadata-studio-api";
-import { Search } from "lucide-react";
+import { PlusCircle, Search } from "lucide-react";
 
 type Props = {
   label: string;
@@ -106,12 +106,13 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
   };
 
   const columns = useMemo(() => {
-    const cols = tableMeta
-      ? tableMeta.fields.filter((f) => !f.hidden).map((f) => f.name)
-      : rows.length > 0
-        ? Object.keys(rows[0]).filter((k) => !["id", "created_at", "updated_at"].includes(k))
-        : [];
-    return cols;
+    if (tableMeta) {
+      return tableMeta.fields.filter((f) => !f.hidden).map((f) => f.name);
+    }
+    if (rows.length > 0) {
+      return Object.keys(rows[0]).filter((k) => !["id", "created_at", "updated_at"].includes(k));
+    }
+    return [];
   }, [tableMeta, rows]);
 
   const filteredRows = useMemo(() => {
@@ -121,42 +122,51 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
       columns.some((col) => {
         const v = row[col];
         if (v === null || v === undefined) return false;
+        if (typeof v === "object") return JSON.stringify(v).toLowerCase().includes(q);
         return String(v).toLowerCase().includes(q);
       })
     );
   }, [rows, searchQuery, columns]);
 
-  const formatDisplayValue = (val: unknown): { display: string; isJson: boolean; summary: string | null } => {
-    if (val === null || val === undefined) return { display: "—", isJson: false, summary: null };
+  const formatDisplayValue = (val: unknown): { display: string; isJson: boolean; tooltip: string | null } => {
+    if (val === null || val === undefined) return { display: "—", isJson: false, tooltip: null };
     if (Array.isArray(val)) {
       const summary = `${val.length} item${val.length !== 1 ? "s" : ""}`;
-      return { display: summary, isJson: true, summary };
+      return { display: summary, isJson: true, tooltip: JSON.stringify(val, null, 2) };
     }
     if (typeof val === "object") {
-      const keys = Object.keys(val as Record<string, unknown>);
-      if (keys.length === 0) return { display: "{}", isJson: true, summary: "{}" };
-      return { display: "{...}", isJson: true, summary: `{ ${keys.length} key${keys.length !== 1 ? "s" : ""} }` };
+      return { display: "{...}", isJson: true, tooltip: JSON.stringify(val, null, 2) };
     }
-    if (typeof val === "boolean") return { display: val ? "Yes" : "No", isJson: false, summary: null };
+    if (typeof val === "boolean") return { display: val ? "Yes" : "No", isJson: false, tooltip: null };
     const s = String(val);
-    return { display: s.length > 80 ? s.slice(0, 77) + "..." : s, isJson: false, summary: null };
+    const tooltip = s.length > 80 ? s : null;
+    return { display: s.length > 80 ? s.slice(0, 77) + "..." : s, isJson: false, tooltip };
   };
 
   if (loading) {
-    return <div className="card"><p>Loading {label}...</p></div>;
+    return (
+      <div className="card" style={{ padding: "var(--card-padding)", textAlign: "center", color: "var(--muted)" }}>
+        <p>Loading {label}...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="card state-info"><p>Error: {error}</p></div>;
+    return (
+      <div className="card state-info" style={{ padding: "var(--card-padding)" }}>
+        <p style={{ color: "var(--danger)" }}>Error: {error}</p>
+        <button className="btn" onClick={load} style={{ marginTop: "8px" }}>Retry</button>
+      </div>
+    );
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
         <div>
-          <h3 style={{ margin: 0 }}>{label}</h3>
-          <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", margin: "2px 0 0" }}>
-            {filteredRows.length} / {rows.length} record{rows.length !== 1 ? "s" : ""}
+          <h3 style={{ margin: 0, fontSize: "var(--font-size-base)" }}>{label}</h3>
+          <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", margin: "1px 0 0" }}>
+            {filteredRows.length} of {rows.length} record{rows.length !== 1 ? "s" : ""}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -164,7 +174,7 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
             <Search size={14} style={{ position: "absolute", left: "8px", color: "var(--muted)", pointerEvents: "none" }} />
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              style={{ padding: "5px 8px 5px 28px", fontSize: "var(--font-size-sm)", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg)", color: "var(--fg)", width: "180px" }} />
+              style={{ padding: "4px 8px 4px 28px", fontSize: "var(--font-size-sm)", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg)", color: "var(--fg)", width: "180px" }} />
           </div>
           {tableMeta && (
             <button className="btn" onClick={() => {
@@ -175,66 +185,69 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
               }
               setFormState({ mode: "create", record: empty });
             }}
-              style={{ padding: "6px 14px", fontSize: "var(--font-size-sm)", cursor: "pointer" }}>
-              + New
+              style={{ padding: "5px 12px", fontSize: "var(--font-size-sm)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+              <PlusCircle size={14} /> New
             </button>
           )}
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "32px 16px", color: "var(--muted)" }}>
-          <p style={{ fontSize: "var(--font-size-sm)", margin: 0 }}>No {label.toLowerCase()} found.</p>
+        <div style={{ textAlign: "center", padding: "32px 16px", color: "var(--muted)", border: "1px dashed var(--border)", borderRadius: "var(--border-radius-sm)" }}>
+          <p style={{ fontSize: "var(--font-size-sm)", margin: 0, fontWeight: 500 }}>No {label.toLowerCase()} found.</p>
           <p style={{ fontSize: "var(--font-size-xs)", margin: "4px 0 0" }}>Create a new record using the + New button above.</p>
         </div>
       ) : filteredRows.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--muted)" }}>
+        <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--muted)", border: "1px dashed var(--border)", borderRadius: "var(--border-radius-sm)" }}>
           <p style={{ fontSize: "var(--font-size-sm)", margin: 0 }}>No records match "{searchQuery}".</p>
+          <button className="logout" onClick={() => setSearchQuery("")} style={{ marginTop: "8px", padding: "4px 10px", fontSize: "var(--font-size-xs)" }}>Clear Search</button>
         </div>
       ) : (
-        <div style={{ overflowX: "auto", maxHeight: "70vh", overflowY: "auto" }}>
-          <table className="erp-table" style={{ minWidth: "100%" }}>
-            <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
+        <div style={{ overflowX: "auto", maxHeight: "calc(100vh - 300px)", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)" }}>
+          <table className="erp-table" style={{ minWidth: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead style={{ position: "sticky", top: 0, zIndex: 10 }}>
               <tr>
                 {columns.map((col) => (
-                  <th key={col} style={{ whiteSpace: "nowrap", fontSize: "var(--font-size-xs)", textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--card-bg, #fff)", borderBottom: "2px solid var(--border)" }}>
+                  <th key={col} style={{ whiteSpace: "nowrap", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--card-bg, #f8f9fa)", borderBottom: "1px solid var(--border)", padding: "6px 10px", textAlign: "left" }}>
                     {col.replace(/_/g, " ")}
                   </th>
                 ))}
-                {tableMeta && <th style={{ width: "100px", background: "var(--card-bg, #fff)", borderBottom: "2px solid var(--border)" }}>Actions</th>}
+                {tableMeta && <th style={{ width: "100px", background: "var(--card-bg, #f8f9fa)", borderBottom: "1px solid var(--border)", padding: "6px 10px", textAlign: "center" }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {filteredRows.map((row, idx) => (
-                <tr key={idx}>
+                <tr key={idx} style={{ borderBottom: "1px solid var(--border-light, #f1f3f5)" }}>
                   {columns.map((col) => {
                     const raw = row[col];
-                    const { display, isJson } = formatDisplayValue(raw);
+                    const { display, isJson, tooltip } = formatDisplayValue(raw);
                     const isJsonCol = isJsonField(col, tableMeta);
                     return (
-                      <td key={col} style={{ fontSize: "var(--font-size-sm)", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <td key={col} style={{ fontSize: "var(--font-size-xs)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "6px 10px" }}>
                         {isJsonCol || isJson ? (
                           <span onClick={() => setJsonEdit({ row, col, val: raw })}
-                            title={raw === null || raw === undefined ? "" : JSON.stringify(raw)}
-                            style={{ cursor: "pointer", color: "var(--primary, #0f5f63)", textDecoration: "underline dotted", fontSize: "var(--font-size-xs)" }}>
+                            title={tooltip ?? ""}
+                            style={{ cursor: "pointer", color: "var(--primary, #0f5f63)", textDecoration: "underline dotted", fontWeight: 500 }}>
                             {display}
                           </span>
                         ) : (
-                          <span>{display}</span>
+                          <span title={tooltip ?? ""}>{display}</span>
                         )}
                       </td>
                     );
                   })}
                   {tableMeta && (
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button className="logout" onClick={() => setFormState({ mode: "edit", record: { ...row } })}
-                        style={{ padding: "2px 8px", fontSize: "var(--font-size-xs)", cursor: "pointer", marginRight: "4px" }}>
-                        Edit
-                      </button>
-                      <button className="logout" onClick={() => handleDelete(row.id as string)}
-                        style={{ padding: "2px 8px", fontSize: "var(--font-size-xs)", cursor: "pointer", color: "var(--danger)" }}>
-                        Del
-                      </button>
+                    <td style={{ whiteSpace: "nowrap", padding: "6px 10px", textAlign: "center" }}>
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                        <button className="logout" onClick={() => setFormState({ mode: "edit", record: { ...row } })}
+                          style={{ padding: "2px 6px", fontSize: "10px", cursor: "pointer", borderRadius: "3px" }}>
+                          Edit
+                        </button>
+                        <button className="logout" onClick={() => handleDelete(row.id as string)}
+                          style={{ padding: "2px 6px", fontSize: "10px", cursor: "pointer", color: "var(--danger)", borderRadius: "3px" }}>
+                          Del
+                        </button>
+                      </div>
                     </td>
                   )}
                 </tr>

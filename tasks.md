@@ -15,8 +15,8 @@ Phase 3.1 improves the Developer Side UX without changing the ERP business model
 # A. Planning And Docs
 
 - [x] Add GPT review report: `docs/ai-runs/2026-05-30_gpt-review-phase-3-warehouse-and-ui.md`
-- [ ] Create `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md`
-- [ ] Update `progress.md` after implementation
+- [x] Create `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md`
+- [x] Update `progress.md` after implementation
 
 ---
 
@@ -24,21 +24,21 @@ Phase 3.1 improves the Developer Side UX without changing the ERP business model
 
 Update:
 
-- [ ] `src/components/metadata-studio/MetadataDataTable.tsx`
+- [x] `src/components/metadata-studio/MetadataDataTable.tsx`
 
 Add:
 
-- [ ] Search input across visible columns
-- [ ] Row count after filtering
-- [ ] Compact empty state
-- [ ] Sticky table header
-- [ ] Better JSON previews:
+- [x] Search input across visible columns
+- [x] Row count after filtering
+- [x] Compact empty state
+- [x] Sticky table header
+- [x] Better JSON previews:
   - arrays show `N items`
   - objects show `{...}` or key count
   - strings remain readable
-- [ ] Tooltip/title with full JSON preview if practical
-- [ ] Better action column spacing
-- [ ] Keep compact enterprise density
+- [x] Tooltip/title with full JSON preview if practical
+- [x] Better action column spacing
+- [x] Keep compact enterprise density
 
 ---
 
@@ -46,21 +46,21 @@ Add:
 
 Create or update:
 
-- [ ] `src/components/metadata-studio/WorkspaceItemsManager.tsx`
+- [x] `src/components/metadata-studio/WorkspaceItemsManager.tsx`
 
 Requirements:
 
-- [ ] Group workspace items by `workspace_key`
-- [ ] Show item count per workspace
-- [ ] Search by label, item key, target, permission
-- [ ] Filter by workspace
-- [ ] Filter by item type
-- [ ] Filter by active status
-- [ ] Show `item_type` as badge
-- [ ] Show `is_active` as badge
-- [ ] Show inactive items dimmed
-- [ ] Keep Edit/Delete actions compact
-- [ ] Use existing `MetadataFormDialog` for editing where possible
+- [x] Group workspace items by `workspace_key`
+- [x] Show item count per workspace
+- [x] Search by label, item key, target, permission
+- [x] Filter by workspace
+- [x] Filter by item type
+- [x] Filter by active status
+- [x] Show `item_type` as badge
+- [x] Show `is_active` as badge
+- [x] Show inactive items dimmed
+- [x] Keep Edit/Delete actions compact
+- [x] Use existing `MetadataFormDialog` for editing where possible
 
 Target display style:
 
@@ -85,21 +85,21 @@ Warehouse (6)
 
 Update:
 
-- [ ] `src/components/metadata-studio/MetadataStudioHome.tsx`
+- [x] `src/components/metadata-studio/MetadataStudioHome.tsx`
 
 Requirements:
 
-- [ ] `Create Custom DocType` remains primary action
-- [ ] Raw tables appear under `Advanced Metadata Tables`
-- [ ] Add helper text:
+- [x] `Create Custom DocType` remains primary action
+- [x] Raw tables appear under `Advanced Metadata Tables`
+- [x] Add helper text:
   - `Use builders/wizards for normal work. Use raw tables only for advanced fixes.`
-- [ ] Add quick cards:
+- [x] Add quick cards:
   - DocTypes
   - Workspaces
   - Workspace Items
   - List Views
   - Form Layouts
-- [ ] Keep compact layout
+- [x] Keep compact layout
 
 ---
 
@@ -107,7 +107,7 @@ Requirements:
 
 Update:
 
-- [ ] `src/components/metadata-studio/MetadataFormDialog.tsx`
+- [x] `src/components/metadata-studio/MetadataFormDialog.tsx`
 
 Already fixed:
 
@@ -117,9 +117,9 @@ Already fixed:
 
 Improve further if practical:
 
-- [ ] Add monospace label/helper: `Valid JSON required`
-- [ ] Add examples for JSON fields based on field name if easy
-- [ ] Make dialog width responsive
+- [x] Add monospace label/helper: `Valid JSON required`
+- [x] Add examples for JSON fields based on field name if easy
+- [x] Make dialog width responsive
 
 ---
 
@@ -127,10 +127,10 @@ Improve further if practical:
 
 Do not build full visual builders yet. But improve the raw-table experience:
 
-- [ ] JSON previews should not flood table cells
-- [ ] Edit modal should be readable
-- [ ] JSON save errors should identify exact field label
-- [ ] Add note that future Visual List View Builder and Visual Form Layout Builder are planned
+- [x] JSON previews should not flood table cells
+- [x] Edit modal should be readable
+- [x] JSON save errors should identify exact field label
+- [x] Add note that future Visual List View Builder and Visual Form Layout Builder are planned
 
 ---
 
@@ -140,12 +140,12 @@ CLI-AI must verify with browser automation if available.
 
 Screens to check:
 
-- [ ] Metadata Studio home
-- [ ] Workspace Items grouped view
-- [ ] Workspace Items filters/search
-- [ ] List Views table
-- [ ] List Views edit modal showing formatted JSON
-- [ ] DocFields table search
+- [x] Metadata Studio home
+- [x] Workspace Items grouped view
+- [x] Workspace Items filters/search
+- [x] List Views table
+- [x] List Views edit modal showing formatted JSON
+- [x] DocFields table search
 
 Screenshots should be committed if possible under:
 
@@ -175,7 +175,8 @@ npm run test:simulation
 
 Create:
 
-- [ ] `docs/ai-runs/2026-05-30_phase-3-1-metadata-studio-ux-polish.md`
+- [x] `docs/ai-runs/2026-05-30_phase-3-1-metadata-studio-ux-polish.md`
+
 
 Must include:
 

@@ -22,7 +22,39 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2.9 | Custom DocType Wizard UX | Complete | Guided 7-step wizard for end-to-end custom DocType creation. Creates DocType + DocFields + List View + Form Layout + DocType Actions + Workspace Item in Supabase Cloud. Metadata Studio home reorganized with wizard as primary action. |
 | 2.10 | Custom DocType Wizard Hardening | Complete | Atomic bundle RPC, duplicate checks (doctype_key, route, workspace item), permission auto-provisioning (catalog + owner/admin grants), sidebar refresh, success checklist, simulation, real authenticated UI verification (create/list/update/deactivate). |
 | 3 | Warehouse hierarchy | Complete | Metadata-driven 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with generic_json storage, Link field parent references with display templates, 25 permission keys granted to owner/admin, workspace sidebar items, migration 0028 applied on Supabase Cloud, browser UI verified (create hierarchy → edit → deactivate). |
+| 3.1 | Metadata Studio UX Polish | Complete | Improved raw metadata tables (search, sticky header, JSON previews), grouped workspace items view, Metadata Studio home categorization, and responsive JSON editor dialog. |
 | 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
+
+## Phase 3.1 Implementation Summary
+
+### Files Created
+- `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md` — goals, requirements, and strategy for UX polish.
+- `src/components/metadata-studio/WorkspaceItemsManager.tsx` — renamed and enhanced from `WorkspaceItemsView.tsx` with grouping and filters.
+
+### Files Modified
+- `src/components/metadata-studio/MetadataDataTable.tsx` — added search, filtered row count, sticky headers, better JSON previews, and tooltips.
+- `src/components/metadata-studio/MetadataStudioHome.tsx` — reorganized layout with Quick Access cards and Advanced Metadata Tables section.
+- `src/components/metadata-studio/MetadataFormDialog.tsx` — improved responsiveness and added monospace JSON validation helper.
+- `src/components/metadata-studio/WorkspaceMetadataList.tsx` — updated to use `WorkspaceItemsManager`.
+
+### UX Improvements
+- **MetadataDataTable:** Global search across visible columns, sticky header for long lists, compact enterprise density, and smart JSON previews ("N items", "{...}") that reveal full content on hover.
+- **WorkspaceItemsManager:** Grouped rows by `workspace_key` with item counts, advanced filtering (Workspace, Item Type, Active Status), and badge-based status indicators.
+- **Metadata Studio Home:** Clear hierarchy prioritizing wizards over raw tables, with quick links to the most common configuration objects.
+- **MetadataFormDialog:** Monospace labels for JSON fields with character count and clear error messaging for invalid syntax.
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | **PASS** |
+| `npm run lint` | **PASS** (pre-existing warnings only) |
+| `npm run build` | **PASS** |
+| `npm run test` | 31 pass, 6 fail (pre-existing in auth/user-roles) |
+
+### Remaining Gaps
+- Visual List View Builder (planned).
+- Visual Form Layout Builder (planned).
+- Advanced JSON editor (e.g. Monaco) for complex configurations.
 
 ## Phase 2.6 Implementation Summary
 
