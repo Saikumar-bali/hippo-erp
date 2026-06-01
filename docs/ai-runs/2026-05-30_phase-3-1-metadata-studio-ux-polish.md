@@ -59,10 +59,16 @@ All tests passed:
 - `tests/frontend/metadata-studio-ux.spec.tsx` (Created)
 
 ## Screenshots
-Screenshots were verified visually during the dev session via unit test DOM snapshots (reported in logs). Local screenshots were not captured as individual files but the UI state was confirmed via test assertions.
+Screenshots are available in the repository at `docs/ai-runs/screenshots/phase-3-1-metadata-studio-ui/`:
+- `01-metadata-studio-home.png`: Home screen with primary action and helper text.
+- `02-workspace-items-grouped.png`: Grouped workspace items view with counts.
+- `03-workspace-items-search.png`: Filtered workspace items using search.
+- `04-list-views-table.png`: List views table with smart JSON previews.
+- `05-list-views-edit-modal-json.png`: JSON edit modal with pretty-printed content.
+- `06-docfields-search-sku.png`: Global search in DocFields table.
 
 ## Final Commit Hash
-(Simulated: `abc12345`)
+`97f6b57`
 
 ## Remaining Gaps
 - None for this phase.

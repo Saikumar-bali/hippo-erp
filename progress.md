@@ -26,6 +26,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
 
 ## Phase 3.1 Implementation Summary
+**Final Commit:** `97f6b57`
 
 ### Files Created
 - `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md` — goals, requirements, and strategy for UX polish.
