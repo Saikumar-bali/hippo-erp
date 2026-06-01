@@ -1,267 +1,203 @@
-# Phase 4.2 Tasks: GRN UI Foundation
+# Phase 4.3 Tasks: GRN UI Hardening And Inventory Read-Only Views
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Build the first usable GRN user interface on top of the Phase 4.1 backend RPCs. GRN is a transaction document, so it must use the explicit GRN API wrapper and must not use generic JSON CRUD.
+Goal: Harden the Phase 4.2 GRN UI against real Supabase Cloud usage, fix readable labels in posted detail, and add read-only inventory visibility. Do not add new inventory transaction types yet.
 
 ## Why This Phase Exists
 
-Phase 4.1 completed the backend foundation:
+Phase 4.2 created the first GRN UI foundation. It is accepted as a first pass, but the review found gaps:
 
-- physical `wh.*` transaction tables
-- RLS policies
-- SECURITY DEFINER RPCs
-- `src/lib/grn-api.ts`
-- Supabase Cloud simulation passing
+- browser verification was local-only and not fully authenticated against Supabase Cloud
+- posted GRN detail may show raw UUIDs for Product/UOM/Bin labels
+- duplicate-post protection is mostly hidden by UI state and not clearly surfaced
+- current inventory and inventory movements are not visible in UI
+- the AI report still has `Final Commit: (to be determined)`
 
-Now build the UI carefully:
-
-- create GRN draft
-- edit draft lines
-- post GRN
-- show posted GRN as read-only
-- show inventory movements/current inventory as read-only views
+Phase 4.3 should make GRN usable and inspectable for real ERP operations.
 
 ---
 
 # A. Review And Docs
 
-- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-product-list-and-phase-4-1.md`
-- [ ] Create `docs/PHASE_4_2_GRN_UI_FOUNDATION.md`
-- [ ] Update `docs/METADATA_ENGINE.md` with the transaction-document UI boundary
-- [ ] Update `progress.md` after implementation
-- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-2-grn-ui-foundation.md`
+- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-2-grn-ui.md`
+- [ ] Create `docs/PHASE_4_3_GRN_UI_HARDENING.md`
+- [ ] Update `docs/PHASE_4_2_GRN_UI_FOUNDATION.md` if details changed
+- [ ] Update `docs/METADATA_ENGINE.md` if routing/transaction UI boundary changed
+- [ ] Update `progress.md`
+- [ ] Update `docs/ai-runs/2026-06-01_phase-4-2-grn-ui-foundation.md` with actual final commit hash
+- [ ] Create `docs/ai-runs/2026-06-01_phase-4-3-grn-ui-hardening.md`
 
 ---
 
-# B. Product List Guardrail
+# B. Authenticated Browser Verification
 
-Before GRN UI work, verify the Product list fix is still working.
+Use a real authenticated app session against Supabase Cloud.
 
-- [ ] Product Master → Products must show useful columns, not only Status and Actions.
-- [ ] If fallback warning appears, fix `app.erp_list_views` metadata for `doctype_key = product`, `view_key = default`.
-- [ ] Confirm no conflicting `is_default = true` list views affect Product.
-- [ ] Add note to the AI run report.
+Verify and document:
 
----
+- [ ] user can open Purchasing → GRN
+- [ ] user can create a draft GRN
+- [ ] user can add at least one line
+- [ ] product, UOM, and bin dropdowns load real records
+- [ ] user can save draft
+- [ ] draft appears in list
+- [ ] user can reopen draft
+- [ ] user can post GRN
+- [ ] status becomes posted
+- [ ] posted GRN detail is read-only
+- [ ] duplicate post is blocked or impossible and backend error is shown clearly when forced
+- [ ] current inventory increased
+- [ ] inventory movement row exists
 
-# C. GRN Route And Sidebar
+Screenshots should be committed if practical under:
 
-Use existing Purchasing workspace metadata seeded in Phase 4.1.
+```text
+docs/ai-runs/screenshots/phase-4-3-grn-hardening/
+```
 
-Tasks:
-
-- [ ] Confirm Purchasing workspace is visible for permitted users.
-- [ ] Confirm GRN item is visible under Purchasing.
-- [ ] Route GRN item to a custom GRN UI component, not `DynamicListPage`.
-- [ ] Update `DynamicRouteRenderer.tsx` or route mapping carefully.
-
-Suggested files:
-
-- [ ] `src/components/grn/GrnListPage.tsx`
-- [ ] `src/components/grn/GrnDraftFormPage.tsx`
-- [ ] `src/components/grn/GrnDetailPage.tsx`
-- [ ] `src/components/grn/GrnLineGrid.tsx`
-- [ ] `src/components/grn/GrnStatusBadge.tsx`
+If screenshots are local-only, say so clearly.
 
 ---
 
-# D. API Usage
+# C. Posted GRN Detail Label Fix
 
-Use only:
+Current `GrnDetailPage` passes empty arrays to `GrnLineGrid`, so read-only detail may show raw UUIDs.
 
-- [ ] `src/lib/grn-api.ts`
+Fix one of these ways:
 
-Do not call generic document APIs for GRN.
+Option A — Frontend enrichment:
 
-Required API usage:
+- [ ] load products via `listProducts(tenantId)`
+- [ ] load UOMs via `listUoms(tenantId)`
+- [ ] load bins from `wh.warehouse_bins`
+- [ ] pass those arrays into `GrnLineGrid`
 
-- [ ] `listGrns(companyId, filters)`
-- [ ] `getGrn(companyId, grnId)`
-- [ ] `createGrnDraft(companyId, payload)`
-- [ ] `updateGrnDraft(companyId, grnId, payload)`
-- [ ] `postGrn(companyId, grnId)`
+Option B — Backend enrichment:
 
-If `grn-api.ts` is missing necessary types/fields, extend it carefully without changing backend contracts unless required.
+- [ ] update `wh_get_grn` to return display labels
+- [ ] update `grn-api.ts` types
+- [ ] render labels from API
 
----
+Preferred first step: Option A unless backend changes are clearly cleaner.
 
-# E. GRN List UI
+Acceptance:
 
-Create a compact enterprise list page.
-
-Required columns:
-
-- [ ] GRN Number
-- [ ] Supplier
-- [ ] Received Date
-- [ ] Status
-- [ ] QC Status
-- [ ] Line Count
-- [ ] Posted At
-- [ ] Actions
-
-Required controls:
-
-- [ ] Search by GRN number/supplier if API supports it, otherwise client-side search after list load.
-- [ ] Status filter: all/draft/posted/cancelled.
-- [ ] `+ New GRN` button.
-- [ ] Compact empty state.
+- [ ] Posted detail shows product SKU/name, UOM code, and bin code/name
+- [ ] No raw UUIDs in normal read-only detail view
 
 ---
 
-# F. GRN Draft Form UI
+# D. Duplicate Post UX
 
-Draft form requirements:
+Improve post safety:
 
-Header fields:
+- [ ] Add confirmation dialog before posting a draft
+- [ ] Disable Post button while posting
+- [ ] If backend says already posted, show friendly message
+- [ ] If user opens a posted GRN in edit route, redirect to read-only detail or show read-only state
+- [ ] Document duplicate-post browser/API result
 
-- [ ] GRN Number
-- [ ] Supplier Name or Supplier Link if available
-- [ ] Received Date
-- [ ] QC Status
-- [ ] Notes
+---
 
-Line grid fields:
+# E. Read-Only Current Inventory View
+
+Add read-only current inventory page if backend allows SELECT.
+
+Suggested file:
+
+- [ ] `src/components/grn/CurrentInventoryPage.tsx`
+
+Display columns:
 
 - [ ] Product
-- [ ] UOM
-- [ ] Received Qty
-- [ ] Accepted Qty
-- [ ] Rejected Qty
-- [ ] Batch Number
-- [ ] Expiry Date
-- [ ] Warehouse/Bin selection
-
-Validation in UI:
-
-- [ ] received_qty > 0
-- [ ] accepted_qty + rejected_qty <= received_qty
-- [ ] bin required when accepted_qty > 0
-- [ ] expiry date required when user enters batch expiry/product requires expiry if API supports it
-
-Actions:
-
-- [ ] Save Draft
-- [ ] Cancel
-- [ ] Post GRN
-
----
-
-# G. Posted GRN Detail UI
-
-Posted GRN must be read-only.
-
-Requirements:
-
-- [ ] Show header details.
-- [ ] Show line details.
-- [ ] Show movement/current-inventory summary if API has enough data.
-- [ ] Hide or disable Save Draft.
-- [ ] Show posted timestamp and posted by if available.
-- [ ] Post button disabled/hidden after posting.
-
----
-
-# H. Link/Data Loading
-
-GRN form needs selectable master data.
-
-Inspect existing APIs and choose safe source for:
-
-- [ ] Products
-- [ ] UOMs
-- [ ] Warehouses/Bins
+- [ ] Batch
+- [ ] Bin
+- [ ] On Hand Qty
+- [ ] Available Qty
+- [ ] Last Movement At
 
 Rules:
 
-- [ ] Products may be physical RPC-backed; do not assume `erp_documents`.
-- [ ] Warehouse hierarchy may be `generic_json`; use existing generic API or metadata APIs where safe.
-- [ ] Dropdowns should show readable labels, not UUIDs.
-- [ ] For first version, dependent filtering can be simple, but document limitations.
+- [ ] read-only only
+- [ ] no create/edit/delete
+- [ ] use readable product/bin labels where possible
+- [ ] route from Inventory workspace item if active, or add an inactive/active item carefully based on permissions
 
 ---
 
-# I. Read-Only Inventory Views
+# F. Read-Only Inventory Movements View
 
-Add minimal read-only views if backend supports data:
+Add read-only movement ledger page if backend allows SELECT.
 
-- [ ] Current Inventory list
-- [ ] Inventory Movements list
+Suggested file:
 
-These should be read-only. No direct create/edit/delete.
-
-Suggested files:
-
-- [ ] `src/components/grn/CurrentInventoryPage.tsx`
 - [ ] `src/components/grn/InventoryMovementsPage.tsx`
 
-Only implement if the backend API/RPC exposes readable data. Otherwise document as Phase 4.3.
+Display columns:
+
+- [ ] Movement Date
+- [ ] Movement Type
+- [ ] Source
+- [ ] Product
+- [ ] Batch
+- [ ] Bin
+- [ ] Qty Delta
+- [ ] Created By
+
+Rules:
+
+- [ ] read-only only
+- [ ] no create/edit/delete
+- [ ] positive and negative quantities should be visually distinct if easy
+- [ ] route from Inventory workspace item if active, or document why deferred
 
 ---
 
-# J. Error Handling
+# G. API Layer
 
-GRN UI must surface backend validation clearly:
+Extend `src/lib/grn-api.ts` or create `src/lib/inventory-api.ts`.
 
-- [ ] duplicate GRN number
-- [ ] invalid quantity
-- [ ] missing bin
-- [ ] product/UOM/bin not found
-- [ ] duplicate posting blocked
-- [ ] posted GRN update blocked
-- [ ] permission denied
+Add typed wrappers if needed:
 
-Use clear user-facing messages, not raw stack traces.
+- [ ] `listCurrentInventory(tenantId, filters?)`
+- [ ] `listInventoryMovements(tenantId, filters?)`
+
+Do not add write APIs for movement/current inventory.
 
 ---
 
-# K. Browser Verification
+# H. GRN UI Polish
 
-Verify with real browser automation if available.
+Improve professional usability:
 
-Required flow:
-
-- [ ] Open Purchasing → GRN.
-- [ ] Create draft GRN.
-- [ ] Add one product line.
-- [ ] Select UOM and warehouse/bin.
-- [ ] Enter received/accepted/rejected quantities.
-- [ ] Save draft.
-- [ ] Confirm draft appears in list.
-- [ ] Open draft.
-- [ ] Post GRN.
-- [ ] Confirm status becomes posted.
-- [ ] Confirm posted detail is read-only.
-- [ ] Confirm duplicate post is blocked.
-
-Screenshots should be committed if possible under:
-
-```text
-docs/ai-runs/screenshots/phase-4-2-grn-ui/
-```
-
-If screenshots are local-only, say so in the report.
+- [ ] add client-side search on GRN list by GRN number/supplier
+- [ ] show line count consistently without `any`
+- [ ] avoid inline `any` in `GrnListPage`
+- [ ] cache Product/UOM/Bin lists per form session if simple
+- [ ] show clear empty states
+- [ ] show helpful validation below line grid
+- [ ] keep compact enterprise density
 
 ---
 
-# L. Tests
+# I. Tests
 
-Add frontend tests if practical:
+Add/update tests:
 
 - [ ] `tests/frontend/grn-ui.spec.tsx`
 
-Minimum tests:
+Coverage:
 
-- [ ] list page renders
-- [ ] draft form validates accepted + rejected <= received
-- [ ] posted GRN disables edit/post actions
-
-Do not overbuild tests if the UI is still changing, but cover basic regressions.
+- [ ] read-only detail shows product/UOM/bin labels
+- [ ] posted GRN cannot be edited from UI
+- [ ] post confirmation appears
+- [ ] current inventory read-only page renders
+- [ ] movement ledger read-only page renders
 
 ---
 
-# M. Verification Commands
+# J. Verification Commands
 
 Run and document exact output:
 
@@ -273,63 +209,61 @@ npm run build
 npm run test:simulation
 ```
 
-Important:
-
-- [ ] Reconcile current test count discrepancy in reports: Phase 3.1 says 32 pass / 8 fail, Phase 4.1 says 34 pass / 6 fail.
-- [ ] Record the latest exact test result.
-- [ ] Fix any new failures caused by GRN UI.
+Record the latest exact `npm run test` numbers. Do not leave old contradictory test counts in reports.
 
 ---
 
-# N. AI Run Report
+# K. AI Run Report
 
 Create:
 
-- [ ] `docs/ai-runs/2026-06-01_phase-4-2-grn-ui-foundation.md`
+- [ ] `docs/ai-runs/2026-06-01_phase-4-3-grn-ui-hardening.md`
 
 Must include:
 
 - [ ] final commit hash
 - [ ] files created/modified
-- [ ] Product list guardrail result
-- [ ] GRN API usage summary
-- [ ] browser verification result
+- [ ] authenticated browser verification result
 - [ ] screenshot paths or local-only note
+- [ ] current inventory verification
+- [ ] movement ledger verification
 - [ ] command results
 - [ ] known gaps
 - [ ] next recommended task
 
 ---
 
-# O. Out Of Scope
+# L. Out Of Scope
 
 Do not implement in this phase:
 
 - [ ] Purchase Orders
-- [ ] Supplier invoices/payments
+- [ ] supplier invoices/payments
 - [ ] transfers
 - [ ] adjustments
 - [ ] cycle counts
 - [ ] reservations
 - [ ] valuation/FIFO/weighted average
+- [ ] cancellation/reversal flow
 - [ ] full workflow engine
 - [ ] full naming series engine
-- [ ] cancellation/reversal flow unless backend already supports it safely
 
 ---
 
-# P. Acceptance Criteria
+# M. Acceptance Criteria
 
-Phase 4.2 is complete only when:
+Phase 4.3 is complete only when:
 
-- [ ] Product list columns remain fixed.
-- [ ] Purchasing → GRN opens a custom GRN list page.
-- [ ] User can create and save a draft GRN.
-- [ ] User can post a GRN through explicit RPC.
-- [ ] Posted GRN becomes read-only.
-- [ ] Backend validation errors are shown clearly.
-- [ ] Browser verification is documented.
-- [ ] Build/typecheck/lint/test results are documented.
-- [ ] AI run report exists.
+- [ ] authenticated browser GRN flow is verified against Supabase Cloud
+- [ ] posted GRN detail does not show raw UUIDs for normal labels
+- [ ] post action has confirmation and friendly duplicate-post handling
+- [ ] Current Inventory is visible read-only or explicitly deferred with reason
+- [ ] Inventory Movements are visible read-only or explicitly deferred with reason
+- [ ] test/build results are documented with current exact counts
+- [ ] AI run report exists
 
-After Phase 4.2, proceed to Phase 4.3: Inventory read-only views polish, cancellation/reversal planning, or GRN workflow improvements depending on gaps.
+After Phase 4.3, decide between:
+
+- Phase 4.4: GRN polish and cancellation/reversal planning
+- Phase 5: Purchase Orders
+- Phase 5 alternative: Inventory transfer/adjustment architecture
