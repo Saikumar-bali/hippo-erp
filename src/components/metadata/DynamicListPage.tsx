@@ -379,17 +379,28 @@ export function DynamicListPage({
             <strong>{records.length === 0 ? `No ${config.doctype.label.toLowerCase()} records yet.` : "No records match the current filters."}</strong>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table className="erp-table">
+          <div className="table-wrap" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table className="erp-table" style={{ minWidth: "100%" }}>
               <thead>
                 <tr>
-                  {columns.map((col) => (
-                    <th key={col.fieldname} style={col.width ? { width: col.width } : undefined}>
-                      {col.label}
-                    </th>
-                  ))}
-                  {!hasStatusColumn && <th>Status</th>}
-                  <th>Actions</th>
+                  {columns.map((col) => {
+                    const field = fieldMap.get(col.fieldname);
+                    const isNumeric = field?.fieldtype === "Float" || field?.fieldtype === "Int";
+                    return (
+                      <th 
+                        key={col.fieldname} 
+                        style={{ 
+                          width: col.width ? `${col.width}px` : "auto",
+                          minWidth: col.width ? `${col.width}px` : "100px",
+                          textAlign: isNumeric ? "right" : "left"
+                        }}
+                      >
+                        {col.label}
+                      </th>
+                    );
+                  })}
+                  {!hasStatusColumn && <th style={{ width: "80px", textAlign: "center" }}>Status</th>}
+                  <th style={{ width: "120px", textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -398,8 +409,9 @@ export function DynamicListPage({
                     {columns.map((col) => {
                       const field = fieldMap.get(col.fieldname);
                       if (!field) return <td key={col.fieldname}>—</td>;
+                      const isNumeric = field.fieldtype === "Float" || field.fieldtype === "Int";
                       return (
-                        <td key={col.fieldname}>
+                        <td key={col.fieldname} style={{ textAlign: isNumeric ? "right" : "left" }}>
                           {clickableColumns.has(col.fieldname) ? (
                             <button className="link-button" onClick={() => setSelectedId(record.id as string)}>
                               {renderCell(field, record)}
@@ -411,12 +423,12 @@ export function DynamicListPage({
                       );
                     })}
                     {!hasStatusColumn && (
-                      <td>
+                      <td style={{ textAlign: "center" }}>
                         <StatusField value={record.is_active as boolean} />
                       </td>
                     )}
-                    <td>
-                      <div className="action-group">
+                    <td style={{ textAlign: "center" }}>
+                      <div className="action-group" style={{ justifyContent: "center" }}>
                         <button className="logout" onClick={() => setSelectedId(record.id as string)}>View</button>
                         {canUpdate && (record.is_active as boolean) && (
                           <button className="logout" onClick={() => { setSelectedId(record.id as string); setEditingId(record.id as string); }}>Edit</button>

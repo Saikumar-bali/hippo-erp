@@ -42,6 +42,11 @@ Discovered that the Products page was missing metadata-driven columns (SKU, Name
 - **Resolution**: Used Metadata Studio -> List Views to disable the `is_default` flag on `supplier_ui_test_default`.
 - **Result**: Standard `product` list view now correctly loads its column JSON.
 
+### UI Refinements: Alignment & Responsiveness
+- **Numeric Alignment**: Fixed "way right side" issue where numeric values (ROP/ROQ) were shifted away from headers. Headers for numeric fields are now right-aligned to match the data.
+- **Table Responsiveness**: Added `overflow-x: auto` and touch-scrolling support to all dynamic list tables. Ensured columns use `min-width` to prevent layout collapse on small screens.
+- **Padding**: Added consistent right-padding to numeric cells for better readability.
+
 ## Code Quality
 | Command | Result |
 |---------|--------|

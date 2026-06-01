@@ -65,7 +65,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - No line-level approval or partial-receipt workflow
 
 ## Phase 3.1 Implementation Summary
-**Final Commit:** `4596808`
+**Final Commit:** `d9e495b`
 
 ### Files Created
 - `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md` — goals, requirements, and strategy for UX polish.

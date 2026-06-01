@@ -284,11 +284,15 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
           <table className="erp-table" style={{ minWidth: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
             <thead style={{ position: "sticky", top: 0, zIndex: 10 }}>
               <tr>
-                {columns.map((col) => (
-                  <th key={col} style={{ whiteSpace: "nowrap", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--card-bg, #f8f9fa)", borderBottom: "1px solid var(--border)", padding: "6px 10px", textAlign: "left" }}>
-                    {col.replace(/_/g, " ")}
-                  </th>
-                ))}
+                {columns.map((col) => {
+                  const field = tableMeta?.fields.find(f => f.name === col);
+                  const isNumeric = field?.type === "number" || field?.type === "int";
+                  return (
+                    <th key={col} style={{ whiteSpace: "nowrap", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--card-bg, #f8f9fa)", borderBottom: "1px solid var(--border)", padding: "6px 10px", textAlign: isNumeric ? "right" : "left" }}>
+                      {col.replace(/_/g, " ")}
+                    </th>
+                  );
+                })}
                 {tableMeta && <th style={{ width: "100px", background: "var(--card-bg, #f8f9fa)", borderBottom: "1px solid var(--border)", padding: "6px 10px", textAlign: "center", position: "sticky", right: 0 }}>Actions</th>}
               </tr>
             </thead>
@@ -299,8 +303,10 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
                     const raw = row[col];
                     const { display, isJson, tooltip } = formatDisplayValue(raw);
                     const isJsonCol = isJsonField(col, tableMeta);
+                    const field = tableMeta?.fields.find(f => f.name === col);
+                    const isNumeric = field?.type === "number" || field?.type === "int";
                     return (
-                      <td key={col} style={{ fontSize: "var(--font-size-xs)", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "6px 10px" }}>
+                      <td key={col} style={{ fontSize: "var(--font-size-xs)", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "6px 10px", textAlign: isNumeric ? "right" : "left" }}>
                         {isJsonCol || isJson ? (
                           <span onClick={() => setJsonEdit({ row, col, val: raw })}
                             title={tooltip ?? "Click to edit JSON"}

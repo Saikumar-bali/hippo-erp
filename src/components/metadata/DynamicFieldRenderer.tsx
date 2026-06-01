@@ -45,7 +45,7 @@ export function DynamicFieldRenderer({ field, value, linkLabels, asLink }: Props
   }
 
   if ((field.fieldtype === "Float" || field.fieldtype === "Int") && value !== null && value !== undefined) {
-    return <span style={{ textAlign: "right", display: "block" }}>{String(value)}</span>;
+    return <span style={{ textAlign: "right", display: "block", width: "100%", paddingRight: "4px" }}>{String(value)}</span>;
   }
 
   return <span>{display}</span>;
