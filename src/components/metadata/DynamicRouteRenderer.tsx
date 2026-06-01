@@ -10,6 +10,7 @@ import { ModuleView } from "../ModuleView";
 import { MetadataStudioHome } from "../metadata-studio/MetadataStudioHome";
 import { CustomDocTypeWizard } from "../metadata-studio/CustomDocTypeWizard";
 import { DocTypeList } from "../metadata-studio/DocTypeList";
+import { GrnListPage } from "../grn/GrnListPage";
 
 import { DocFieldList } from "../metadata-studio/DocFieldList";
 import { WorkspaceMetadataList, WorkspaceItemList } from "../metadata-studio/WorkspaceMetadataList";
@@ -157,6 +158,10 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
 
     if (itemKey === "company_profile") {
       return <CompanyProfileView canUpdate={permissions.can("update_company")} />;
+    }
+
+    if (itemKey === "grn") {
+      return <GrnListPage tenantId={tenantId} />;
     }
 
     if (itemKey === "users_and_roles") {

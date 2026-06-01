@@ -49,10 +49,10 @@ function normalizeListColumns(raw: unknown, fields: DocFieldMeta[]): { columns: 
   const fallback = fallbackFields.slice(0, 8).map((f) => ({
     fieldname: f.fieldname,
     label: f.label,
-    width: f.fieldname === "name" || f.fieldname.endsWith("_name") ? "220" : "120",
-  })) as ListViewColumn[];
+    width: f.fieldname === "name" || f.fieldname.endsWith("_name") ? 220 : 120,
+  }));
 
-  return { columns: fallback, usedFallback: true };
+  return { columns: fallback as ListViewColumn[], usedFallback: true };
 }
 
 export function DynamicListPage({

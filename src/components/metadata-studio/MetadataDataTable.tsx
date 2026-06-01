@@ -286,7 +286,7 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
               <tr>
                 {columns.map((col) => {
                   const field = tableMeta?.fields.find(f => f.name === col);
-                  const isNumeric = field?.type === "number" || field?.type === "int";
+                  const isNumeric = field?.type === "number";
                   return (
                     <th key={col} style={{ whiteSpace: "nowrap", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", background: "var(--card-bg, #f8f9fa)", borderBottom: "1px solid var(--border)", padding: "6px 10px", textAlign: isNumeric ? "right" : "left" }}>
                       {col.replace(/_/g, " ")}
@@ -304,7 +304,7 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
                     const { display, isJson, tooltip } = formatDisplayValue(raw);
                     const isJsonCol = isJsonField(col, tableMeta);
                     const field = tableMeta?.fields.find(f => f.name === col);
-                    const isNumeric = field?.type === "number" || field?.type === "int";
+                    const isNumeric = field?.type === "number";
                     return (
                       <td key={col} style={{ fontSize: "var(--font-size-xs)", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "6px 10px", textAlign: isNumeric ? "right" : "left" }}>
                         {isJsonCol || isJson ? (
