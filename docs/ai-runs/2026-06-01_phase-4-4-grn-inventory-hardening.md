@@ -2,11 +2,13 @@
 
 **Date:** 2026-06-01
 **Branch:** phase-2.5-metadata-engine
-**Final Commit:** *(not yet committed)*
+**Final Commit:** `771cf49` follow-up fix after CLI-AI commit `5eb7246`
 
 ## Summary
 
 Phase 4.4 hardened the GRN and inventory subsystem for production-readiness. Three production-risk gaps from Phase 4.3 were addressed: inventory list RPCs returning `null` instead of `[]`, LIMIT/OFFSET applied after `jsonb_agg` (no-op), and inactive workspace items.
+
+A GPT follow-up patch fixed a missing SQL semicolon in migration `0037_inventory_list_rpcs_hardening.sql`.
 
 ## Files Created
 
@@ -22,6 +24,7 @@ Phase 4.4 hardened the GRN and inventory subsystem for production-readiness. Thr
 |------|---------|
 | `src/lib/inventory-api.ts` | Reorganized: Phase 4.3+ read-only API moved to top, legacy helpers marked `@deprecated` with section headers |
 | `progress.md` | Phase status line updated, Phase 4.2/4.3/4.4 summaries added |
+| `supabase/migrations/0037_inventory_list_rpcs_hardening.sql` | GPT follow-up: added final semicolon to workspace activation statement |
 
 ## Database Changes
 
@@ -63,3 +66,4 @@ Phase 4.4 hardened the GRN and inventory subsystem for production-readiness. Thr
 - No auto GRN numbering
 - No line-level approval or partial-receipt workflow
 - No PO reference in GRN
+- No cancellation/reversal flow yet
