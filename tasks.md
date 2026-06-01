@@ -1,160 +1,211 @@
-# Phase 4.5 Tasks: GRN Cancellation / Reversal Architecture
+# Phase 4.6 Tasks: Implement GRN Cancellation / Reversal
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Design the safe cancellation/reversal flow for posted GRNs. Do not implement Purchase Orders, transfers, adjustments, reservations, or valuation yet.
+Goal: Implement safe cancellation for posted GRNs using reversal inventory movements. Do not start Purchase Orders, transfers, adjustments, reservations, valuation, or workflow yet.
 
 ## Why This Phase Exists
 
-Phase 4.1–4.4 created and hardened the GRN receiving flow:
+Phase 4.5 completed the cancellation/reversal architecture. Now implement the backend and minimal UI.
 
-- physical GRN and inventory tables
-- GRN create/edit/post RPCs
-- movement ledger and current inventory updates
-- GRN UI
-- read-only Current Inventory and Movement Ledger views
-- production hardening for inventory list RPCs
+A posted GRN must never be edited or deleted to correct mistakes. Cancellation must:
 
-But a real ERP must handle mistakes after posting. Posted inventory movements should not be deleted or edited. Cancellation should create controlled reversal movement rows and update current inventory in one database transaction.
-
-This phase is architecture/planning first.
+- create reversal inventory movement rows
+- leave original movement rows unchanged
+- decrement current inventory transactionally
+- block cancellation if stock was already consumed
+- require a reason and permission
+- make cancelled GRNs read-only
 
 ---
 
 # A. Review And Docs
 
-- [ ] Create `docs/PHASE_4_5_GRN_CANCELLATION_REVERSAL_ARCHITECTURE.md`
-- [ ] Update `docs/METADATA_ENGINE.md` with transaction reversal boundary if needed
-- [ ] Update `progress.md` after planning
-- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-5-grn-cancellation-reversal-architecture.md`
+- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-5-cancellation-architecture.md`
+- [ ] Update `progress.md` after implementation
+- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-6-grn-cancellation-reversal.md`
 
 ---
 
-# B. Design Principles
+# B. Migration: Cancellation / Reversal
 
-Document these rules clearly:
+Create migration:
 
-- [ ] Posted GRN cannot be edited directly.
-- [ ] Posted GRN cannot be deleted directly.
-- [ ] Cancellation creates reversal inventory movement rows.
-- [ ] Original movement rows remain unchanged.
-- [ ] Current inventory is reduced by reversal quantities.
-- [ ] Cancellation must be atomic.
-- [ ] Cancellation must be blocked if inventory is already consumed below the quantity required for reversal.
-- [ ] Cancellation requires explicit permission.
-- [ ] Cancellation records who/when/why.
+- [ ] `supabase/migrations/0038_grn_cancellation_reversal.sql`
 
----
+Migration must include:
 
-# C. Data Model Changes Proposal
+## B1. Table changes
 
-Plan minimal additions to existing physical tables.
+Add to `wh.grns`:
 
-Possible GRN header additions:
+- [ ] `cancelled_by uuid null`
+- [ ] `cancelled_at timestamptz null`
+- [ ] `cancel_reason text null`
 
-- [ ] `cancelled_by uuid`
-- [ ] `cancelled_at timestamptz`
-- [ ] `cancel_reason text`
-- [ ] `cancelled_from_status text` optional
+Add to `wh.inventory_movements`:
 
-Possible inventory movement fields:
+- [ ] `is_reversal boolean not null default false`
+- [ ] `reversal_of_movement_id uuid null references wh.inventory_movements(id)`
 
-- [ ] `reversal_of_movement_id uuid references wh.inventory_movements(id)`
-- [ ] `is_reversal boolean default false`
+Do not delete or mutate existing movement rows.
 
-Decide whether a separate audit table is needed:
+## B2. Permission
 
-- [ ] `wh.grn_status_events`
-
-Do not overbuild if existing audit patterns are enough.
-
----
-
-# D. RPC / Service Boundary Design
-
-Plan explicit function:
-
-- [ ] `wh_cancel_grn(p_grn_id uuid, p_reason text)`
-
-Rules:
-
-- [ ] Validate current user permission: `cancel_grn`.
-- [ ] Validate GRN exists and belongs to user company.
-- [ ] Validate GRN status is `posted`.
-- [ ] Validate reason is required.
-- [ ] Find original `GRN_RECEIPT` movement rows.
-- [ ] For each movement, create `REVERSAL` movement with negative quantity.
-- [ ] Decrease `wh.current_inventory` for matching product/batch/bin.
-- [ ] Block cancellation if current on-hand quantity would become negative.
-- [ ] Mark GRN status as `cancelled`.
-- [ ] Store cancellation metadata.
-- [ ] Ensure duplicate cancellation is blocked.
-- [ ] Ensure everything happens in one transaction.
-
----
-
-# E. Permission And Workspace Plan
-
-Plan permission:
+Seed permission:
 
 - [ ] `cancel_grn`
 
-Decide grants:
+Grant default access to:
 
-- [ ] owner/admin: granted
-- [ ] warehouse_manager: granted or optional
-- [ ] stock_operator: likely not granted by default
-- [ ] viewer/auditor: not granted
+- [ ] owner
+- [ ] admin
+- [ ] warehouse_manager, if this role exists
 
-UI behavior:
+Do not grant by default to:
 
-- [ ] Show Cancel GRN button only for posted GRNs and permitted users.
-- [ ] Ask for cancellation reason.
-- [ ] Confirm irreversible reversal behavior.
-- [ ] Show cancelled GRN as read-only.
-- [ ] Movement Ledger should show REVERSAL rows clearly.
+- [ ] stock_operator
+- [ ] viewer
+- [ ] auditor
+
+## B3. RPC
+
+Implement:
+
+- [ ] `wh_cancel_grn(p_grn_id uuid, p_reason text)`
+
+Requirements:
+
+- [ ] SECURITY DEFINER
+- [ ] validate GRN exists
+- [ ] validate status is `posted`
+- [ ] validate reason is not empty
+- [ ] validate user has `cancel_grn`
+- [ ] lock `wh.grns` row with `FOR UPDATE`
+- [ ] lock relevant `wh.current_inventory` rows with `FOR UPDATE`
+- [ ] find original `GRN_RECEIPT` movements for each accepted line
+- [ ] handle missing original movement as error
+- [ ] handle duplicate original movement as error or deterministic safe behavior
+- [ ] ensure `on_hand_qty >= accepted_qty` and `available_qty >= accepted_qty`
+- [ ] insert `REVERSAL` movement rows with negative qty
+- [ ] set `is_reversal = true`
+- [ ] set `reversal_of_movement_id` to original movement id
+- [ ] decrement `current_inventory.on_hand_qty` and `available_qty`
+- [ ] update `last_movement_at`
+- [ ] deactivate batches created solely by this GRN
+- [ ] update GRN status to `cancelled`
+- [ ] set `cancelled_by`, `cancelled_at`, `cancel_reason`
+- [ ] block duplicate cancellation
+- [ ] return `{ ok: true, data: { grn_id, reversals_created } }`
+- [ ] return friendly structured errors
 
 ---
 
-# F. Simulation Plan
+# C. API Wrapper
 
-Plan simulation:
+Update:
+
+- [ ] `src/lib/grn-api.ts`
+
+Add:
+
+- [ ] `cancelGrn(grnId: string, reason: string)`
+
+Ensure:
+
+- [ ] returns typed result
+- [ ] surfaces friendly backend errors
+- [ ] does not use generic JSON CRUD
+
+---
+
+# D. UI: Minimal Cancellation
+
+Create:
+
+- [ ] `src/components/grn/CancelGrnDialog.tsx`
+
+Update:
+
+- [ ] `src/components/grn/GrnDetailPage.tsx`
+- [ ] `src/components/grn/GrnStatusBadge.tsx`
+- [ ] `src/components/grn/InventoryMovementsPage.tsx` if needed
+
+UI requirements:
+
+- [ ] Show Cancel GRN button only for posted GRNs.
+- [ ] Ask for reason in dialog.
+- [ ] Reason is required.
+- [ ] Warn that cancellation creates reversal inventory entries.
+- [ ] Disable button while cancelling.
+- [ ] After successful cancellation, reload detail.
+- [ ] Show cancelled status badge.
+- [ ] Cancelled GRN remains read-only.
+- [ ] Movement ledger clearly shows `REVERSAL` rows.
+
+Permission note:
+
+- If frontend permission helper is readily available in this component tree, hide Cancel button unless user has `cancel_grn`.
+- If not practical in this phase, rely on backend permission and document the UI limitation.
+
+---
+
+# E. Simulation Test
+
+Create:
 
 - [ ] `tests/simulations/grn_cancellation_reversal_flow.sql`
 
-Must verify:
+Update:
 
-- [ ] Create and post GRN.
-- [ ] Confirm positive inventory movement exists.
-- [ ] Confirm current inventory increased.
-- [ ] Cancel GRN with reason.
-- [ ] Confirm GRN status becomes cancelled.
-- [ ] Confirm reversal movement row exists.
-- [ ] Confirm current inventory reduced back.
-- [ ] Confirm original movement remains unchanged.
-- [ ] Confirm duplicate cancellation blocked.
-- [ ] Confirm cancellation without reason blocked.
-- [ ] Confirm cancellation blocked if stock already consumed below required quantity, if outbound consumption simulation is available.
+- [ ] `scripts/run-simulation.cjs`
 
----
+Simulation must verify:
 
-# G. UI Plan
-
-Plan only. Do not implement full UI unless explicitly approved after planning.
-
-Future UI tasks:
-
-- [ ] Add Cancel button to posted GRN detail.
-- [ ] Add cancellation reason dialog.
-- [ ] Add cancelled status badge.
-- [ ] Add movement ledger type styling for REVERSAL rows.
-- [ ] Add cancellation metadata to detail page.
+- [ ] create and post GRN
+- [ ] positive movement exists
+- [ ] current inventory increased
+- [ ] cancel GRN with reason
+- [ ] GRN status becomes cancelled
+- [ ] reversal movement exists with negative qty
+- [ ] reversal links to original movement
+- [ ] original movement remains unchanged
+- [ ] current inventory reduced back
+- [ ] duplicate cancellation blocked
+- [ ] cancellation without reason blocked
+- [ ] cancellation of draft blocked
+- [ ] insufficient stock blocks cancellation if practical
+- [ ] cleanup/rollback at end
 
 ---
 
-# H. Test Suite / Verification Plan
+# F. Browser Verification
 
-Plan commands for implementation phase:
+Verify against Supabase Cloud:
+
+- [ ] open posted GRN detail
+- [ ] Cancel GRN button appears for permitted user
+- [ ] cancel without reason is blocked
+- [ ] cancel with reason succeeds
+- [ ] GRN status becomes cancelled
+- [ ] cancelled GRN is read-only
+- [ ] Current Inventory decreases
+- [ ] Movement Ledger shows REVERSAL row
+- [ ] duplicate cancellation is blocked or impossible from UI
+
+Screenshots should be committed if practical under:
+
+```text
+docs/ai-runs/screenshots/phase-4-6-grn-cancellation/
+```
+
+If screenshots are local-only, say so clearly.
+
+---
+
+# G. Tests And Commands
+
+Run and document exact output:
 
 ```bash
 npm run typecheck
@@ -164,36 +215,35 @@ npm run build
 npm run test:simulation
 ```
 
-The planning report must also carry forward current known test state from Phase 4.4.
+Document known pre-existing test failures separately from new failures.
 
 ---
 
-# I. AI Run Report
+# H. AI Run Report
 
 Create:
 
-- [ ] `docs/ai-runs/2026-06-01_phase-4-5-grn-cancellation-reversal-architecture.md`
+- [ ] `docs/ai-runs/2026-06-01_phase-4-6-grn-cancellation-reversal.md`
 
 Must include:
 
-- [ ] files inspected
-- [ ] architecture decisions
-- [ ] proposed table changes
-- [ ] proposed RPC design
-- [ ] permission design
-- [ ] simulation plan
-- [ ] UI plan
-- [ ] risks and edge cases
-- [ ] next implementation recommendation
+- [ ] final commit hash
+- [ ] files created/modified
+- [ ] migration details
+- [ ] RPC implementation summary
+- [ ] simulation result
+- [ ] browser verification result
+- [ ] screenshot paths or local-only note
+- [ ] command results
+- [ ] known gaps
+- [ ] next recommended task
 
 ---
 
-# J. Out Of Scope
+# I. Out Of Scope
 
 Do not implement in this phase:
 
-- [ ] full cancellation RPC implementation
-- [ ] full cancellation UI
 - [ ] Purchase Orders
 - [ ] supplier invoices/payments
 - [ ] transfers
@@ -203,20 +253,23 @@ Do not implement in this phase:
 - [ ] valuation/FIFO/weighted average
 - [ ] full workflow engine
 - [ ] full naming series engine
+- [ ] partial GRN cancellation
 
 ---
 
-# K. Acceptance Criteria
+# J. Acceptance Criteria
 
-Phase 4.5 planning is complete only when:
+Phase 4.6 is complete only when:
 
-- [ ] cancellation/reversal architecture doc exists
-- [ ] reversal movement strategy is clear
-- [ ] current inventory update strategy is clear
-- [ ] duplicate cancellation and insufficient-stock cases are addressed
-- [ ] permission design is clear
-- [ ] simulation plan exists
-- [ ] UI plan exists
+- [ ] `wh_cancel_grn` exists and passes simulation
+- [ ] cancellation creates reversal movement rows
+- [ ] original movements remain unchanged
+- [ ] current inventory decreases safely
+- [ ] duplicate/draft/no-reason cancellation is blocked
+- [ ] insufficient-stock case is handled or documented
+- [ ] minimal UI allows cancellation with reason
+- [ ] cancelled status renders correctly
+- [ ] browser verification is documented
 - [ ] AI run report exists
 
-After Phase 4.5 planning, proceed to Phase 4.6: implement GRN cancellation/reversal backend.
+After Phase 4.6, decide whether to proceed to Phase 4.7 GRN numbering/QC polish or Phase 5 Purchase Orders.
