@@ -160,4 +160,4 @@ $$;
 update app.erp_workspace_items
 set is_active = true
 where workspace_key = 'inventory'
-  and item_key in ('current_inventory', 'movements')
+  and item_key in ('current_inventory', 'movements');
