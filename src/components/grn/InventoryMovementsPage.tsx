@@ -98,27 +98,42 @@ export function InventoryMovementsPage({ tenantId }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.movement_date ? new Date(r.movement_date).toLocaleString() : "—"}</td>
-                    <td>{movementTypeLabels[r.movement_type] ?? r.movement_type}</td>
-                    <td>{r.source_type}</td>
-                    <td>{r.product_sku} — {r.product_name}</td>
-                    <td>{r.batch_number ?? "—"}</td>
-                    <td>
-                      {r.bin_code ? `${r.bin_code}${r.bin_name ? ` — ${r.bin_name}` : ""}` : "—"}
-                    </td>
-                    <td
+                  {filtered.map((r) => {
+                    const isReversal = r.movement_type === "REVERSAL";
+                    return (
+                    <tr
+                      key={r.id}
                       style={{
-                        textAlign: "right",
-                        fontWeight: 600,
-                        color: r.qty_delta >= 0 ? "#065f46" : "#991b1b",
+                        backgroundColor: isReversal ? "#fef2f2" : undefined,
+                        fontStyle: isReversal ? "italic" : undefined,
                       }}
                     >
-                      {r.qty_delta > 0 ? "+" : ""}{Number(r.qty_delta).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                      <td>{r.movement_date ? new Date(r.movement_date).toLocaleString() : "—"}</td>
+                      <td>
+                        {isReversal ? (
+                          <span style={{ color: "#dc2626", fontWeight: 600 }}>REVERSAL</span>
+                        ) : (
+                          movementTypeLabels[r.movement_type] ?? r.movement_type
+                        )}
+                      </td>
+                      <td>{r.source_type}</td>
+                      <td>{r.product_sku} — {r.product_name}</td>
+                      <td>{r.batch_number ?? "—"}</td>
+                      <td>
+                        {r.bin_code ? `${r.bin_code}${r.bin_name ? ` — ${r.bin_name}` : ""}` : "—"}
+                      </td>
+                      <td
+                        style={{
+                          textAlign: "right",
+                          fontWeight: 600,
+                          color: r.qty_delta >= 0 ? "#065f46" : "#991b1b",
+                        }}
+                      >
+                        {r.qty_delta > 0 ? "+" : ""}{Number(r.qty_delta).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                  })}
               </tbody>
             </table>
           </div>

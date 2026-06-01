@@ -25,6 +25,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 3.1 | Metadata Studio UX Polish | Complete | Improved raw metadata tables (search, sticky header, JSON previews), grouped workspace items view, Metadata Studio home categorization, and responsive JSON editor dialog. |
 | 4 | GRN + Inventory Receipt Architecture | Complete | Migrations 0030–0037 applied on Supabase Cloud. Full GRN lifecycle (create/edit/post/view/list), inventory read-only views, post confirmation dialog, client search, label enrichment, production-hardened RPCs (null→[], pagination), workspace visibility verified. |
 | 4.5 | GRN Cancellation / Reversal Architecture | Architecture complete | Design document covers reversal rules, table changes, RPC design, permission, simulation, UI plan. No implementation. |
+| 4.6 | GRN Cancellation / Reversal Implementation | Complete | Migration 0038, `wh_cancel_grn` RPC, CancelGrnDialog, frontend integration, simulation (12/12). Migration applied on Supabase Cloud. Verified E2E. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.
@@ -162,13 +163,44 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - `grn_status_events` audit table deferred (existing columns suffice)
 - Batches soft-deactivated (`is_active = false`), never deleted
 
-### Proposed Deliverables for Phase 4.6
-- Migration `0038_grn_cancellation_reversal.sql`
-- `CancelGrnDialog.tsx` + wire into `GrnDetailPage.tsx`
-- Update `GrnStatusBadge.tsx` for `cancelled` status
-- `cancelGrn()` in `grn-api.ts`
-- Simulation `tests/simulations/grn_cancellation_reversal_flow.sql`
-- Full verification + AI run report
+## Phase 4.6 Implementation Summary
+**Status:** GRN cancellation / reversal implementation complete.
+**Final Commit:** *(not yet committed)*
+
+### Files Created
+- `supabase/migrations/0038_grn_cancellation_reversal.sql` — table columns, `cancel_grn` permission, `wh_cancel_grn` RPC
+- `src/components/grn/CancelGrnDialog.tsx` — reason dialog with confirmation
+- `tests/simulations/grn_cancellation_reversal_flow.sql` — 12-test simulation
+- `docs/ai-runs/2026-06-01_phase-4-6-grn-cancellation-reversal.md` — AI run report
+
+### Files Modified
+- `src/lib/grn-api.ts` — added `cancelGrn()` API wrapper
+- `src/components/grn/GrnDetailPage.tsx` — Cancel button + cancelled info display
+- `src/components/grn/InventoryMovementsPage.tsx` — REVERSAL rows styled (red bg, bold label)
+- `scripts/run-simulation.cjs` — added cancellation flow entry
+
+### Key Design Decisions
+- `grn_lines` stores `batch_number` (text), not `batch_id` (uuid); RPC resolves batch_id from original movement
+- Two-pass RPC: validate all lines first, then execute reversals
+- Stock consumption guard locks `current_inventory` rows with `FOR UPDATE`
+- Original movements unchanged (append-only design)
+
+### Supabase Cloud Verification
+- Migration 0038 applied. Columns verified. Permission seeded + granted.
+- E2E: Post GRN (qty=15) → Cancel → Status=cancelled → Reversal movement (qty=-15, is_reversal=true) → Original unchanged → Current inventory 0 → Duplicate blocked → Empty reason blocked → Draft blocked.
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 37 warnings (pre-existing) |
+| `npm run build` | Success |
+
+### Remaining Gaps
+- No PO reference in GRN (future phase)
+- No partial reversal support
+- No `grn_status_events` audit table (deferred)
+- Insufficient-stock-with-consumption test requires outbound movement (future phase)
 
 ## Phase 3.1 Implementation Summary
 **Final Commit:** `d9e495b`

@@ -7,6 +7,7 @@ import { listUoms } from "../../lib/product-api";
 import { supabase } from "../../lib/supabase";
 import { GrnStatusBadge } from "./GrnStatusBadge";
 import { GrnLineGrid } from "./GrnLineGrid";
+import { CancelGrnDialog } from "./CancelGrnDialog";
 
 type Props = {
   grnId: string;
@@ -36,6 +37,7 @@ export function GrnDetailPage({ grnId, tenantId, onBack }: Props) {
   const [data, setData] = useState<GrnWithLines | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [uoms, setUoms] = useState<UomOption[]>([]);
@@ -135,7 +137,20 @@ export function GrnDetailPage({ grnId, tenantId, onBack }: Props) {
               <span style={valueStyle}>{new Date(grn.posted_at).toLocaleString()}</span>
             </div>
           )}
+          {grn.cancelled_at && (
+            <div style={fieldStyle}>
+              <span style={labelStyle}>Cancelled At</span>
+              <span style={valueStyle}>{new Date(grn.cancelled_at).toLocaleString()}</span>
+            </div>
+          )}
         </div>
+
+        {grn.cancel_reason && (
+          <div style={{ ...fieldStyle, marginBottom: "16px" }}>
+            <span style={{ ...labelStyle, color: "#dc2626" }}>Cancel Reason</span>
+            <span style={valueStyle}>{grn.cancel_reason}</span>
+          </div>
+        )}
 
         {grn.notes && (
           <div style={{ ...fieldStyle, marginBottom: "16px" }}>
@@ -153,10 +168,28 @@ export function GrnDetailPage({ grnId, tenantId, onBack }: Props) {
           readOnly
         />
 
-        <div className="form-actions" style={{ marginTop: "16px" }}>
+        <div className="form-actions" style={{ marginTop: "16px", display: "flex", gap: "8px", justifyContent: "space-between" }}>
           <button className="logout" onClick={onBack}>Back to List</button>
+          {grn.status === "posted" && (
+            <button
+              className="primary"
+              onClick={() => setShowCancelDialog(true)}
+              style={{ backgroundColor: "#dc2626", borderColor: "#dc2626" }}
+            >
+              Cancel GRN
+            </button>
+          )}
         </div>
       </div>
+
+      {showCancelDialog && (
+        <CancelGrnDialog
+          grnId={grnId}
+          grnNumber={grn.grn_number}
+          onClose={() => setShowCancelDialog(false)}
+          onCancelled={() => { setShowCancelDialog(false); void load(); }}
+        />
+      )}
     </div>
   );
 }

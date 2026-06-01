@@ -47,6 +47,9 @@ export interface GrnHeader {
   created_by: string;
   posted_by: string | null;
   posted_at: string | null;
+  cancelled_by: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
   created_at: string;
   updated_at: string;
   line_count?: number;
@@ -143,4 +146,11 @@ export async function listGrns(
 
 export async function postGrn(grnId: string): Promise<{ grn_id: string; movements_created: number }> {
   return rpcCall<{ grn_id: string; movements_created: number }>("wh_post_grn", { p_grn_id: grnId });
+}
+
+export async function cancelGrn(grnId: string, reason: string): Promise<{ grn_id: string; reversals_created: number }> {
+  return rpcCall<{ grn_id: string; reversals_created: number }>("wh_cancel_grn", {
+    p_grn_id: grnId,
+    p_reason: reason,
+  });
 }

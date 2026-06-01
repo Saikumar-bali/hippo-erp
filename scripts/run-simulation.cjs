@@ -14,6 +14,7 @@ const files = [
   { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_wizard_hardening_flow.sql"), label: "Custom DocType wizard hardening (Phase 2.10)" },
   { path: path.join(process.cwd(), "tests", "simulations", "warehouse_hierarchy_flow.sql"), label: "Warehouse hierarchy (Phase 3)" },
   { path: path.join(process.cwd(), "tests", "simulations", "grn_inventory_receipt_flow.sql"), label: "GRN inventory receipt flow (Phase 4.1)" },
+  { path: path.join(process.cwd(), "tests", "simulations", "grn_cancellation_reversal_flow.sql"), label: "GRN cancellation reversal flow (Phase 4.6)" },
 ];
 
 let missing = false;
