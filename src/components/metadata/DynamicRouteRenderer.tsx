@@ -175,11 +175,9 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
     }
 
     if (itemKey.startsWith("metadata_studio")) {
-      if (itemKey === "metadata_studio") {
-        return <MetadataStudioHome onNavigate={() => {}} />;
-      }
       return (
         <MetadataStudioRouter
+          key={itemKey}
           itemKey={itemKey}
           onRefreshSidebar={onRefreshSidebar}
           onNavigateToDocType={onNavigateToDocType}

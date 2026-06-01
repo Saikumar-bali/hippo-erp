@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { listAllWorkspaceItems, updateRecord, deleteRecord, loadWorkspaceKeys } from "../../lib/metadata/metadata-studio-api";
+import { listAllWorkspaceItems, createRecord, updateRecord, deleteRecord, loadWorkspaceKeys } from "../../lib/metadata/metadata-studio-api";
 import { MetadataFormDialog } from "./MetadataFormDialog";
 import { TABLES } from "../../lib/metadata/metadata-studio-api";
 import { Search, Filter } from "lucide-react";
+import { toast } from "sonner";
 
 type FilterState = {
   workspace_key: string;
@@ -35,6 +36,7 @@ export function WorkspaceItemsView() {
   const [filters, setFilters] = useState<FilterState>({ workspace_key: "", item_type: "", active: "" });
   const [workspaceOptions, setWorkspaceOptions] = useState<{ value: string; label: string }[]>([]);
   const [formState, setFormState] = useState<{ mode: "create" | "edit"; record: Record<string, unknown> } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Record<string, unknown> | null>(null);
 
   const tableMeta = TABLES["workspace_items"];
 
@@ -60,10 +62,25 @@ export function WorkspaceItemsView() {
     load();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this workspace item?")) return;
-    await deleteRecord("workspace_items", id);
-    load();
+  const handleDeleteConfirm = async () => {
+    if (!confirmDelete) return;
+    const row = confirmDelete;
+    setConfirmDelete(null);
+    try {
+      await deleteRecord("workspace_items", row.id as string);
+      load();
+      toast.success("Item deleted successfully", {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            await createRecord("workspace_items", row);
+            load();
+          },
+        },
+      });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    }
   };
 
   const filteredRows = useMemo(() => {
@@ -197,7 +214,7 @@ export function WorkspaceItemsView() {
                       <td style={{ whiteSpace: "nowrap" }}>
                         <button className="logout" onClick={() => setFormState({ mode: "edit", record: { ...row } })}
                           style={{ padding: "2px 8px", fontSize: "var(--font-size-xs)", cursor: "pointer", marginRight: "4px" }}>Edit</button>
-                        <button className="logout" onClick={() => handleDelete(row.id as string)}
+                        <button className="logout" onClick={() => setConfirmDelete(row)}
                           style={{ padding: "2px 8px", fontSize: "var(--font-size-xs)", cursor: "pointer", color: "var(--danger)" }}>Del</button>
                       </td>
                     </tr>
@@ -215,10 +232,28 @@ export function WorkspaceItemsView() {
           fields={tableMeta.fields}
           initial={formState.record}
           onSave={formState.mode === "create"
-            ? async (v) => { await updateRecord("workspace_items", v.id as string, v); load(); }
+            ? async (v) => { await createRecord("workspace_items", v); load(); }
             : handleUpdate}
           onClose={() => setFormState(null)}
         />
+      )}
+
+      {confirmDelete && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}>
+          <div className="card" style={{ width: "380px", padding: "var(--card-padding)" }}>
+            <h4 style={{ margin: "0 0 8px" }}>Delete workspace item?</h4>
+            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--muted)", margin: "0 0 16px" }}>
+              Are you sure you want to delete <strong>{(confirmDelete.label as string) || (confirmDelete.item_key as string)}</strong>? This action can be undone.
+            </p>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button className="logout" onClick={() => setConfirmDelete(null)}
+                style={{ padding: "6px 14px", fontSize: "var(--font-size-sm)", cursor: "pointer" }}>Cancel</button>
+              <button className="btn" onClick={handleDeleteConfirm}
+                style={{ padding: "6px 14px", fontSize: "var(--font-size-sm)", cursor: "pointer", background: "var(--danger, #c62828)", color: "#fff", border: "none", borderRadius: "var(--border-radius-sm)" }}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
