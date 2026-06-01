@@ -23,10 +23,43 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2.10 | Custom DocType Wizard Hardening | Complete | Atomic bundle RPC, duplicate checks (doctype_key, route, workspace item), permission auto-provisioning (catalog + owner/admin grants), sidebar refresh, success checklist, simulation, real authenticated UI verification (create/list/update/deactivate). |
 | 3 | Warehouse hierarchy | Complete | Metadata-driven 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with generic_json storage, Link field parent references with display templates, 25 permission keys granted to owner/admin, workspace sidebar items, migration 0028 applied on Supabase Cloud, browser UI verified (create hierarchy → edit → deactivate). |
 | 3.1 | Metadata Studio UX Polish | Complete | Improved raw metadata tables (search, sticky header, JSON previews), grouped workspace items view, Metadata Studio home categorization, and responsive JSON editor dialog. |
-| 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
+| 4 | GRN + Inventory Receipt Architecture | Planning complete | Architecture planned. Physical tables, RPCs, validations, simulation, and browser verification plan documented in `docs/PHASE_4_GRN_INVENTORY_RECEIPT_ARCHITECTURE.md`. Implementation pending. |
+
+## Phase 4 Planning Summary
+**Status:** Architecture planned, implementation pending.
+
+### Architecture Decisions
+- GRN uses explicit `wh.*` physical tables, not generic JSON
+- All inventory transactions go through SECURITY DEFINER RPCs
+- Posting is atomic: validates → creates batches → creates movements → updates current inventory in one transaction
+- Movements are append-only; reversals create compensating entries
+
+### Tables Planned
+| Table | Purpose |
+|-------|---------|
+| `wh.grns` | GRN header — draft/posted/cancelled |
+| `wh.grn_lines` | Line items with quantities, batch, bin |
+| `wh.inventory_batches` | Batch/lot tracking |
+| `wh.inventory_movements` | Immutable movement ledger |
+| `wh.current_inventory` | Current on-hand + available qty |
+
+### RPCs Planned
+| RPC | Purpose |
+|-----|---------|
+| `wh_create_grn_draft` | Create draft GRN |
+| `wh_update_grn_draft` | Update draft GRN |
+| `wh_get_grn` | Get GRN with lines |
+| `wh_list_grns` | List GRNs |
+| `wh_post_grn` | Atomic posting |
+
+### Next Steps
+- Implement migration 0030 with `wh.*` schema and tables
+- Implement RPC functions
+- Build GRN UI components (list, form, detail)
+- Implement simulation and browser verification
 
 ## Phase 3.1 Implementation Summary
-**Final Commit:** `97f6b57`
+**Final Commit:** `dff76cb`
 
 ### Files Created
 - `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md` — goals, requirements, and strategy for UX polish.

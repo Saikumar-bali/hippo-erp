@@ -280,3 +280,43 @@ The 6-level tree hierarchy benefits from a dedicated tree-builder component rath
 - **Option A**: Single tree component that loads all levels and allows inline CRUD (better UX, more complex).
 - **Option B**: Six separate DynamicListPage instances with parent-as-filter (simpler, consistent with Product Master pattern).
 - **Recommendation**: Start with Option B using metadata-driven DynamicListPage, add tree component later if hierarchy navigation proves painful.
+
+## Phase 4: GRN + Inventory Receipt (Design)
+
+### Architecture Decision
+
+GRN is the first inventory transaction. It uses **explicit physical tables** (`wh.*`) and **SECURITY DEFINER RPCs**, not generic JSON CRUD. This is the permanent boundary:
+
+| Data Type | Storage | Write Path |
+|-----------|---------|------------|
+| Master data (products, warehouse, etc.) | `app.erp_documents` (generic_json) | `erp_create_document` etc. |
+| Transactional inventory data (GRN, movements, batches, current inventory) | `wh.*` physical tables | Explicit `wh_*` RPCs only |
+
+### Tables
+
+| Table | Purpose |
+|-------|---------|
+| `wh.grns` | GRN header — company-scoped, status-based (draft/posted/cancelled) |
+| `wh.grn_lines` | Line items with received/accepted/rejected quantities, batch, bin allocation |
+| `wh.inventory_batches` | Batch/lot tracking per product |
+| `wh.inventory_movements` | Immutable movement ledger — append-only |
+| `wh.current_inventory` | Current on-hand and available quantity snapshot, upserted during posting |
+
+### RPCs
+
+| RPC | Purpose |
+|-----|---------|
+| `wh_create_grn_draft` | Create draft GRN with lines |
+| `wh_update_grn_draft` | Update draft GRN |
+| `wh_get_grn` | Get GRN with lines |
+| `wh_list_grns` | List GRNs with filters |
+| `wh_post_grn` | **Atomic posting** — validates, creates batches/movements, upserts current inventory in one transaction |
+
+### Key Rules
+- `received_qty > 0`, `accepted_qty >= 0`, `rejected_qty >= 0`
+- `accepted_qty + rejected_qty <= received_qty`
+- Batch/expiry rules from product metadata
+- Bin allocation required for accepted quantity
+- Posted GRN is read-only (cancellation creates reversal movements)
+- All posting work inside one database transaction
+- No direct table writes from frontend — always through RPCs
