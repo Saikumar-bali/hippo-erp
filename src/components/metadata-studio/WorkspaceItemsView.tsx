@@ -203,7 +203,8 @@ export function WorkspaceItemsView() {
                 </thead>
                 <tbody>
                   {wsRows.map((row) => (
-                    <tr key={row.id as string}>
+                    <tr key={row.id as string}
+                      style={row.is_active ? undefined : { opacity: 0.5 }}>
                       <td style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>{row.item_key as string}</td>
                       <td style={{ fontSize: "var(--font-size-sm)" }}>{row.label as string}</td>
                       <td><span style={badgeStyle("type")}>{row.item_type as string}</span></td>

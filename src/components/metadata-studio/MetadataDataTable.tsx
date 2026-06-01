@@ -215,6 +215,7 @@ export function MetadataDataTable({ label, tableKey, fetcher: outerFetcher }: Pr
                       <td key={col} style={{ fontSize: "var(--font-size-sm)", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {isJsonCol || isJson ? (
                           <span onClick={() => setJsonEdit({ row, col, val: raw })}
+                            title={raw === null || raw === undefined ? "" : JSON.stringify(raw)}
                             style={{ cursor: "pointer", color: "var(--primary, #0f5f63)", textDecoration: "underline dotted", fontSize: "var(--font-size-xs)" }}>
                             {display}
                           </span>

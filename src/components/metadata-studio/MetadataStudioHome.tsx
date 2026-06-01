@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileJson, Columns3, LayoutDashboard, ListTree, Table, LayoutTemplate, ShieldCheck, Hash, GitBranch, PlusCircle } from "lucide-react";
+import { FileJson, Columns3, LayoutDashboard, ListTree, Table, LayoutTemplate, ShieldCheck, Hash, GitBranch, PlusCircle, Zap } from "lucide-react";
 import { CustomDocTypeWizard } from "./CustomDocTypeWizard";
 
 const advancedSections = [
@@ -13,6 +13,8 @@ const advancedSections = [
   { key: "metadata_studio_naming_series", label: "Naming Series", icon: Hash, desc: "Document numbering configurations" },
   { key: "metadata_studio_workflows", label: "Workflows", icon: GitBranch, desc: "Document workflow state machines" },
 ];
+
+const quickKeys = new Set(["metadata_studio_doctypes", "metadata_studio_workspaces", "metadata_studio_workspace_items", "metadata_studio_list_views", "metadata_studio_form_layouts"]);
 
 type Props = {
   onNavigate: (itemKey: string) => void;
@@ -70,15 +72,37 @@ export function MetadataStudioHome({ onNavigate }: Props) {
         Create Custom DocType
       </div>
 
-      <div style={{ marginBottom: "8px" }}>
-        <h3 style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, color: "var(--muted)", margin: 0 }}>
-          Advanced Metadata Tables
+      <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", marginBottom: "16px", lineHeight: 1.5 }}>
+        Use builders/wizards for normal work. Use raw tables only for advanced fixes.
+      </p>
+
+      <div style={{ marginBottom: "12px" }}>
+        <h3 style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+          <Zap size={14} /> Quick Access
         </h3>
-        <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", margin: "2px 0 0" }}>
-          Raw table inspection for debugging. Use the wizard above for creating new DocTypes.
-        </p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "8px", marginBottom: "20px" }}>
+        {advancedSections.filter((s) => quickKeys.has(s.key)).map((s) => (
+          <button
+            key={s.key}
+            className="btn"
+            onClick={() => onNavigate(s.key)}
+            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "var(--font-size-sm)", cursor: "pointer", textAlign: "left", border: "none", borderRadius: "var(--border-radius-sm)" }}
+          >
+            <s.icon size={16} />
+            <div>
+              <div style={{ fontWeight: 600 }}>{s.label}</div>
+              <div style={{ fontSize: "var(--font-size-xs)", opacity: 0.8 }}>{s.desc}</div>
+            </div>
+          </button>
+        ))}
       </div>
 
+      <div style={{ marginBottom: "8px" }}>
+        <h3 style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, color: "var(--muted)", margin: 0 }}>
+          All Metadata Tables
+        </h3>
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px" }}>
         {advancedSections.map((s) => (
           <button

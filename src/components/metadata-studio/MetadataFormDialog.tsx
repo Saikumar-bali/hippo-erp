@@ -180,13 +180,18 @@ export function MetadataFormDialog({ title, fields, initial, onSave, onClose }: 
                   inputStyle={inputStyle}
                 />
               ) : f.type === "json" ? (
-                <textarea
-                  value={toJsonEditorValue(values[f.name])}
-                  onChange={(e) => set(f.name, e.target.value)}
-                  style={textareaStyle}
-                  placeholder="Enter valid JSON"
-                  spellCheck={false}
-                />
+                <>
+                  <textarea
+                    value={toJsonEditorValue(values[f.name])}
+                    onChange={(e) => set(f.name, e.target.value)}
+                    style={textareaStyle}
+                    placeholder="Enter valid JSON"
+                    spellCheck={false}
+                  />
+                  <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }}>
+                    Valid JSON required
+                  </span>
+                </>
               ) : (
                 <input
                   type="text"
