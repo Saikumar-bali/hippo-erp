@@ -58,19 +58,16 @@ export function GrnDraftFormPage({ tenantId, grnId, onSaved, onCancel }: Props) 
 
   const loadDeps = useCallback(async () => {
     try {
-      const [productData, uomData, binData] = await Promise.all([
+      const [productData, uomData, binResult] = await Promise.all([
         listProducts(tenantId),
         listUoms(tenantId),
-        supabase
-          .schema("wh")
-          .from("warehouse_bins")
-          .select("id, bin_code, name")
-          .eq("tenant_id", tenantId)
-          .throwOnError(),
+        supabase.rpc("wh_list_bins", { p_tenant_id: tenantId }),
       ]);
       setProducts(productData as ProductOption[]);
       setUoms(uomData as UomOption[]);
-      setBins((binData.data ?? []) as BinOption[]);
+      if (binResult.error) throw binResult.error;
+      const binPayload = binResult.data as { ok: boolean; data: BinOption[] };
+      setBins(binPayload.ok ? (binPayload.data ?? []) : []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load form data";
       setFetchError(msg);

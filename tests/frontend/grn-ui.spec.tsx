@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const mockListGrns = vi.fn();
@@ -6,6 +6,7 @@ const mockCreateGrnDraft = vi.fn();
 const mockUpdateGrnDraft = vi.fn();
 const mockGetGrn = vi.fn();
 const mockPostGrn = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock("../../src/lib/grn-api", () => ({
   listGrns: mockListGrns,
@@ -25,15 +26,7 @@ vi.mock("../../src/lib/product-api", () => ({
 
 vi.mock("../../src/lib/supabase", () => ({
   supabase: {
-    schema: () => ({
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            throwOnError: () => Promise.resolve({ data: [] }),
-          }),
-        }),
-      }),
-    }),
+    rpc: mockRpc,
   },
 }));
 
@@ -68,6 +61,7 @@ const postedGrn = {
 describe("GrnListPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRpc.mockResolvedValue({ data: { ok: true, data: [] }, error: null });
     mockListGrns.mockResolvedValue({ grns: [draftGrn, postedGrn], total: 2 });
     mockListProducts.mockResolvedValue([]);
     mockListUoms.mockResolvedValue([]);
