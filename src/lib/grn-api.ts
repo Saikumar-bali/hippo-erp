@@ -49,6 +49,7 @@ export interface GrnHeader {
   posted_at: string | null;
   created_at: string;
   updated_at: string;
+  line_count?: number;
 }
 
 export interface GrnLine {

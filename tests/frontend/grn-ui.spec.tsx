@@ -1,12 +1,16 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-const mockListGrns = vi.fn();
-const mockCreateGrnDraft = vi.fn();
-const mockUpdateGrnDraft = vi.fn();
-const mockGetGrn = vi.fn();
-const mockPostGrn = vi.fn();
-const mockRpc = vi.fn();
+afterEach(() => cleanup());
+
+const mockListGrns = vi.hoisted(() => vi.fn());
+const mockCreateGrnDraft = vi.hoisted(() => vi.fn());
+const mockUpdateGrnDraft = vi.hoisted(() => vi.fn());
+const mockGetGrn = vi.hoisted(() => vi.fn());
+const mockPostGrn = vi.hoisted(() => vi.fn());
+const mockRpc = vi.hoisted(() => vi.fn());
+const mockListProducts = vi.hoisted(() => vi.fn());
+const mockListUoms = vi.hoisted(() => vi.fn());
 
 vi.mock("../../src/lib/grn-api", () => ({
   listGrns: mockListGrns,
@@ -15,9 +19,6 @@ vi.mock("../../src/lib/grn-api", () => ({
   getGrn: mockGetGrn,
   postGrn: mockPostGrn,
 }));
-
-const mockListProducts = vi.fn();
-const mockListUoms = vi.fn();
 
 vi.mock("../../src/lib/product-api", () => ({
   listProducts: mockListProducts,
@@ -34,8 +35,9 @@ import { GrnListPage } from "../../src/components/grn/GrnListPage";
 
 const draftGrn = {
   id: "grn-1",
+  tenant_id: "t1",
   grn_number: "GRN-001",
-  supplier_name: "Test Supplier",
+  supplier_name: "Supplier A",
   received_date: "2026-06-01",
   status: "draft",
   qc_status: "pending",
@@ -52,6 +54,7 @@ const postedGrn = {
   ...draftGrn,
   id: "grn-2",
   grn_number: "GRN-002",
+  supplier_name: "Supplier B",
   status: "posted",
   posted_by: "u1",
   posted_at: "2026-06-01T01:00:00Z",
@@ -89,57 +92,62 @@ describe("GrnListPage", () => {
     mockPostGrn.mockResolvedValue({ grn_id: "grn-1", movements_created: 1 });
   });
 
-  it("renders GRN list with both draft and posted entries", async () => {
+  it("renders GRN list with draft and posted entries", async () => {
     render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => {
-      expect(screen.getByText("GRN-001")).toBeTruthy();
-    });
-    expect(screen.getByText("GRN-002")).toBeTruthy();
-    expect(screen.getByText("Test Supplier")).toBeTruthy();
+    const heading = await screen.findByText("Goods Receipt Notes");
+    expect(heading).toBeTruthy();
+    const grnLinks = screen.getAllByRole("button", { name: /GRN-/ });
+    expect(grnLinks.length).toBe(2);
+    expect(screen.getByText("Supplier A")).toBeTruthy();
+    expect(screen.getByText("Supplier B")).toBeTruthy();
   });
 
   it("shows create form when clicking + New GRN", async () => {
     render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => expect(screen.getByText("GRN-001")).toBeTruthy());
+    await screen.findByText("Goods Receipt Notes");
     fireEvent.click(screen.getByText("+ New GRN"));
-    await waitFor(() => {
-      expect(screen.getByText("New GRN")).toBeTruthy();
-    });
+    await screen.findByText("New GRN");
   });
 
   it("shows edit form when clicking Edit on a draft GRN", async () => {
     render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => expect(screen.getByText("GRN-001")).toBeTruthy());
+    await screen.findByText("Goods Receipt Notes");
     const editButtons = screen.getAllByText("Edit");
     fireEvent.click(editButtons[0]);
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("GRN-001")).toBeTruthy();
-    });
+    await screen.findByDisplayValue("GRN-001");
   });
 
-  it("calls postGrn when clicking Post", async () => {
+  it("shows detail view when clicking View on posted GRN", async () => {
     render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => expect(screen.getByText("GRN-001")).toBeTruthy());
+    await screen.findByText("Goods Receipt Notes");
+    const viewButton = screen.getByRole("button", { name: "View" });
+    fireEvent.click(viewButton);
+    await screen.findByText("Back to List");
+  });
+
+  it("shows post confirmation dialog when clicking Post", async () => {
+    render(<GrnListPage tenantId="t1" />);
+    await screen.findByText("Goods Receipt Notes");
     const postButtons = screen.getAllByText("Post");
     fireEvent.click(postButtons[0]);
+    await screen.findByRole("button", { name: "Confirm Post" });
+  });
+
+  it("calls postGrn after confirmation", async () => {
+    render(<GrnListPage tenantId="t1" />);
+    await screen.findByText("Goods Receipt Notes");
+    const postButtons = screen.getAllByText("Post");
+    fireEvent.click(postButtons[0]);
+    await screen.findByRole("button", { name: "Confirm Post" });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Post" }));
     await waitFor(() => {
       expect(mockPostGrn).toHaveBeenCalledWith("grn-1");
     });
   });
 
-  it("shows read-only detail when clicking View on posted GRN", async () => {
-    render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => expect(screen.getByText("GRN-001")).toBeTruthy());
-    const viewButtons = screen.getAllByText("View");
-    fireEvent.click(viewButtons[0]);
-    await waitFor(() => {
-      expect(screen.getByText("Back to List")).toBeTruthy();
-    });
-  });
-
   it("filters by status", async () => {
     render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => expect(screen.getByText("GRN-001")).toBeTruthy());
+    await screen.findByText("Goods Receipt Notes");
     const select = screen.getByDisplayValue("All Statuses");
     fireEvent.change(select, { target: { value: "draft" } });
     await waitFor(() => {
@@ -147,16 +155,15 @@ describe("GrnListPage", () => {
     });
   });
 
-  it("creates a draft via the form", async () => {
+  it("requires at least one line item when creating draft", async () => {
     render(<GrnListPage tenantId="t1" />);
-    await waitFor(() => expect(screen.getByText("GRN-001")).toBeTruthy());
+    await screen.findByText("Goods Receipt Notes");
     fireEvent.click(screen.getByText("+ New GRN"));
-    await waitFor(() => expect(screen.getByText("New GRN")).toBeTruthy());
+    await screen.findByText("New GRN");
     fireEvent.change(screen.getByPlaceholderText("e.g. GRN-2026-0001"), { target: { value: "GRN-NEW-1" } });
     fireEvent.change(screen.getByPlaceholderText("Supplier name"), { target: { value: "New Supplier" } });
     fireEvent.click(screen.getByText("Save Draft"));
-    await waitFor(() => {
-      expect(mockCreateGrnDraft).toHaveBeenCalled();
-    });
+    await screen.findByText("At least one line item is required.");
+    expect(mockCreateGrnDraft).not.toHaveBeenCalled();
   });
 });

@@ -2,25 +2,61 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getGrn } from "../../lib/grn-api";
 import type { GrnWithLines } from "../../lib/grn-api";
+import { listProducts } from "../../lib/product-api";
+import { listUoms } from "../../lib/product-api";
+import { supabase } from "../../lib/supabase";
 import { GrnStatusBadge } from "./GrnStatusBadge";
 import { GrnLineGrid } from "./GrnLineGrid";
 
 type Props = {
   grnId: string;
+  tenantId: string;
   onBack: () => void;
 };
 
-export function GrnDetailPage({ grnId, onBack }: Props) {
+interface ProductOption {
+  id: string;
+  sku: string;
+  name: string;
+}
+
+interface UomOption {
+  id: string;
+  code: string;
+  name: string;
+}
+
+interface BinOption {
+  id: string;
+  bin_code: string;
+  name: string;
+}
+
+export function GrnDetailPage({ grnId, tenantId, onBack }: Props) {
   const [data, setData] = useState<GrnWithLines | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [uoms, setUoms] = useState<UomOption[]>([]);
+  const [bins, setBins] = useState<BinOption[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const result = await getGrn(grnId);
+      const [result, productData, uomData, binResult] = await Promise.all([
+        getGrn(grnId),
+        listProducts(tenantId),
+        listUoms(tenantId),
+        supabase.rpc("wh_list_bins", { p_tenant_id: tenantId }),
+      ]);
       setData(result);
+      setProducts(productData as ProductOption[]);
+      setUoms(uomData as UomOption[]);
+      if (binResult.error) throw binResult.error;
+      const binPayload = binResult.data as { ok: boolean; data: BinOption[] };
+      setBins(binPayload.ok ? (binPayload.data ?? []) : []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load GRN";
       setError(msg);
@@ -28,7 +64,7 @@ export function GrnDetailPage({ grnId, onBack }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [grnId]);
+  }, [grnId, tenantId]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -111,9 +147,9 @@ export function GrnDetailPage({ grnId, onBack }: Props) {
         <h4 style={{ margin: "0 0 8px", fontSize: "var(--font-size-sm, 13px)" }}>Line Items</h4>
         <GrnLineGrid
           lines={lineInputs}
-          products={[]}
-          uoms={[]}
-          bins={[]}
+          products={products}
+          uoms={uoms}
+          bins={bins}
           readOnly
         />
 

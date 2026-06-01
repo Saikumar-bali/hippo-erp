@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { listGrns, postGrn } from "../../lib/grn-api";
 import type { GrnHeader } from "../../lib/grn-api";
@@ -20,6 +20,9 @@ export function GrnListPage({ tenantId }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [postingId, setPostingId] = useState<string | null>(null);
+  const [confirmPostId, setConfirmPostId] = useState<string | null>(null);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -44,12 +47,27 @@ export function GrnListPage({ tenantId }: Props) {
     if (viewMode === "list") void loadList();
   }, [loadList, viewMode]);
 
+  const filteredGrns = useMemo(() => {
+    if (!searchQuery.trim()) return grns;
+    const q = searchQuery.toLowerCase();
+    return grns.filter(
+      (g) =>
+        g.grn_number.toLowerCase().includes(q) ||
+        g.supplier_name.toLowerCase().includes(q)
+    );
+  }, [grns, searchQuery]);
+
   const handleView = (grnId: string) => {
     setSelectedGrnId(grnId);
     setViewMode("view");
   };
 
   const handleEdit = (grnId: string) => {
+    const grn = grns.find((g) => g.id === grnId);
+    if (grn?.status === "posted") {
+      handleView(grnId);
+      return;
+    }
     setSelectedGrnId(grnId);
     setViewMode("edit");
   };
@@ -59,15 +77,25 @@ export function GrnListPage({ tenantId }: Props) {
     setViewMode("create");
   };
 
-  const handlePost = async (grnId: string) => {
+  const handlePostConfirm = async () => {
+    if (!confirmPostId) return;
+    const id = confirmPostId;
+    setConfirmPostId(null);
+    setPostingId(id);
     try {
-      await postGrn(grnId);
-      toast.success("GRN posted.");
+      await postGrn(id);
+      toast.success("GRN posted successfully.");
       void loadList();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Post failed";
       toast.error(msg);
+    } finally {
+      setPostingId(null);
     }
+  };
+
+  const handlePostClick = (grnId: string) => {
+    setConfirmPostId(grnId);
   };
 
   const handleSaved = () => {
@@ -79,6 +107,7 @@ export function GrnListPage({ tenantId }: Props) {
   const handleCancel = () => {
     setViewMode("list");
     setSelectedGrnId(null);
+    setSearchQuery("");
   };
 
   if (viewMode === "create") {
@@ -103,7 +132,7 @@ export function GrnListPage({ tenantId }: Props) {
   }
 
   if (viewMode === "view" && selectedGrnId) {
-    return <GrnDetailPage grnId={selectedGrnId} onBack={handleCancel} />;
+    return <GrnDetailPage grnId={selectedGrnId} tenantId={tenantId} onBack={handleCancel} />;
   }
 
   const filterStyle: React.CSSProperties = {
@@ -115,12 +144,57 @@ export function GrnListPage({ tenantId }: Props) {
     minWidth: "120px",
   };
 
+  const confirmOverlayStyle: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  };
+
+  const confirmDialogStyle: React.CSSProperties = {
+    background: "#fff",
+    borderRadius: "8px",
+    padding: "24px",
+    maxWidth: "400px",
+    width: "90%",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  };
+
   return (
     <div className="module-stack">
+      {confirmPostId && (
+        <div style={confirmOverlayStyle} onClick={() => setConfirmPostId(null)}>
+          <div style={confirmDialogStyle} onClick={(e) => e.stopPropagation()}>
+            <h4 style={{ margin: "0 0 12px" }}>Confirm Post</h4>
+            <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#4b5563" }}>
+              Once posted, this GRN cannot be edited. Inventory will be updated immediately.
+            </p>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button className="logout" onClick={() => setConfirmPostId(null)}>
+                Cancel
+              </button>
+              <button className="primary-action" onClick={handlePostConfirm}>
+                Confirm Post
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="card-head">
           <h3>Goods Receipt Notes</h3>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by GRN or supplier…"
+              style={{ ...filterStyle, minWidth: "200px" }}
+            />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -140,14 +214,18 @@ export function GrnListPage({ tenantId }: Props) {
         {loading && <div className="card state-info">Loading GRNs…</div>}
         {!!error && <div className="card state-error">{error}</div>}
 
-        {!loading && !error && grns.length === 0 && (
+        {!loading && !error && filteredGrns.length === 0 && (
           <div className="empty-state">
-            <strong>No GRNs yet.</strong>
-            <p>Click "+ New GRN" to create the first Goods Receipt Note.</p>
+            <strong>{searchQuery || statusFilter ? "No matching GRNs." : "No GRNs yet."}</strong>
+            <p>
+              {searchQuery || statusFilter
+                ? "Try adjusting your search or filter."
+                : 'Click "+ New GRN" to create the first Goods Receipt Note.'}
+            </p>
           </div>
         )}
 
-        {!loading && grns.length > 0 && (
+        {!loading && filteredGrns.length > 0 && (
           <div className="table-wrap" style={{ overflowX: "auto" }}>
             <table className="erp-table" style={{ width: "100%", fontSize: "var(--font-size-sm, 12px)" }}>
               <thead>
@@ -163,7 +241,7 @@ export function GrnListPage({ tenantId }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {grns.map((grn) => (
+                {filteredGrns.map((grn) => (
                   <tr key={grn.id}>
                     <td>
                       <button className="link-button" onClick={() => handleView(grn.id)}>
@@ -176,7 +254,7 @@ export function GrnListPage({ tenantId }: Props) {
                       <GrnStatusBadge status={grn.status} qcStatus={grn.qc_status} />
                     </td>
                     <td>{grn.qc_status}</td>
-                    <td style={{ textAlign: "right" }}>{(grn as any).line_count ?? "—"}</td>
+                    <td style={{ textAlign: "right" }}>{grn.line_count ?? "—"}</td>
                     <td>{grn.posted_at ? new Date(grn.posted_at).toLocaleString() : "—"}</td>
                     <td style={{ textAlign: "center" }}>
                       <div className="action-group" style={{ justifyContent: "center" }}>
@@ -188,9 +266,10 @@ export function GrnListPage({ tenantId }: Props) {
                             <button
                               className="primary-action"
                               style={{ fontSize: "11px", padding: "3px 8px" }}
-                              onClick={() => handlePost(grn.id)}
+                              onClick={() => handlePostClick(grn.id)}
+                              disabled={postingId === grn.id}
                             >
-                              Post
+                              {postingId === grn.id ? "Posting…" : "Post"}
                             </button>
                           </>
                         )}
