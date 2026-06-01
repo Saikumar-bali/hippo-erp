@@ -24,6 +24,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 3 | Warehouse hierarchy | Complete | Metadata-driven 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with generic_json storage, Link field parent references with display templates, 25 permission keys granted to owner/admin, workspace sidebar items, migration 0028 applied on Supabase Cloud, browser UI verified (create hierarchy → edit → deactivate). |
 | 3.1 | Metadata Studio UX Polish | Complete | Improved raw metadata tables (search, sticky header, JSON previews), grouped workspace items view, Metadata Studio home categorization, and responsive JSON editor dialog. |
 | 4 | GRN + Inventory Receipt Architecture | Complete | Migrations 0030–0037 applied on Supabase Cloud. Full GRN lifecycle (create/edit/post/view/list), inventory read-only views, post confirmation dialog, client search, label enrichment, production-hardened RPCs (null→[], pagination), workspace visibility verified. |
+| 4.5 | GRN Cancellation / Reversal Architecture | Architecture complete | Design document covers reversal rules, table changes, RPC design, permission, simulation, UI plan. No implementation. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.
@@ -121,7 +122,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 
 ## Phase 4.4 Implementation Summary
 **Status:** GRN + Inventory production hardening complete.
-**Final Commit:** *(not yet committed)*
+**Final Commit:** `771cf49`
 
 ### Files Created
 - `docs/PHASE_4_4_GRN_INVENTORY_PRODUCTION_HARDENING.md` — design document
@@ -145,6 +146,29 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 |---------|--------|
 | `npm run typecheck` | 0 errors |
 | `npm run lint` | 0 errors, 37 warnings (pre-existing) |
+
+## Phase 4.5 Implementation Summary
+**Status:** Architecture / Planning complete (no implementation).
+
+### Files Created
+- `docs/PHASE_4_5_GRN_CANCELLATION_REVERSAL_ARCHITECTURE.md` — full cancellation/reversal architecture document
+- `docs/ai-runs/2026-06-01_phase-4-5-grn-cancellation-reversal-architecture.md` — AI run report
+
+### Key Architecture Decisions
+- Two-pass RPC (validate all lines → execute reversals) for atomicity
+- Dedicated `cancel_grn` permission key (not generic `cancel_document`)
+- `reversal_of_movement_id` column added to link reversal → original movement
+- Block full cancellation if any line has insufficient stock
+- `grn_status_events` audit table deferred (existing columns suffice)
+- Batches soft-deactivated (`is_active = false`), never deleted
+
+### Proposed Deliverables for Phase 4.6
+- Migration `0038_grn_cancellation_reversal.sql`
+- `CancelGrnDialog.tsx` + wire into `GrnDetailPage.tsx`
+- Update `GrnStatusBadge.tsx` for `cancelled` status
+- `cancelGrn()` in `grn-api.ts`
+- Simulation `tests/simulations/grn_cancellation_reversal_flow.sql`
+- Full verification + AI run report
 
 ## Phase 3.1 Implementation Summary
 **Final Commit:** `d9e495b`
