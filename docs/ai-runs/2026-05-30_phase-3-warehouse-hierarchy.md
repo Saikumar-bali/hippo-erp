@@ -10,7 +10,7 @@ Build a metadata-driven Warehouse hierarchy (Warehouse → Zone → Aisle → Ra
 `6f38832` (Update final commit hash and command results in AI run report)
 
 ## Final Commit
-<!-- filled in at end -->
+`c94f1f7`
 
 ## Files Created (5)
 | File | Purpose |
