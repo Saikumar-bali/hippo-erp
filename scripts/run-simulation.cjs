@@ -12,6 +12,7 @@ const files = [
   { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_storage_flow.sql"), label: "Custom DocType storage (Phase 2.8)" },
   { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_wizard_flow.sql"), label: "Custom DocType wizard flow (Phase 2.9)" },
   { path: path.join(process.cwd(), "tests", "simulations", "custom_doctype_wizard_hardening_flow.sql"), label: "Custom DocType wizard hardening (Phase 2.10)" },
+  { path: path.join(process.cwd(), "tests", "simulations", "warehouse_hierarchy_flow.sql"), label: "Warehouse hierarchy (Phase 3)" },
 ];
 
 let missing = false;

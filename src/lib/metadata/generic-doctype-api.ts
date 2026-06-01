@@ -16,18 +16,7 @@ function handleSingleRpcResponse(response: unknown): Record<string, unknown> {
 }
 
 function splitSystemFields(payload: Record<string, unknown>, tenantId?: string) {
-  const {
-    tenant_id,
-    company_id,
-    id,
-    doctype_key,
-    document_number,
-    created_at,
-    updated_at,
-    created_by,
-    updated_by,
-    ...data
-  } = payload;
+  const { tenant_id, company_id, ...data } = payload;
 
   return {
     companyId: tenantId ?? (company_id as string | undefined) ?? (tenant_id as string | undefined),

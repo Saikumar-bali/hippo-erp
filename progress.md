@@ -21,7 +21,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2.8 | Custom DocType Document Storage | Complete | Database: storage_strategy, erp_documents + erp_document_versions tables, 6 RPC functions with field validation + permission check + company scoping. Frontend: generic-doctype-api bridge, doctype-api-map auto-detection, DynamicListPage/DynamicDetailPage generic_json support, storage_strategy in DocType form. Applied + verified on Supabase Cloud. |
 | 2.9 | Custom DocType Wizard UX | Complete | Guided 7-step wizard for end-to-end custom DocType creation. Creates DocType + DocFields + List View + Form Layout + DocType Actions + Workspace Item in Supabase Cloud. Metadata Studio home reorganized with wizard as primary action. |
 | 2.10 | Custom DocType Wizard Hardening | Complete | Atomic bundle RPC, duplicate checks (doctype_key, route, workspace item), permission auto-provisioning (catalog + owner/admin grants), sidebar refresh, success checklist, simulation, real authenticated UI verification (create/list/update/deactivate). |
-| 3 | Warehouse hierarchy | On Hold | Warehouse CRUD not started. |
+| 3 | Warehouse hierarchy | Complete | Metadata-driven 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with generic_json storage, Link field parent references with display templates, 25 permission keys granted to owner/admin, workspace sidebar items, migration 0028 applied on Supabase Cloud, browser UI verified (create hierarchy → edit → deactivate). |
 | 4+ | GRN, stock ledger, transactions, reports | Pending | Must use explicit safe business services for stock-changing actions. |
 
 ## Phase 2.6 Implementation Summary
