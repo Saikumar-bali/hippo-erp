@@ -1,9 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MetadataDataTable } from "../../src/components/metadata-studio/MetadataDataTable";
 import { WorkspaceItemsManager } from "../../src/components/metadata-studio/WorkspaceItemsManager";
 import { MetadataStudioHome } from "../../src/components/metadata-studio/MetadataStudioHome";
-import { vi, describe, it, expect, beforeEach } from "vitest";
-import React from "react";
+import { vi, describe, it, expect } from "vitest";
 
 // Mock the API calls
 vi.mock("../../src/lib/metadata/metadata-studio-api", () => ({
@@ -61,13 +60,13 @@ describe("Metadata Studio UX Polish", () => {
     
     expect(await screen.findByText(/1 of 1 record/)).toBeTruthy();
     expect(screen.getByPlaceholderText("Search...")).toBeTruthy();
-    expect(screen.getByText("{...}")).toBeTruthy(); // JSON preview
+    expect(screen.getByText(/\d+ keys?/)).toBeTruthy(); // JSON preview: {N keys}
   });
 
   it("WorkspaceItemsManager shows grouped view", async () => {
     render(<WorkspaceItemsManager />);
     expect(await screen.findByText(/ws1/i)).toBeTruthy();
-    expect(screen.getByText("(2)")).toBeTruthy(); // count in header
+    expect(screen.getByText(/2 items/)).toBeTruthy(); // count in header
     expect(screen.getByText("Active")).toBeTruthy();
     expect(screen.getByText("Inactive")).toBeTruthy();
   });
