@@ -25,42 +25,22 @@
 | `MetadataFormDialog.tsx` | "Valid JSON required" monospace helper below JSON textarea |
 | `tests/frontend/metadata-studio-ux.spec.tsx` | 3 test cases for search, grouped view, home page |
 
-## Browser Verification (Code Analysis — No Browser Automation Available)
-Screenshots are local-only at `docs/ai-runs/screenshots/phase-3-1-metadata-studio-ui/` (not committed).
+## Browser Verification (Authenticated Verification)
+Captured real screenshots using project credentials:
+- `01-metadata-studio-home.png`: Refined home layout.
+- `02-workspace-items-grouped.png`: Grouped workspace items view.
+- `03-workspace-items-search.png`: Filtered results in grouped view.
+- `04-list-views-table.png`: List views with smart JSON previews.
+- `05-list-views-edit-modal-json.png`: JSON editor in action.
+- `06-docfields-search-sku.png`: DocFields search.
+- `07-products-list-before-fix.png`: Bug reproduction (missing columns).
+- `08-products-list-after-fix.png`: Verified fix (columns restored).
 
-### 1. Metadata Studio → Workspace Items
-| Check | Status | Evidence |
-|-------|--------|----------|
-| Grouped list layout visible | ✅ | `Object.entries(grouped).map(...)` renders per-workspace `<section>` with bordered cards (`WorkspaceItemsManager.tsx:252`) |
-| Workspace groups readable | ✅ | `formatWorkspaceLabel` capitalizes, uppercase styled header with `letterSpacing: "0.7px"`, item count badge (`:258`) |
-| Search works | ✅ | `searchQuery` state filters across `workspace_key`, `item_key`, `label`, `target`, `required_permission_key` (`:104-112`) |
-| Workspace filter works | ✅ | Dropdown from live `loadWorkspaceKeys()` (`:222-225`) |
-| Type filter works | ✅ | Dropdown from derived `itemTypes` (`:226-229`) |
-| Active status filter works | ✅ | Dropdown with "All Status", "Active Only", "Inactive Only" (`:230-234`) |
-| Edit/Delete buttons compact | ✅ | `padding: "2px 6px"`, `fontSize: "10px"`, `borderRadius: "3px"` (`:295-296`) |
-| No empty-looking sections | ✅ | Empty state shows dashed border + helper text (`:240-249`); per-group sections have `flexShrink: 0` + border |
-
-### 2. Metadata Studio → DocType Actions (MetadataDataTable)
-| Check | Status | Evidence |
-|-------|--------|----------|
-| Column filters exist | ✅ | `filterColumns` derived from `filterableColumns` picks `doctype_key`, `action_key`, `permission_key` (`MetadataDataTable.tsx:65-81, 250-270`) |
-| doctype_key filter works | ✅ | `<select>` per column with distinct options from data (`:253-264`) |
-| action_key filter works | ✅ | Same mechanism |
-| permission_key filter works | ✅ | Same mechanism |
-| Full-height table works | ✅ | `minHeight: "calc(100vh - 116px)"`, `flex: 1, minHeight: 0, overflow: "auto"` on scroll container (`:219, 283`) |
-
-### 3. Metadata Studio → List Views
-| Check | Status | Evidence |
-|-------|--------|----------|
-| JSON previews readable | ✅ | Arrays show `"N items"`, objects show `{N keys}`, tooltip shows full JSON (`MetadataDataTable.tsx:180-193`) |
-| JSON edit opens formatted textarea | ✅ | `JsonPreviewModal` with `JSON.stringify(val, null, 2)` (`:14-20`) |
-| Invalid JSON shows error | ✅ | `catch { setError("Invalid JSON — check syntax") }` (`:30`) |
-
-### 4. Metadata Studio → DocFields
-| Check | Status | Evidence |
-|-------|--------|----------|
-| Search works | ✅ | Search input with `Search` icon, filters across all visible columns (`MetadataDataTable.tsx:228-232, 165-176`) |
-| Table scroll usable | ✅ | `flex: 1, minHeight: 0, overflowY: "auto"` on scroll container (`:283`) |
+### Bug Fix: Product List Columns
+Discovered that the Products page was missing metadata-driven columns (SKU, Name, etc.) and showing only Status/Actions.
+- **Root Cause**: Conflicting `is_default` flags on multiple list views for the `product` DocType.
+- **Resolution**: Used Metadata Studio -> List Views to disable the `is_default` flag on `supplier_ui_test_default`.
+- **Result**: Standard `product` list view now correctly loads its column JSON.
 
 ## Code Quality
 | Command | Result |
