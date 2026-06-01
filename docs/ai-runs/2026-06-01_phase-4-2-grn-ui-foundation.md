@@ -1,7 +1,7 @@
 # AI Run Report: Phase 4.2 — GRN UI Foundation
 
 **Date:** 2026-06-01
-**Final Commit:** `(to be determined)`
+**Final Commit:** `e41a668`
 **Branch:** `phase-2.5-metadata-engine`
 
 ## Summary

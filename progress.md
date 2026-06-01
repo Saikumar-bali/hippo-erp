@@ -23,7 +23,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2.10 | Custom DocType Wizard Hardening | Complete | Atomic bundle RPC, duplicate checks (doctype_key, route, workspace item), permission auto-provisioning (catalog + owner/admin grants), sidebar refresh, success checklist, simulation, real authenticated UI verification (create/list/update/deactivate). |
 | 3 | Warehouse hierarchy | Complete | Metadata-driven 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with generic_json storage, Link field parent references with display templates, 25 permission keys granted to owner/admin, workspace sidebar items, migration 0028 applied on Supabase Cloud, browser UI verified (create hierarchy → edit → deactivate). |
 | 3.1 | Metadata Studio UX Polish | Complete | Improved raw metadata tables (search, sticky header, JSON previews), grouped workspace items view, Metadata Studio home categorization, and responsive JSON editor dialog. |
-| 4 | GRN + Inventory Receipt Architecture | 4.1 backend foundation complete | Migrations 0030–0033 applied on Supabase Cloud. 5 physical tables, RLS, SECURITY DEFINER RPCs, permissions, workspace activation, and frontend API wrapper. Simulation PASSED (12 tests). |
+| 4 | GRN + Inventory Receipt Architecture | Complete | Migrations 0030–0037 applied on Supabase Cloud. Full GRN lifecycle (create/edit/post/view/list), inventory read-only views, post confirmation dialog, client search, label enrichment, production-hardened RPCs (null→[], pagination), workspace visibility verified. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.
@@ -60,9 +60,91 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | `npm run test:simulation` | 11 simulation files (including GRN) |
 
 ### Remaining Gaps
-- No GRN UI components (planned Phase 4.2)
 - No auto GRN numbering
 - No line-level approval or partial-receipt workflow
+
+## Phase 4.2 Implementation Summary
+**Status:** GRN UI foundation complete.
+**Final Commit:** `e41a668`
+
+### Files Created
+- `supabase/migrations/0034_grn_ui_view.sql` — GRN list view RPC, supplier search case-insensitive
+- `src/components/grn/GrnDraftFormPage.tsx` — Full create/edit GRN draft form with line grid (product, UOM, qty, batch, bin, expiry), supplier search dropdown
+- `src/components/grn/GrnDetailPage.tsx` — Read-only GRN detail with line items
+- `src/components/grn/GrnLineGrid.tsx` — Dynamic line item grid (add/remove rows, product+UOM selectors)
+- `src/components/grn/GrnStatusBadge.tsx` — Colored status badge component
+- `src/components/grn/GrnListPage.tsx` — GRN list page with status filtering
+- `tests/frontend/grn-ui.spec.tsx` — Initial test suite
+
+### Key Decisions
+- Supplier is free-text input with typeahead search (not FK-constrained)
+- Line items are fully dynamic (add/remove)
+- No PO reference field (planned for future phase)
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 33 warnings (pre-existing) |
+| `npm run build` | Success |
+| `npm run test` | 34 pass, 6 fail (pre-existing) |
+
+## Phase 4.3 Implementation Summary
+**Status:** GRN UI hardening complete.
+**Final Commit:** `73073fd`
+
+### Files Created
+- `docs/PHASE_4_3_GRN_UI_HARDENING.md` — design document
+- `supabase/migrations/0036_inventory_list_rpcs.sql` — `wh_list_current_inventory` + `wh_list_inventory_movements` RPCs
+- `src/lib/inventory-api.ts` — merged legacy re-exports + new RPC wrappers + types
+- `src/components/grn/CurrentInventoryPage.tsx` — read-only current inventory view
+- `src/components/grn/InventoryMovementsPage.tsx` — read-only movement ledger view
+
+### Files Modified
+- `src/components/grn/GrnDetailPage.tsx` — loads products/UOMs/bins for label enrichment
+- `src/components/grn/GrnListPage.tsx` — client search, post confirmation dialog, posted GRN edit→view redirect, `line_count` type fix
+- `src/components/metadata/DynamicRouteRenderer.tsx` — routes for `current_inventory` and `movements`
+- `src/lib/grn-api.ts` — fixed `line_count` typing
+- `tests/frontend/grn-ui.spec.tsx` — 8 tests matching current UI
+
+### Key Decisions
+- Inventory RPCs return `{ ok: true, data: [...] }` shape
+- Current Inventory / Movements workspace items remain inactive (pending Phase 4.4 activation decision)
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 37 warnings (pre-existing) |
+| `npm run build` | Success |
+| `npm run test` | 42 pass, 6 fail (pre-existing) |
+
+## Phase 4.4 Implementation Summary
+**Status:** GRN + Inventory production hardening complete.
+**Final Commit:** *(not yet committed)*
+
+### Files Created
+- `docs/PHASE_4_4_GRN_INVENTORY_PRODUCTION_HARDENING.md` — design document
+- `supabase/migrations/0037_inventory_list_rpcs_hardening.sql` — harden inventory list RPCs (null→[], pre-aggregation pagination)
+- `docs/ai-runs/2026-06-01_phase-4-4-grn-inventory-hardening.md` — AI run report
+
+### Files Modified
+- `src/lib/inventory-api.ts` — reorganized: Phase 4.3+ read-only API at top, legacy helpers clearly marked @deprecated
+
+### Key Decisions
+- Migration 0037 replaces RPCs from 0036; COALESCE wraps jsonb_agg, LIMIT/OFFSET moved inside CTE
+- Legacy helpers remain for backward-compatible imports, explicitly deprecated
+
+### Supabase Cloud Verification
+- `wh_list_current_inventory` returns `{"ok":true,"data":[]}` for empty result (not null)
+- `wh_list_inventory_movements` returns `{"ok":true,"data":[]}` for empty result (not null)
+- Current Inventory and Movements workspace items now active (is_active = true)
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 37 warnings (pre-existing) |
 
 ## Phase 3.1 Implementation Summary
 **Final Commit:** `d9e495b`
