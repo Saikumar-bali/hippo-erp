@@ -1,227 +1,311 @@
-# Phase 3.1 Tasks: Metadata Studio UX Polish
+# Phase 4 Tasks: GRN + Inventory Receipt Architecture
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Improve Metadata Studio raw metadata management screens so they are searchable, grouped, readable, and professional before starting GRN or Stock Ledger.
+Goal: Plan the Goods Receipt Note (GRN) flow and the inventory quantity update architecture before implementing any quantity-changing ERP logic.
 
 ## Why This Phase Exists
 
-Phase 3 Warehouse hierarchy is complete as metadata-driven master data. However, Metadata Studio still feels like a raw database table editor. As the system grows, raw flat tables will become hard to inspect and maintain.
+The framework foundation is now ready:
 
-Phase 3.1 improves the Developer Side UX without changing the ERP business model.
+- Metadata-driven workspace/sidebar
+- Metadata Studio and Custom DocType Wizard
+- Generic JSON storage for safe master data
+- Product Master
+- Warehouse hierarchy master data
+- Metadata Studio UX polish
+
+GRN is the first serious inventory transaction. It must not be implemented as normal generic JSON CRUD. It needs explicit database functions/services because it creates receipt lines, batches, bin allocations, movement records, and current quantity updates.
 
 ---
 
 # A. Planning And Docs
 
-- [x] Add GPT review report: `docs/ai-runs/2026-05-30_gpt-review-phase-3-warehouse-and-ui.md`
-- [x] Create `docs/PHASE_3_1_METADATA_STUDIO_UX_POLISH.md`
-- [x] Update `progress.md` after implementation
+Create/update:
+
+- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-3-1-metadata-ui.md`
+- [ ] `docs/PHASE_4_GRN_INVENTORY_RECEIPT_ARCHITECTURE.md`
+- [ ] `docs/METADATA_ENGINE.md`
+- [ ] `progress.md`
+
+Document:
+
+- [ ] GRN business flow
+- [ ] Master data vs transaction data boundary
+- [ ] Why generic JSON is not used for inventory quantity changes
+- [ ] Supabase Cloud verification flow
+- [ ] Required simulation and browser verification plan
 
 ---
 
-# B. MetadataDataTable Improvements
+# B. Phase 4 Scope
 
-Update:
+Plan these items:
 
-- [x] `src/components/metadata-studio/MetadataDataTable.tsx`
+- [ ] GRN header
+- [ ] GRN lines
+- [ ] QC / grading fields
+- [ ] Batch creation rules
+- [ ] Bin allocation rules
+- [ ] Inventory movement record design
+- [ ] Current quantity snapshot design
+- [ ] Explicit database function boundary
+- [ ] Permission and status boundary
 
-Add:
+Do not implement yet:
 
-- [x] Search input across visible columns
-- [x] Row count after filtering
-- [x] Compact empty state
-- [x] Sticky table header
-- [x] Better JSON previews:
-  - arrays show `N items`
-  - objects show `{...}` or key count
-  - strings remain readable
-- [x] Tooltip/title with full JSON preview if practical
-- [x] Better action column spacing
-- [x] Keep compact enterprise density
+- [ ] Purchase Orders
+- [ ] Supplier invoices
+- [ ] Payments
+- [ ] Transfers
+- [ ] Adjustments
+- [ ] Cycle counts
+- [ ] Reservations
+- [ ] Valuation/FIFO/weighted average
+- [ ] Full workflow engine
 
 ---
 
-# C. Workspace Items Specialized UI
+# C. Data Model Proposal
 
-Create or update:
+Design physical transaction tables, not generic JSON:
 
-- [x] `src/components/metadata-studio/WorkspaceItemsManager.tsx`
+- [ ] `wh.grns`
+- [ ] `wh.grn_lines`
+- [ ] `wh.inventory_batches`
+- [ ] `wh.inventory_movements`
+- [ ] `wh.current_inventory`
 
-Requirements:
+Rules:
 
-- [x] Group workspace items by `workspace_key`
-- [x] Show item count per workspace
-- [x] Search by label, item key, target, permission
-- [x] Filter by workspace
-- [x] Filter by item type
-- [x] Filter by active status
-- [x] Show `item_type` as badge
-- [x] Show `is_active` as badge
-- [x] Show inactive items dimmed
-- [x] Keep Edit/Delete actions compact
-- [x] Use existing `MetadataFormDialog` for editing where possible
+- [ ] Draft GRN can be edited.
+- [ ] Posted GRN becomes read-only except controlled cancellation/reversal later.
+- [ ] Posting creates inventory movement rows.
+- [ ] Movement rows should not be directly edited by the UI.
+- [ ] Current inventory is updated in the same database transaction.
 
-Target display style:
+---
+
+# D. Suggested GRN Header Fields
+
+- [ ] `id uuid`
+- [ ] `company_id uuid`
+- [ ] `grn_number text`
+- [ ] `supplier_name text` or `supplier_id uuid`
+- [ ] `received_date date`
+- [ ] `status text` draft/posted/cancelled
+- [ ] `qc_status text` pending/accepted/rejected/partial
+- [ ] `notes text`
+- [ ] `created_by uuid`
+- [ ] `updated_by uuid`
+- [ ] `posted_by uuid`
+- [ ] `posted_at timestamptz`
+- [ ] timestamps
+
+---
+
+# E. Suggested GRN Line Fields
+
+- [ ] `id uuid`
+- [ ] `grn_id uuid`
+- [ ] `product_id uuid`
+- [ ] `uom_id uuid`
+- [ ] `received_qty numeric`
+- [ ] `accepted_qty numeric`
+- [ ] `rejected_qty numeric`
+- [ ] `batch_number text`
+- [ ] `expiry_date date`
+- [ ] `warehouse_id uuid`
+- [ ] `zone_id uuid`
+- [ ] `aisle_id uuid`
+- [ ] `rack_id uuid`
+- [ ] `shelf_id uuid`
+- [ ] `bin_id uuid`
+- [ ] `line_status text`
+
+Validation:
+
+- [ ] `received_qty > 0`
+- [ ] `accepted_qty + rejected_qty <= received_qty`
+- [ ] batch number required or generated when product uses batch tracking
+- [ ] expiry date required when product uses expiry tracking
+- [ ] bin allocation required for accepted quantity
+
+---
+
+# F. Inventory Movement Design
+
+Design movement fields:
+
+- [ ] `id uuid`
+- [ ] `company_id uuid`
+- [ ] `movement_type text` e.g. `GRN_RECEIPT`
+- [ ] `source_type text` = `GRN`
+- [ ] `source_id uuid`
+- [ ] `source_line_id uuid`
+- [ ] `product_id uuid`
+- [ ] `batch_id uuid`
+- [ ] `warehouse_id uuid`
+- [ ] `bin_id uuid`
+- [ ] `qty_delta numeric`
+- [ ] `movement_date timestamptz`
+- [ ] `created_by uuid`
+
+Rules:
+
+- [ ] Accepted quantity creates positive movement.
+- [ ] Rejected quantity does not increase available inventory.
+- [ ] Movement rows should not be edited directly.
+- [ ] Cancellation later should create reversal movement, not mutate old movement.
+
+---
+
+# G. Current Inventory Snapshot
+
+Design `wh.current_inventory` strategy:
+
+- [ ] one row per company/product/batch/bin combination
+- [ ] updated inside same posting transaction
+- [ ] available quantity initially equals on-hand quantity until reservations exist
+- [ ] outbound transactions later must not make quantity negative
+
+---
+
+# H. RPC / Service Boundary
+
+Plan explicit functions:
+
+- [ ] `wh_create_grn_draft`
+- [ ] `wh_update_grn_draft`
+- [ ] `wh_get_grn`
+- [ ] `wh_list_grns`
+- [ ] `wh_post_grn`
+- [ ] `wh_cancel_grn` future/optional
+
+Rules:
+
+- [ ] validate permission
+- [ ] validate company context
+- [ ] validate product/UOM/warehouse/bin existence
+- [ ] validate quantities
+- [ ] create batch if needed
+- [ ] create movement records
+- [ ] update current inventory
+- [ ] set GRN status to posted
+- [ ] all posting work happens inside one database transaction
+
+---
+
+# I. UI Strategy
+
+GRN can appear in workspace/sidebar through metadata:
 
 ```text
-Workspace Items
-[Search...] [Workspace: All] [Type: All] [Status: Active]
-
-Metadata Studio (9)
-  Supplier UI Tests    DocType   supplier_ui_test   view_supplier_ui_test   Active
-  DocTypes             Page      metadata_studio_doctypes manage_metadata    Active
-
-Product Master (3)
-  Products             DocType   product            view_products           Active
-
-Warehouse (6)
-  Warehouses           DocType   warehouse          view_warehouse          Active
+Purchasing
+  GRN
 ```
 
----
+But GRN operations must use explicit GRN APIs, not generic JSON.
 
-# D. Metadata Studio Home Polish
+Plan UI:
 
-Update:
-
-- [x] `src/components/metadata-studio/MetadataStudioHome.tsx`
-
-Requirements:
-
-- [x] `Create Custom DocType` remains primary action
-- [x] Raw tables appear under `Advanced Metadata Tables`
-- [x] Add helper text:
-  - `Use builders/wizards for normal work. Use raw tables only for advanced fixes.`
-- [x] Add quick cards:
-  - DocTypes
-  - Workspaces
-  - Workspace Items
-  - List Views
-  - Form Layouts
-- [x] Keep compact layout
+- [ ] GRN list
+- [ ] GRN create/edit draft form
+- [ ] line item grid
+- [ ] product link field
+- [ ] warehouse hierarchy link fields
+- [ ] accepted/rejected quantity inputs
+- [ ] Post button
+- [ ] posted read-only view
 
 ---
 
-# E. MetadataFormDialog JSON Editor Polish
+# J. Simulation Plan
 
-Update:
+Plan simulation file:
 
-- [x] `src/components/metadata-studio/MetadataFormDialog.tsx`
+- [ ] `tests/simulations/grn_inventory_receipt_flow.sql`
 
-Already fixed:
+It should verify:
 
-- [x] JSON fields render as textarea
-- [x] JSON objects/arrays pretty-print
-- [x] Invalid JSON shows clear error
-
-Improve further if practical:
-
-- [x] Add monospace label/helper: `Valid JSON required`
-- [x] Add examples for JSON fields based on field name if easy
-- [x] Make dialog width responsive
-
----
-
-# F. List View / Form Layout Advanced UX
-
-Do not build full visual builders yet. But improve the raw-table experience:
-
-- [x] JSON previews should not flood table cells
-- [x] Edit modal should be readable
-- [x] JSON save errors should identify exact field label
-- [x] Add note that future Visual List View Builder and Visual Form Layout Builder are planned
+- [ ] create draft GRN
+- [ ] add line
+- [ ] post GRN
+- [ ] batch created if needed
+- [ ] movement row created
+- [ ] current inventory increased
+- [ ] cannot casually edit posted GRN
+- [ ] rejected quantity does not increase available inventory
+- [ ] duplicate posting blocked
+- [ ] cleanup at end
 
 ---
 
-# G. Screenshot / Browser Verification
+# K. Browser Verification Plan
 
-CLI-AI must verify with browser automation if available.
+Plan UI verification:
 
-Screens to check:
-
-- [x] Metadata Studio home
-- [x] Workspace Items grouped view
-- [x] Workspace Items filters/search
-- [x] List Views table
-- [x] List Views edit modal showing formatted JSON
-- [x] DocFields table search
-
-Screenshots should be committed if possible under:
-
-```text
-docs/ai-runs/screenshots/phase-3-1-metadata-studio-ui/
-```
-
-If screenshots are only local, report that explicitly.
+- [ ] create GRN draft
+- [ ] add product line
+- [ ] select warehouse/bin
+- [ ] enter accepted/rejected quantities
+- [ ] save draft
+- [ ] post GRN
+- [ ] confirm posted status
+- [ ] confirm current inventory increased
+- [ ] confirm movement record exists
 
 ---
 
-# H. Verification Commands
+# L. Test Suite Triage
 
-Run and document exact output:
+Latest Phase 3.1 report says:
 
-```bash
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-npm run test:simulation
-```
+- [ ] `npm run typecheck`: passing
+- [ ] `npm run lint`: passing with warnings
+- [ ] `npm run build`: passing
+- [ ] `npm run test`: 32 pass, 8 fail
+
+Tasks:
+
+- [ ] identify the 8 failing tests
+- [ ] classify pre-existing vs newly introduced
+- [ ] fix any failures caused by recent metadata/warehouse work
+- [ ] document remaining pre-existing failures
 
 ---
 
-# I. AI Run Report
+# M. AI Run Report
 
 Create:
 
-- [x] `docs/ai-runs/2026-05-30_phase-3-1-metadata-studio-ux-polish.md`
-
+- [ ] `docs/ai-runs/2026-06-01_phase-4-grn-inventory-receipt-architecture.md`
 
 Must include:
 
-- [ ] Goal
-- [ ] Branch/final commit
-- [ ] Files inspected
-- [ ] Files created
-- [ ] Files modified
-- [ ] UI verification
-- [ ] Screenshot paths or local-only note
-- [ ] Command results
-- [ ] Known gaps
-- [ ] Next recommended task
+- [ ] files inspected
+- [ ] architecture decisions
+- [ ] data model proposal
+- [ ] API/RPC proposal
+- [ ] security/RLS proposal
+- [ ] inventory transaction design
+- [ ] simulation plan
+- [ ] test triage results
+- [ ] next implementation recommendation
 
 ---
 
-# J. Out Of Scope
+# N. Acceptance Criteria
 
-Do not implement in this phase:
+Phase 4 planning is complete when:
 
-- [ ] GRN
-- [ ] Stock Ledger
-- [ ] Stock quantity calculations
-- [ ] Inventory valuation
-- [ ] Stock transfers
-- [ ] Stock adjustments
-- [ ] Reservations
-- [ ] Reorder alerts
-- [ ] Workflow engine
-- [ ] Naming series engine
-- [ ] Visual List View Builder
-- [ ] Visual Form Layout Builder
+- [ ] GRN architecture doc exists
+- [ ] table design is clear
+- [ ] RPC/service boundary is clear
+- [ ] generic JSON boundary is clearly forbidden for inventory quantity changes
+- [ ] simulation plan exists
+- [ ] browser verification plan exists
+- [ ] test failures are triaged
+- [ ] AI run report exists
 
----
-
-# K. Acceptance Criteria
-
-Phase 3.1 is complete only when:
-
-- [ ] Metadata Studio Home clearly prioritizes builders/wizards over raw tables
-- [ ] Workspace Items view is grouped and filterable
-- [ ] Metadata tables have search and better JSON previews
-- [ ] JSON edit modal is readable and validates JSON
-- [ ] UI verification is documented
-- [ ] Build/typecheck/lint/test results are documented
-- [ ] Detailed AI run report exists under `docs/ai-runs/`
-
-After Phase 3.1, proceed to Phase 4 planning: GRN and explicit stock posting architecture.
+Only after this planning phase should CLI-AI implement GRN tables/RPCs/UI.
