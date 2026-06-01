@@ -19,6 +19,42 @@ type Props = {
   permissionChecker: (key: string) => boolean;
 };
 
+function normalizeListColumns(raw: unknown, fields: DocFieldMeta[]): { columns: ListViewColumn[]; usedFallback: boolean } {
+  const parsed = typeof raw === "string"
+    ? (() => {
+        try { return JSON.parse(raw); } catch { return null; }
+      })()
+    : raw;
+
+  if (Array.isArray(parsed)) {
+    const valid = parsed
+      .filter((c) => c && typeof c === "object" && typeof (c as Record<string, unknown>).fieldname === "string")
+      .map((c) => {
+        const col = c as Record<string, unknown>;
+        const fieldname = String(col.fieldname);
+        const field = fields.find((f) => f.fieldname === fieldname);
+        return {
+          fieldname,
+          label: String(col.label ?? field?.label ?? fieldname.replace(/_/g, " ")),
+          width: col.width ? String(col.width) : undefined,
+        } as ListViewColumn;
+      });
+    if (valid.length > 0) return { columns: valid, usedFallback: false };
+  }
+
+  const fallbackFields = fields
+    .filter((f) => !f.is_hidden && (f.in_list_view || ["sku", "code", "name", "label", "title"].includes(f.fieldname)))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  const fallback = fallbackFields.slice(0, 8).map((f) => ({
+    fieldname: f.fieldname,
+    label: f.label,
+    width: f.fieldname === "name" || f.fieldname.endsWith("_name") ? "220" : "120",
+  })) as ListViewColumn[];
+
+  return { columns: fallback, usedFallback: true };
+}
+
 export function DynamicListPage({
   doctypeKey,
   tenantId,
@@ -150,15 +186,25 @@ export function DynamicListPage({
   }, [api, records, config, tenantId]);
 
   const listView = config?.listView;
-  const columns = useMemo(() => listView?.columns_json ?? [] as ListViewColumn[], [listView?.columns_json]);
-  const filterConfig = useMemo(() => listView?.filters_json ?? [], [listView?.filters_json]);
-  const searchFields = useMemo(() => listView?.search_fields_json ?? [] as string[], [listView?.search_fields_json]);
+  const normalizedColumns = useMemo(
+    () => normalizeListColumns(listView?.columns_json, config?.fields ?? []),
+    [listView?.columns_json, config?.fields]
+  );
+  const columns = normalizedColumns.columns;
+  const usedFallbackColumns = normalizedColumns.usedFallback;
+  const filterConfig = useMemo(() => Array.isArray(listView?.filters_json) ? listView?.filters_json ?? [] : [], [listView?.filters_json]);
+  const searchFields = useMemo(() => {
+    if (Array.isArray(listView?.search_fields_json) && listView?.search_fields_json.length > 0) {
+      return listView.search_fields_json as string[];
+    }
+    return columns.map((c) => c.fieldname).slice(0, 4);
+  }, [listView?.search_fields_json, columns]);
   const actions = config?.actions ?? [];
 
   const hasStatusColumn = columns.some((c) => c.fieldname === "is_active");
 
   const clickableColumns = (() => {
-    const priority = ["sku", "code", "name", "title", "label"];
+    const priority = ["sku", "code", "name", "title", "label", "product_name", "warehouse_name"];
     for (const p of priority) {
       if (columns.some((c) => c.fieldname === p)) return new Set([p]);
     }
@@ -310,6 +356,12 @@ export function DynamicListPage({
             onAction={handleAction}
           />
         </div>
+
+        {usedFallbackColumns && (
+          <div className="state-info" style={{ marginBottom: "8px", padding: "6px 8px", fontSize: "var(--font-size-xs)" }}>
+            List View columns are missing or invalid for <strong>{doctypeKey}</strong>. Showing fallback columns from DocFields. Fix this in Metadata Studio → List Views.
+          </div>
+        )}
 
         {filterConfig.length > 0 && (
           <DynamicFilterBar
