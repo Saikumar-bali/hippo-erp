@@ -1,152 +1,160 @@
-# Phase 4.4 Tasks: GRN + Inventory Production Hardening
+# Phase 4.5 Tasks: GRN Cancellation / Reversal Architecture
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Clean up the GRN/inventory read-only layer before adding new transaction modules. This phase fixes documentation gaps, SQL edge cases, workspace visibility, and legacy inventory API risk.
+Goal: Design the safe cancellation/reversal flow for posted GRNs. Do not implement Purchase Orders, transfers, adjustments, reservations, or valuation yet.
 
 ## Why This Phase Exists
 
-Phase 4.3 added useful GRN hardening and inventory read-only screens, but review found production-risk gaps:
+Phase 4.1–4.4 created and hardened the GRN receiving flow:
 
-- Required AI run report is missing or not named correctly.
-- `progress.md` does not clearly summarize Phase 4.2 and Phase 4.3.
-- Inventory list RPCs may return `null` instead of `[]` when no rows exist.
-- Inventory list RPC pagination should be applied before aggregation.
-- Current Inventory and Movement Ledger route support exists, but workspace item activation/permissions must be verified.
-- `src/lib/inventory-api.ts` still exposes legacy write helpers for out-of-scope inventory operations.
+- physical GRN and inventory tables
+- GRN create/edit/post RPCs
+- movement ledger and current inventory updates
+- GRN UI
+- read-only Current Inventory and Movement Ledger views
+- production hardening for inventory list RPCs
 
-Do not start Purchase Orders or new inventory transaction types until these are clean.
+But a real ERP must handle mistakes after posting. Posted inventory movements should not be deleted or edited. Cancellation should create controlled reversal movement rows and update current inventory in one database transaction.
+
+This phase is architecture/planning first.
 
 ---
 
 # A. Review And Docs
 
-- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-3-grn-hardening.md`
-- [ ] Create or fix `docs/ai-runs/2026-06-01_phase-4-3-grn-ui-hardening.md`
-- [ ] Update `progress.md` with Phase 4.2 final summary
-- [ ] Update `progress.md` with Phase 4.3 final summary
-- [ ] Ensure final commit hashes are correct in Phase 4.2/4.3 reports
-- [ ] Create `docs/PHASE_4_4_GRN_INVENTORY_PRODUCTION_HARDENING.md`
-- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-4-grn-inventory-production-hardening.md`
+- [ ] Create `docs/PHASE_4_5_GRN_CANCELLATION_REVERSAL_ARCHITECTURE.md`
+- [ ] Update `docs/METADATA_ENGINE.md` with transaction reversal boundary if needed
+- [ ] Update `progress.md` after planning
+- [ ] Create AI run report: `docs/ai-runs/2026-06-01_phase-4-5-grn-cancellation-reversal-architecture.md`
 
 ---
 
-# B. Inventory RPC SQL Hardening
+# B. Design Principles
 
-Create migration:
+Document these rules clearly:
 
-- [ ] `supabase/migrations/0037_inventory_list_rpcs_hardening.sql`
-
-Fix RPCs:
-
-- [ ] `wh_list_current_inventory`
-- [ ] `wh_list_inventory_movements`
-
-Required behavior:
-
-- [ ] Return `[]`, not `null`, when no rows exist.
-- [ ] Apply filtering, ordering, limit, and offset before JSON aggregation.
-- [ ] Keep permission checks.
-- [ ] Keep response shape: `{ ok: true, data: [...] }` or `{ ok: false, error: ... }`.
-- [ ] Verify no SQL ambiguity or search_path risk.
-
-Suggested structure:
-
-```sql
-with rows as (
-  select ...
-  from ...
-  where ...
-  order by ...
-  limit ... offset ...
-)
-select coalesce(jsonb_agg(jsonb_build_object(...)), '[]'::jsonb) from rows;
-```
+- [ ] Posted GRN cannot be edited directly.
+- [ ] Posted GRN cannot be deleted directly.
+- [ ] Cancellation creates reversal inventory movement rows.
+- [ ] Original movement rows remain unchanged.
+- [ ] Current inventory is reduced by reversal quantities.
+- [ ] Cancellation must be atomic.
+- [ ] Cancellation must be blocked if inventory is already consumed below the quantity required for reversal.
+- [ ] Cancellation requires explicit permission.
+- [ ] Cancellation records who/when/why.
 
 ---
 
-# C. Workspace Visibility Verification
+# C. Data Model Changes Proposal
 
-Verify metadata and permissions for:
+Plan minimal additions to existing physical tables.
 
-- [ ] Inventory → Current Stock / Current Inventory
-- [ ] Inventory → Movements Ledger
+Possible GRN header additions:
 
-Tasks:
+- [ ] `cancelled_by uuid`
+- [ ] `cancelled_at timestamptz`
+- [ ] `cancel_reason text`
+- [ ] `cancelled_from_status text` optional
 
-- [ ] Confirm workspace items exist.
-- [ ] Confirm `item_key` matches `DynamicRouteRenderer` cases:
-  - `current_inventory`
-  - `movements`
-- [ ] Confirm active/inactive state is intentional.
-- [ ] If the views should be visible now, activate them safely.
-- [ ] Confirm required permissions exist and are granted:
-  - `view_current_inventory`
-  - `view_inventory_movements`
-- [ ] Browser verify both menu items appear for owner/admin user.
+Possible inventory movement fields:
 
-If keeping either item inactive, document the reason.
+- [ ] `reversal_of_movement_id uuid references wh.inventory_movements(id)`
+- [ ] `is_reversal boolean default false`
 
----
+Decide whether a separate audit table is needed:
 
-# D. Inventory API Cleanup
+- [ ] `wh.grn_status_events`
 
-Review:
-
-- [ ] `src/lib/inventory-api.ts`
-
-Problem:
-
-The file contains new read-only wrappers, but also legacy write helpers for out-of-scope operations such as transfers, adjustments, reservations, valuation, and old GRN flows. Some may reference dropped or unimplemented backend functions/tables.
-
-Tasks:
-
-- [ ] Move new read-only wrappers into a clean section or separate file if needed.
-- [ ] Mark legacy out-of-scope helpers as deprecated with comments.
-- [ ] Do not expose legacy write helpers to current UI.
-- [ ] If any legacy helper references dropped tables/functions and causes type/build risk, remove or isolate it.
-- [ ] Keep product/UOM exports only if existing app imports require them.
-- [ ] Document cleanup decision in AI run report.
-
-Preferred final direction:
-
-- `src/lib/inventory-api.ts` = current inventory and movement read-only APIs only
-- old experimental stock operation helpers removed or moved to a clearly deprecated file only if still needed
+Do not overbuild if existing audit patterns are enough.
 
 ---
 
-# E. Authenticated Browser Verification Evidence
+# D. RPC / Service Boundary Design
 
-Re-run or confirm real browser flow against Supabase Cloud:
+Plan explicit function:
 
-- [ ] Purchasing → GRN opens.
-- [ ] Draft GRN can be created.
-- [ ] Draft can be posted.
-- [ ] Posted detail shows readable labels.
-- [ ] Inventory → Current Inventory opens and shows rows or empty state.
-- [ ] Inventory → Movements Ledger opens and shows rows or empty state.
-- [ ] No raw UUID leakage in normal user-facing cells where labels are available.
+- [ ] `wh_cancel_grn(p_grn_id uuid, p_reason text)`
 
-Screenshots should be committed if possible under:
+Rules:
 
-```text
-docs/ai-runs/screenshots/phase-4-4-production-hardening/
-```
-
-If screenshots are local-only, state that clearly.
+- [ ] Validate current user permission: `cancel_grn`.
+- [ ] Validate GRN exists and belongs to user company.
+- [ ] Validate GRN status is `posted`.
+- [ ] Validate reason is required.
+- [ ] Find original `GRN_RECEIPT` movement rows.
+- [ ] For each movement, create `REVERSAL` movement with negative quantity.
+- [ ] Decrease `wh.current_inventory` for matching product/batch/bin.
+- [ ] Block cancellation if current on-hand quantity would become negative.
+- [ ] Mark GRN status as `cancelled`.
+- [ ] Store cancellation metadata.
+- [ ] Ensure duplicate cancellation is blocked.
+- [ ] Ensure everything happens in one transaction.
 
 ---
 
-# F. Test And Simulation
+# E. Permission And Workspace Plan
 
-Update tests if needed:
+Plan permission:
 
-- [ ] Inventory RPC empty result returns array.
-- [ ] Current Inventory page handles empty array.
-- [ ] Movements page handles empty array.
-- [ ] No tests rely on `null` response for empty inventory.
+- [ ] `cancel_grn`
 
-Run:
+Decide grants:
+
+- [ ] owner/admin: granted
+- [ ] warehouse_manager: granted or optional
+- [ ] stock_operator: likely not granted by default
+- [ ] viewer/auditor: not granted
+
+UI behavior:
+
+- [ ] Show Cancel GRN button only for posted GRNs and permitted users.
+- [ ] Ask for cancellation reason.
+- [ ] Confirm irreversible reversal behavior.
+- [ ] Show cancelled GRN as read-only.
+- [ ] Movement Ledger should show REVERSAL rows clearly.
+
+---
+
+# F. Simulation Plan
+
+Plan simulation:
+
+- [ ] `tests/simulations/grn_cancellation_reversal_flow.sql`
+
+Must verify:
+
+- [ ] Create and post GRN.
+- [ ] Confirm positive inventory movement exists.
+- [ ] Confirm current inventory increased.
+- [ ] Cancel GRN with reason.
+- [ ] Confirm GRN status becomes cancelled.
+- [ ] Confirm reversal movement row exists.
+- [ ] Confirm current inventory reduced back.
+- [ ] Confirm original movement remains unchanged.
+- [ ] Confirm duplicate cancellation blocked.
+- [ ] Confirm cancellation without reason blocked.
+- [ ] Confirm cancellation blocked if stock already consumed below required quantity, if outbound consumption simulation is available.
+
+---
+
+# G. UI Plan
+
+Plan only. Do not implement full UI unless explicitly approved after planning.
+
+Future UI tasks:
+
+- [ ] Add Cancel button to posted GRN detail.
+- [ ] Add cancellation reason dialog.
+- [ ] Add cancelled status badge.
+- [ ] Add movement ledger type styling for REVERSAL rows.
+- [ ] Add cancellation metadata to detail page.
+
+---
+
+# H. Test Suite / Verification Plan
+
+Plan commands for implementation phase:
 
 ```bash
 npm run typecheck
@@ -156,30 +164,59 @@ npm run build
 npm run test:simulation
 ```
 
-Document exact counts. Do not leave contradictory old test counts.
+The planning report must also carry forward current known test state from Phase 4.4.
 
 ---
 
-# G. Supabase Cloud Verification
+# I. AI Run Report
 
-- [ ] Apply migration 0037 to Supabase Cloud.
-- [ ] Run relevant simulation or SQL verification for inventory list RPCs.
-- [ ] Verify empty tenant/current filters return `[]` not `null`.
-- [ ] Verify permissions still block unauthorized access.
+Create:
+
+- [ ] `docs/ai-runs/2026-06-01_phase-4-5-grn-cancellation-reversal-architecture.md`
+
+Must include:
+
+- [ ] files inspected
+- [ ] architecture decisions
+- [ ] proposed table changes
+- [ ] proposed RPC design
+- [ ] permission design
+- [ ] simulation plan
+- [ ] UI plan
+- [ ] risks and edge cases
+- [ ] next implementation recommendation
 
 ---
 
-# H. Acceptance Criteria
+# J. Out Of Scope
 
-Phase 4.4 is complete only when:
+Do not implement in this phase:
 
-- [ ] Missing Phase 4.3 AI run report exists.
-- [ ] `progress.md` has clear Phase 4.2 and 4.3 summaries.
-- [ ] Inventory list RPCs return arrays and paginate correctly.
-- [ ] Current Inventory / Movements workspace visibility is verified or intentionally documented.
-- [ ] Legacy inventory API risk is cleaned up or clearly deprecated.
-- [ ] Supabase Cloud verification is documented.
-- [ ] Browser verification is documented.
-- [ ] Test/build results are documented.
+- [ ] full cancellation RPC implementation
+- [ ] full cancellation UI
+- [ ] Purchase Orders
+- [ ] supplier invoices/payments
+- [ ] transfers
+- [ ] adjustments
+- [ ] cycle counts
+- [ ] reservations
+- [ ] valuation/FIFO/weighted average
+- [ ] full workflow engine
+- [ ] full naming series engine
 
-After Phase 4.4, proceed to Phase 4.5: GRN cancellation/reversal architecture.
+---
+
+# K. Acceptance Criteria
+
+Phase 4.5 planning is complete only when:
+
+- [ ] cancellation/reversal architecture doc exists
+- [ ] reversal movement strategy is clear
+- [ ] current inventory update strategy is clear
+- [ ] duplicate cancellation and insufficient-stock cases are addressed
+- [ ] permission design is clear
+- [ ] simulation plan exists
+- [ ] UI plan exists
+- [ ] AI run report exists
+
+After Phase 4.5 planning, proceed to Phase 4.6: implement GRN cancellation/reversal backend.
