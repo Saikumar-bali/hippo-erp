@@ -23,40 +23,46 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 2.10 | Custom DocType Wizard Hardening | Complete | Atomic bundle RPC, duplicate checks (doctype_key, route, workspace item), permission auto-provisioning (catalog + owner/admin grants), sidebar refresh, success checklist, simulation, real authenticated UI verification (create/list/update/deactivate). |
 | 3 | Warehouse hierarchy | Complete | Metadata-driven 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with generic_json storage, Link field parent references with display templates, 25 permission keys granted to owner/admin, workspace sidebar items, migration 0028 applied on Supabase Cloud, browser UI verified (create hierarchy → edit → deactivate). |
 | 3.1 | Metadata Studio UX Polish | Complete | Improved raw metadata tables (search, sticky header, JSON previews), grouped workspace items view, Metadata Studio home categorization, and responsive JSON editor dialog. |
-| 4 | GRN + Inventory Receipt Architecture | Planning complete | Architecture planned. Physical tables, RPCs, validations, simulation, and browser verification plan documented in `docs/PHASE_4_GRN_INVENTORY_RECEIPT_ARCHITECTURE.md`. Implementation pending. |
+| 4 | GRN + Inventory Receipt Architecture | 4.1 backend foundation complete | Migrations 0030–0033 applied on Supabase Cloud. 5 physical tables, RLS, SECURITY DEFINER RPCs, permissions, workspace activation, and frontend API wrapper. Simulation PASSED (12 tests). |
 
-## Phase 4 Planning Summary
-**Status:** Architecture planned, implementation pending.
+## Phase 4.1 Implementation Summary
+**Status:** Backend foundation complete on Supabase Cloud.
+**Final Commit:** `068ce35`
 
-### Architecture Decisions
-- GRN uses explicit `wh.*` physical tables, not generic JSON
-- All inventory transactions go through SECURITY DEFINER RPCs
-- Posting is atomic: validates → creates batches → creates movements → updates current inventory in one transaction
-- Movements are append-only; reversals create compensating entries
+### Migrations Created
 
-### Tables Planned
-| Table | Purpose |
-|-------|---------|
-| `wh.grns` | GRN header — draft/posted/cancelled |
-| `wh.grn_lines` | Line items with quantities, batch, bin |
-| `wh.inventory_batches` | Batch/lot tracking |
-| `wh.inventory_movements` | Immutable movement ledger |
-| `wh.current_inventory` | Current on-hand + available qty |
+| Migration | Contents |
+|-----------|---------|
+| `0030_grn_inventory_tables.sql` | 5 physical tables (`wh.grns`, `wh.grn_lines`, `wh.inventory_batches`, `wh.inventory_movements`, `wh.current_inventory`); legacy table cleanup; expression index for nullable batch_id uniqueness; triggers |
+| `0031_grn_permissions_workspace.sql` | 3 permission keys (`delete_grn`, `view_inventory_movements`, `view_current_inventory`); Purchasing workspace + GRN item activation; grants to 6 roles |
+| `0032_grn_inventory_rls.sql` | RLS: SELECT for tenant members; ALL writes denied (SECURITY DEFINER RPCs only) |
+| `0033_grn_inventory_rpcs.sql` | 5 RPCs (`wh_create_grn_draft`, `wh_update_grn_draft`, `wh_get_grn`, `wh_list_grns`, `wh_post_grn`); `wh.current_user_has_grn_permission` helper; service role bypass |
 
-### RPCs Planned
-| RPC | Purpose |
-|-----|---------|
-| `wh_create_grn_draft` | Create draft GRN |
-| `wh_update_grn_draft` | Update draft GRN |
-| `wh_get_grn` | Get GRN with lines |
-| `wh_list_grns` | List GRNs |
-| `wh_post_grn` | Atomic posting |
+### Key Decisions
+- FK references physical tables (`wh.products(id)`, `wh.units_of_measure(id)`, `wh.warehouse_bins(id)`)
+- `batch_id` nullable with expression unique index (no sentinel batch)
+- Audit columns nullable (auth.uid() returns NULL for Management API)
+- No auto GRN numbering; caller-provided with per-tenant uniqueness validation
 
-### Next Steps
-- Implement migration 0030 with `wh.*` schema and tables
-- Implement RPC functions
-- Build GRN UI components (list, form, detail)
-- Implement simulation and browser verification
+### Simulation Results (Supabase Cloud)
+**12/12 tests PASSED.** See `tests/simulations/grn_inventory_receipt_flow.sql`.
+
+### Frontend API
+`src/lib/grn-api.ts` — minimal wrapper with `GrnHeader`, `GrnLine`, `GrnWithLines`, `GrnListResult` types.
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, 33 warnings (pre-existing) |
+| `npm run build` | Success |
+| `npm run test` | 34 pass, 6 fail (pre-existing auth/mock failures) |
+| `npm run test:simulation` | 11 simulation files (including GRN) |
+
+### Remaining Gaps
+- No GRN UI components (planned Phase 4.2)
+- No auto GRN numbering
+- No line-level approval or partial-receipt workflow
 
 ## Phase 3.1 Implementation Summary
 **Final Commit:** `dff76cb`
