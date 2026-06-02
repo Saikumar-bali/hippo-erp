@@ -1,10 +1,150 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getWorkspaceTree } from "../lib/metadata/workspace-api";
 import { ERP_MODULES } from "../lib/erp-modules";
-import type { WorkspaceTreeItem } from "../lib/metadata/workspace-types";
+import type { WorkspaceItemMeta, WorkspaceTreeItem } from "../lib/metadata/workspace-types";
 import { usePermissions } from "./usePermissions";
 
 type LoadState = "loading" | "loaded" | "fallback" | "error";
+
+const METADATA_STUDIO_SHORTCUTS: WorkspaceItemMeta[] = [
+  {
+    id: "metadata-shortcut-builder-home",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio",
+    label: "Builder Home",
+    item_type: "page",
+    target: "metadata_studio",
+    icon: "LayoutDashboard",
+    sort_order: 0,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-doctype-builder",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_doctype_builder",
+    label: "DocType Builder",
+    item_type: "page",
+    target: "metadata_studio_doctype_builder",
+    icon: "FileJson",
+    sort_order: 1,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-field-builder",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_field_builder",
+    label: "Field Builder",
+    item_type: "page",
+    target: "metadata_studio_field_builder",
+    icon: "Columns3",
+    sort_order: 2,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-list-view-builder",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_list_view_builder",
+    label: "List View Builder",
+    item_type: "page",
+    target: "metadata_studio_list_view_builder",
+    icon: "ListTree",
+    sort_order: 3,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-form-layout-builder",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_form_layout_builder",
+    label: "Form Layout Builder",
+    item_type: "page",
+    target: "metadata_studio_form_layout_builder",
+    icon: "PanelTop",
+    sort_order: 4,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-menu-builder",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_workspace_menu_builder",
+    label: "Menu Builder",
+    item_type: "page",
+    target: "metadata_studio_workspace_menu_builder",
+    icon: "MenuSquare",
+    sort_order: 5,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-access-builder",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_access_builder",
+    label: "Access Builder",
+    item_type: "page",
+    target: "metadata_studio_access_builder",
+    icon: "ShieldCheck",
+    sort_order: 6,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
+    id: "metadata-shortcut-doc-check",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_doc_check",
+    label: "Check / Repair DocType",
+    item_type: "page",
+    target: "metadata_studio_doc_check",
+    icon: "Activity",
+    sort_order: 7,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+];
+
+function ensureMetadataStudioShortcuts(tree: WorkspaceTreeItem[]): WorkspaceTreeItem[] {
+  const copy = tree.map((ws) => ({
+    ...ws,
+    items: [...ws.items],
+  }));
+
+  let metadataWorkspace = copy.find((ws) => ws.workspace.workspace_key === "metadata_studio");
+  if (!metadataWorkspace) {
+    metadataWorkspace = {
+      workspace: {
+        id: "metadata_studio",
+        workspace_key: "metadata_studio",
+        label: "Metadata Studio",
+        description: "Build and repair metadata-driven app screens",
+        icon: "DatabaseZap",
+        sort_order: 5,
+        is_active: true,
+      },
+      items: [],
+    };
+    copy.unshift(metadataWorkspace);
+  }
+
+  const existingKeys = new Set(metadataWorkspace.items.map((item) => item.item_key));
+  const existingTargets = new Set(metadataWorkspace.items.map((item) => item.target));
+
+  for (const shortcut of METADATA_STUDIO_SHORTCUTS) {
+    if (!existingKeys.has(shortcut.item_key) && !existingTargets.has(shortcut.target)) {
+      metadataWorkspace.items.push(shortcut);
+    }
+  }
+
+  metadataWorkspace.items.sort((a, b) => {
+    const order = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    if (order !== 0) return order;
+    return a.label.localeCompare(b.label);
+  });
+
+  return copy;
+}
 
 export function useWorkspaceNavigation() {
   const [tree, setTree] = useState<WorkspaceTreeItem[]>([]);
@@ -17,7 +157,7 @@ export function useWorkspaceNavigation() {
     try {
       const result = await getWorkspaceTree();
       if (result.length > 0) {
-        setTree(result);
+        setTree(ensureMetadataStudioShortcuts(result));
         setState("loaded");
       } else {
         setState("fallback");
@@ -85,7 +225,7 @@ export function useWorkspaceNavigation() {
         required_permission_key: mod.requiredPermissions.length > 0 ? mod.requiredPermissions[0] : null,
       });
     }
-    return Array.from(workspaceMap.values());
+    return ensureMetadataStudioShortcuts(Array.from(workspaceMap.values()));
   }, []);
 
   const displayTree = state === "loaded" ? tree : fallbackTree;
