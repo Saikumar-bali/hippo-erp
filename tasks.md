@@ -22,9 +22,9 @@ Current issues:
 ## A. Docs
 
 - [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-7-manual-builder.md`
-- [ ] Create `docs/PHASE_4_8_METADATA_STUDIO_BUILDER_UX.md`
-- [ ] Create `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md`
-- [ ] Update `progress.md`
+- [x] Create `docs/PHASE_4_8_METADATA_STUDIO_BUILDER_UX.md`
+- [x] Create `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md`
+- [x] Update `progress.md`
 
 ---
 
@@ -32,17 +32,17 @@ Current issues:
 
 Update:
 
-- [ ] `src/components/metadata-studio/MetadataStudioHome.tsx`
+- [x] `src/components/metadata-studio/MetadataStudioHome.tsx`
 
 Add clear cards:
 
-- [ ] DocType Builder
-- [ ] Field Builder
-- [ ] List View Builder
-- [ ] Form Layout Builder
-- [ ] Menu Builder
-- [ ] Access Builder
-- [ ] Check / Repair DocType
+- [x] DocType Builder
+- [x] Field Builder
+- [x] List View Builder
+- [x] Form Layout Builder
+- [x] Menu Builder
+- [x] Access Builder
+- [x] Check / Repair DocType
 
 Move raw metadata tables under `Advanced Metadata Tables`.
 
@@ -52,23 +52,23 @@ Move raw metadata tables under `Advanced Metadata Tables`.
 
 Create:
 
-- [ ] `src/components/metadata-studio/DocTypeBuilder.tsx`
+- [x] `src/components/metadata-studio/DocTypeBuilder.tsx`
 
 Must include:
 
-- [ ] Label input
-- [ ] Auto-generated key
-- [ ] Module dropdown
-- [ ] Schema dropdown: `app`, `wh`
-- [ ] Storage dropdown: `generic_json`, `physical_rpc`
-- [ ] Company Scoped toggle
-- [ ] Description
-- [ ] Save button
+- [x] Label input
+- [x] Auto-generated key
+- [x] Module dropdown
+- [x] Schema dropdown: `app`, `wh`
+- [x] Storage dropdown: `generic_json`, `physical_rpc`
+- [x] Company Scoped toggle
+- [x] Description
+- [x] Save button
 
 Defaults:
 
-- [ ] schema = `app`
-- [ ] storage = `generic_json`
+- [x] schema = `app`
+- [x] storage = `generic_json`
 
 ---
 
@@ -76,21 +76,21 @@ Defaults:
 
 Create:
 
-- [ ] `src/components/metadata-studio/DocFieldBuilder.tsx`
+- [x] `src/components/metadata-studio/DocFieldBuilder.tsx`
 
 Must include:
 
-- [ ] Select DocType
-- [ ] Add/edit/reorder fields
-- [ ] Label input
-- [ ] Auto-generated fieldname
-- [ ] Field Type dropdown
-- [ ] Select options editor
-- [ ] Link DocType dropdown
-- [ ] Required toggle
-- [ ] In List View toggle
-- [ ] In Filter toggle
-- [ ] Hidden toggle
+- [x] Select DocType
+- [x] Add/edit/reorder fields
+- [x] Label input
+- [x] Auto-generated fieldname
+- [x] Field Type dropdown
+- [x] Select options editor
+- [x] Link DocType dropdown
+- [x] Required toggle
+- [x] In List View toggle
+- [x] In Filter toggle
+- [x] Hidden toggle
 
 Supported types:
 
@@ -110,19 +110,19 @@ Supported types:
 
 Create:
 
-- [ ] `src/components/metadata-studio/ListViewBuilder.tsx`
+- [x] `src/components/metadata-studio/ListViewBuilder.tsx`
 
 Must include:
 
-- [ ] Select DocType
-- [ ] Available fields
-- [ ] Selected columns
-- [ ] Add/remove/reorder columns
-- [ ] Column label and width controls
-- [ ] Search fields selector
-- [ ] Filter fields selector
-- [ ] Preview table
-- [ ] Save generated list metadata
+- [x] Select DocType
+- [x] Available fields
+- [x] Selected columns
+- [x] Add/remove/reorder columns
+- [x] Column label and width controls
+- [x] Search fields selector
+- [x] Filter fields selector
+- [x] Preview table
+- [x] Save generated list metadata
 
 No JSON writing in normal mode.
 
@@ -132,18 +132,18 @@ No JSON writing in normal mode.
 
 Create:
 
-- [ ] `src/components/metadata-studio/FormLayoutBuilder.tsx`
+- [x] `src/components/metadata-studio/FormLayoutBuilder.tsx`
 
 Must include:
 
-- [ ] Select DocType
-- [ ] Add section
-- [ ] Rename section
-- [ ] One/two-column choice
-- [ ] Assign fields to section
-- [ ] Reorder fields
-- [ ] Preview form
-- [ ] Save generated layout metadata
+- [x] Select DocType
+- [x] Add section
+- [x] Rename section
+- [x] One/two-column choice
+- [x] Assign fields to section
+- [x] Reorder fields
+- [x] Preview form
+- [x] Save generated layout metadata
 
 No JSON writing in normal mode.
 
@@ -153,19 +153,19 @@ No JSON writing in normal mode.
 
 Create:
 
-- [ ] `src/components/metadata-studio/WorkspaceMenuBuilder.tsx`
+- [x] `src/components/metadata-studio/WorkspaceMenuBuilder.tsx`
 
 Must include:
 
-- [ ] Select workspace
-- [ ] Show menu items
-- [ ] Add/edit menu item
-- [ ] Item type dropdown
-- [ ] DocType target dropdown
-- [ ] Page target dropdown for known pages
-- [ ] Auto-suggest view key for DocType items
-- [ ] Active toggle
-- [ ] Sort order controls
+- [x] Select workspace
+- [x] Show menu items
+- [x] Add/edit menu item
+- [x] Item type dropdown
+- [x] DocType target dropdown
+- [x] Page target dropdown for known pages
+- [x] Auto-suggest view key for DocType items
+- [x] Active toggle
+- [x] Sort order controls
 
 ---
 
@@ -173,15 +173,15 @@ Must include:
 
 Create:
 
-- [ ] `src/components/metadata-studio/AccessBuilder.tsx`
+- [x] `src/components/metadata-studio/AccessBuilder.tsx`
 
 Must include:
 
-- [ ] Select DocType
-- [ ] Show standard access keys for view/create/update/delete
-- [ ] Create missing access keys
-- [ ] Enable owner/admin access
-- [ ] Show clear result messages
+- [x] Select DocType
+- [x] Show standard access keys for view/create/update/delete
+- [x] Create missing access keys
+- [x] Enable owner/admin access
+- [x] Show clear result messages
 
 ---
 
@@ -189,7 +189,7 @@ Must include:
 
 Update:
 
-- [ ] `src/components/metadata/DynamicRouteRenderer.tsx`
+- [x] `src/components/metadata/DynamicRouteRenderer.tsx`
 
 Add routes for all new builder screens.
 
@@ -207,6 +207,11 @@ Verify:
 - [ ] Menu item target is selected from dropdown
 - [ ] Demo record can be created, edited, and deactivated
 
+Browser note:
+
+- Local Vite app served successfully at `http://127.0.0.1:4173`
+- Authenticated verification remains pending because the provided local login attempt did not progress past the login screen in this CLI/browser environment
+
 ---
 
 ## K. Commands
@@ -221,18 +226,26 @@ npm run build
 npm run test:simulation
 ```
 
+Results:
+
+- `npm run typecheck` -> PASS
+- `npm run lint` -> PASS with 42 pre-existing warnings
+- `npm run test` -> 44 passed, 6 failed (pre-existing auth/dashboard/users failures outside Phase 4.8)
+- `npm run build` -> PASS
+- `npm run test:simulation` -> PASS as readiness script for manual SQL execution
+
 ---
 
 ## L. Acceptance Criteria
 
 Phase 4.8 is complete only when:
 
-- [ ] Metadata Studio is builder-first
-- [ ] schema uses dropdown
-- [ ] field type uses dropdown
-- [ ] List View can be built without JSON
-- [ ] Form Layout can be built without JSON
-- [ ] Menu target uses dropdown
-- [ ] Access setup is handled by UI
+- [x] Metadata Studio is builder-first
+- [x] schema uses dropdown
+- [x] field type uses dropdown
+- [x] List View can be built without JSON
+- [x] Form Layout can be built without JSON
+- [x] Menu target uses dropdown
+- [x] Access setup is handled by UI
 - [ ] Purchase Invoice demo works through builder screens
-- [ ] AI run report exists
+- [x] AI run report exists

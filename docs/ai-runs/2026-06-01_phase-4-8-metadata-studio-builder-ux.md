@@ -75,16 +75,16 @@ Interactive authenticated browser verification is still pending:
 
 Reason:
 
-- this CLI/browser environment did not have a reusable signed-in Metadata Studio session or safe test credentials for Supabase Auth
+- a local login attempt with the provided test credentials did not progress past the login screen in this CLI/browser environment
 - verification of the authenticated Purchase Invoice flow therefore remains a local interactive follow-up step
 
 ## Screenshots
 
-Local-only note: no screenshots captured in this run.
+Local-only note: login-attempt screenshots were generated during verification and then removed without commit because they could expose credential entry state.
 
 ## Final Commit
 
-Pending final commit hash.
+`8cba392aff71877bb0d7989599366dc8bc94522f`
 
 ## Remaining Gaps
 
