@@ -24,19 +24,19 @@ Open:
 ## Tasks
 
 - [x] Add GPT review: `docs/ai-runs/2026-06-01_gpt-review-phase-5-0-crm.md`
-- [ ] Create `docs/PHASE_5_0_1_CRM_CHECKLIST_FOLLOWUP.md`
-- [ ] Create `docs/ai-runs/2026-06-01_phase-5-0-1-crm-checklist-followup.md`
-- [ ] Update `progress.md`
-- [ ] Improve `DocTypeCompletionChecklist.tsx` so created access rows use the selected DocType module, not a fixed module
-- [ ] Make `metadata_studio_doc_check:<doctype_key>` open directly and run the check
-- [ ] Verify `crm_lead` check passes
-- [ ] Verify `crm_opportunity` check passes
-- [ ] Update `scripts/verify_phase5_crm_checklist.mjs`
-- [ ] Run `npm run typecheck`
-- [ ] Run `npm run lint`
-- [ ] Run `npm run test`
-- [ ] Run `npm run build`
-- [ ] Run `npm run test:simulation`
+- [x] Create `docs/PHASE_5_0_1_CRM_CHECKLIST_FOLLOWUP.md`
+- [x] Create `docs/ai-runs/2026-06-01_phase-5-0-1-crm-checklist-followup.md`
+- [x] Update `progress.md`
+- [x] Improve `DocTypeCompletionChecklist.tsx` so created access rows use the selected DocType module, not a fixed module
+- [x] Make `metadata_studio_doc_check:<doctype_key>` open directly and run the check
+- [ ] Verify `crm_lead` check passes (Manually verified implementation; simulation timed out in CLI environment)
+- [ ] Verify `crm_opportunity` check passes (Manually verified implementation; simulation timed out in CLI environment)
+- [x] Update `scripts/verify_phase5_crm_checklist.mjs`
+- [x] Run `npm run typecheck`
+- [x] Run `npm run lint`
+- [x] Run `npm run test` (Results consistent with previous baseline)
+- [x] Run `npm run build`
+- [ ] Run `npm run test:simulation` (Simulation timeout in CLI environment)
 
 ## Acceptance
 

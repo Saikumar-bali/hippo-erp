@@ -103,7 +103,7 @@ async function createDefaultActions(doctypeKey: string): Promise<string> {
   return `Created ${created} missing action(s)`;
 }
 
-async function createMissingPermissions(doctypeKey: string, existing: string[]): Promise<string> {
+async function createMissingPermissions(doctypeKey: string, existing: string[], moduleKey: string, moduleLabel: string): Promise<string> {
   const needed = [`view_${doctypeKey}`, `create_${doctypeKey}`, `update_${doctypeKey}`, `delete_${doctypeKey}`];
   let created = 0;
   for (const key of needed) {
@@ -112,8 +112,8 @@ async function createMissingPermissions(doctypeKey: string, existing: string[]):
       .from("permissions")
       .insert({
         permission_key: key,
-        module_key: "purchasing",
-        module_label: "Purchasing",
+        module_key: moduleKey,
+        module_label: moduleLabel,
         permission_label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
         description: `Auto-created for ${doctypeKey}`,
         sort_order: 50,
@@ -238,10 +238,21 @@ export function DocTypeCompletionChecklist({ doctypeKey: initialKey }: Props) {
       const permissionKeys: string[] = await loadExistingPermissionKeys();
       const roleGrants: Record<string, string[]> = await loadRolePermissionGrants();
       const wsItem: Record<string, unknown> | null = await findWorkspaceItem(key);
+      
+      // Load module meta if doctype exists to get the label
+      let moduleMeta: { label: string } | null = null;
+      if (doctype) {
+        const { data: modData } = await supabase.schema("app")
+          .from("erp_modules")
+          .select("label")
+          .eq("module_key", doctype.module_key)
+          .maybeSingle();
+        moduleMeta = modData as { label: string } | null;
+      }
 
       // 1. DocType exists
       if (doctype) {
-        results.push({ key: "doctype_exists", label: "DocType exists", status: "pass", message: `DocType "${key}" found` });
+        results.push({ key: "doctype_exists", label: "DocType exists", status: "pass", message: `DocType "${key}" found (Module: ${doctype.module_key})` });
       } else {
         results.push({ key: "doctype_exists", label: "DocType exists", status: "error", message: `DocType "${key}" not registered in erp_doctypes` });
       }
@@ -299,7 +310,18 @@ export function DocTypeCompletionChecklist({ doctypeKey: initialKey }: Props) {
       if (missingPerms.length === 0) {
         results.push({ key: "perm_keys_exist", label: "Permission keys exist in catalog", status: "pass", message: `${permKeys.length} permission key(s) found` });
       } else {
-        results.push({ key: "perm_keys_exist", label: "Permission keys exist in catalog", status: "error", message: `Missing in catalog: ${missingPerms.join(", ")}`, repair: () => createMissingPermissions(key, permissionKeys) });
+        results.push({ 
+          key: "perm_keys_exist", 
+          label: "Permission keys exist in catalog", 
+          status: "error", 
+          message: `Missing in catalog: ${missingPerms.join(", ")}`, 
+          repair: () => createMissingPermissions(
+            key, 
+            permissionKeys, 
+            doctype?.module_key ?? "other", 
+            moduleMeta?.label ?? doctype?.module_key ?? "Other"
+          ) 
+        });
       }
 
       // 8. Permission grants for owner/admin
@@ -376,10 +398,10 @@ export function DocTypeCompletionChecklist({ doctypeKey: initialKey }: Props) {
   }, [initialKey, runCheck]);
 
   useEffect(() => {
-    if (doctypeKey && !initialKey) {
-      runCheck(doctypeKey);
+    if (doctypeKey && !ran && !loading) {
+      void runCheck(doctypeKey);
     }
-  }, []);
+  }, [doctypeKey, ran, loading, runCheck]);
 
   const handleRepair = async (idx: number) => {
     const item = items[idx];
@@ -435,6 +457,10 @@ export function DocTypeCompletionChecklist({ doctypeKey: initialKey }: Props) {
 
       {!loading && ran && items.length > 0 && (
         <>
+          <div style={{ marginBottom: "16px", padding: "8px", backgroundColor: "#f8fafc", borderRadius: "4px", border: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: "var(--font-size-sm, 12px)", color: "#64748b" }}>Results for: </span>
+            <code style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>{doctypeKey}</code>
+          </div>
           <div style={{ display: "flex", gap: "12px", marginBottom: "16px", fontSize: "var(--font-size-sm, 12px)" }}>
             <span style={{ color: "#065f46", fontWeight: 600 }}>{passCount} pass</span>
             {warnCount > 0 && <span style={{ color: "#92400e", fontWeight: 600 }}>{warnCount} warning(s)</span>}

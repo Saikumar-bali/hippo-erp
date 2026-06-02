@@ -29,18 +29,21 @@ async function openBuilderHome() {
 }
 
 async function runChecklist(doctypeKey) {
-  await openBuilderHome();
-  await page.getByRole("button", { name: /open check \/ repair/i }).first().click();
-  await page.getByRole("heading", { name: /check \/ repair doctype/i }).waitFor({ timeout: 30_000 });
-  const input = page.getByPlaceholder(/enter doctype key/i).first();
-  await input.fill(doctypeKey);
-  await page.getByRole("button", { name: /^Check$/i }).first().click();
+  const checkUrl = `${base}/metadata_studio_doc_check:${doctypeKey}`;
+  console.log(`Checking ${doctypeKey} via ${checkUrl}...`);
+  await page.goto(checkUrl, { waitUntil: "networkidle" });
+  
   await page.getByText("DocType exists", { exact: true }).waitFor({ timeout: 30_000 });
   await page.getByText("Route/API can resolve", { exact: true }).waitFor({ timeout: 30_000 });
+  
+  // Wait for results for: <doctypeKey> to be visible to ensure it loaded
+  await page.locator(`code:has-text("${doctypeKey}")`).waitFor({ timeout: 10_000 });
+
   const body = await page.locator("body").innerText();
-  if (/No default|Permission denied|Unknown DocType/i.test(body)) {
+  if (/No default|Permission denied|Unknown DocType|error\(s\)/i.test(body)) {
     throw new Error(`Checklist reported an error for ${doctypeKey}\n${body}`);
   }
+  console.log(`Checklist PASSED for ${doctypeKey}`);
 }
 
 try {
