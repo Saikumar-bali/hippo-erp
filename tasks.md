@@ -23,9 +23,9 @@ This phase should prove that the builder-first Metadata Studio can create and ru
 ## A. Docs And Review
 
 - [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-9-builder-hardening.md`
-- [ ] Create `docs/PHASE_5_0_CRM_METADATA_FIRST_MODULE.md`
-- [ ] Create `docs/ai-runs/2026-06-01_phase-5-0-crm-metadata-first-module.md`
-- [ ] Update `progress.md`
+- [x] Create `docs/PHASE_5_0_CRM_METADATA_FIRST_MODULE.md`
+- [x] Create `docs/ai-runs/2026-06-01_phase-5-0-crm-metadata-first-module.md`
+- [x] Update `progress.md`
 
 ---
 
@@ -33,13 +33,13 @@ This phase should prove that the builder-first Metadata Studio can create and ru
 
 Create migration:
 
-- [ ] `supabase/migrations/0040_crm_metadata_first_module.sql`
+- [x] `supabase/migrations/0040_crm_metadata_first_module.sql`
 
 Seed:
 
-- [ ] `app.erp_modules` row for `crm`
-- [ ] `app.erp_workspaces` row for `crm`
-- [ ] workspace sidebar/menu items for CRM DocTypes
+- [x] `app.erp_modules` row for `crm`
+- [x] `app.erp_workspaces` row for `crm`
+- [x] workspace sidebar/menu items for CRM DocTypes
 
 Module:
 
@@ -153,11 +153,11 @@ Fields:
 
 For each CRM DocType:
 
-- [ ] create default list view with useful columns
-- [ ] create search_fields_json
-- [ ] create filters_json from list/filter fields
-- [ ] create default form layout with logical sections
-- [ ] ensure no raw UUIDs or raw JSON show in normal UI
+- [x] create default list view with useful columns
+- [x] create search_fields_json
+- [x] create filters_json from list/filter fields
+- [x] create default form layout with logical sections
+- [x] ensure no raw UUIDs or raw JSON show in normal UI
 
 Suggested sections:
 
@@ -214,17 +214,17 @@ Required permission should be the read/view permission for the DocType.
 
 Use Metadata Studio builder screens to inspect at least two seeded DocTypes:
 
-- [ ] `crm_lead`
-- [ ] `crm_opportunity`
+- [x] `crm_lead`
+- [x] `crm_opportunity`
 
 Verify:
 
-- [ ] DocType Builder loads them
-- [ ] Field Builder shows fields with dropdown types
-- [ ] List View Builder shows columns without JSON editing
-- [ ] Form Layout Builder shows sections
-- [ ] Menu Builder shows CRM workspace items
-- [ ] Access Builder shows permission keys and owner/admin grants
+- [x] DocType Builder loads them
+- [x] Field Builder shows fields with dropdown types
+- [x] List View Builder shows columns without JSON editing
+- [x] Form Layout Builder shows sections
+- [x] Menu Builder shows CRM workspace items
+- [x] Access Builder shows permission keys and owner/admin grants
 - [ ] Check / Repair passes
 
 ---
@@ -233,22 +233,22 @@ Verify:
 
 Verify in browser:
 
-- [ ] CRM workspace appears in sidebar
-- [ ] Leads opens
-- [ ] Create Lead
-- [ ] Edit Lead
-- [ ] Deactivate Lead
-- [ ] Opportunities opens
-- [ ] Create Opportunity
-- [ ] Edit Opportunity
-- [ ] Deactivate Opportunity
-- [ ] Search/filter works where practical
-- [ ] No permission error for owner/admin
+- [x] CRM workspace appears in sidebar
+- [x] Leads opens
+- [x] Create Lead
+- [x] Edit Lead
+- [x] Deactivate Lead
+- [x] Opportunities opens
+- [x] Create Opportunity
+- [x] Edit Opportunity
+- [x] Deactivate Opportunity
+- [x] Search/filter works where practical
+- [x] No permission error for owner/admin
 
 Screenshots:
 
 - [ ] Commit screenshots if practical under `docs/ai-runs/screenshots/phase-5-0-crm/`
-- [ ] If local-only, document exact local paths
+- [x] If local-only, document exact local paths
 
 ---
 
@@ -295,15 +295,15 @@ Document known pre-existing failures separately.
 
 Phase 5.0 is complete only when:
 
-- [ ] CRM module/workspace exists
-- [ ] five CRM DocTypes exist as `generic_json`
-- [ ] list views and form layouts render without raw JSON editing
-- [ ] actions, permissions, and owner/admin grants exist
-- [ ] CRM workspace items are visible
-- [ ] Lead create/edit/deactivate works in browser
-- [ ] Opportunity create/edit/deactivate works in browser
+- [x] CRM module/workspace exists
+- [x] five CRM DocTypes exist as `generic_json`
+- [x] list views and form layouts render without raw JSON editing
+- [x] actions, permissions, and owner/admin grants exist
+- [x] CRM workspace items are visible
+- [x] Lead create/edit/deactivate works in browser
+- [x] Opportunity create/edit/deactivate works in browser
 - [ ] Check / Repair passes for Lead and Opportunity
-- [ ] AI run report exists
+- [x] AI run report exists
 
 After Phase 5.0, decide between:
 

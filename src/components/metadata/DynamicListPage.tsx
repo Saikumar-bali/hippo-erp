@@ -87,6 +87,10 @@ export function DynamicListPage({
       setError("");
       setRecords([]);
       setDataLoading(true);
+      setSearch("");
+      setFilterValues({});
+      setPage(0);
+      setLinkLabels({});
       setSelectedId(null);
       setCreating(false);
       setEditingId(null);
