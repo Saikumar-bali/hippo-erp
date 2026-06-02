@@ -86,7 +86,19 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
   onRefreshSidebar?: () => Promise<void>;
   onNavigateToDocType?: (doctypeKey: string) => void;
 }) {
-  const [subPage, setSubPage] = useState<string | null>(itemKey === "metadata_studio" ? null : itemKey);
+  const legacyBuilderRouteMap: Record<string, string> = {
+    metadata_studio_doctypes: "metadata_studio_doctype_builder",
+    metadata_studio_docfields: "metadata_studio_field_builder",
+    metadata_studio_list_views: "metadata_studio_list_view_builder",
+    metadata_studio_form_layouts: "metadata_studio_form_layout_builder",
+    metadata_studio_workspace_items: "metadata_studio_workspace_menu_builder",
+    metadata_studio_actions: "metadata_studio_access_builder",
+  };
+  const initialSubPage =
+    itemKey === "metadata_studio"
+      ? null
+      : legacyBuilderRouteMap[itemKey] ?? itemKey;
+  const [subPage, setSubPage] = useState<string | null>(initialSubPage);
 
   if (!subPage || subPage === "metadata_studio") {
     return <MetadataStudioHome onNavigate={(k) => setSubPage(k)} />;
@@ -210,11 +222,11 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
       );
     }
 
-    if (itemKey.startsWith("metadata_studio")) {
+    if (itemKey.startsWith("metadata_studio") || target.startsWith("metadata_studio")) {
       return (
         <MetadataStudioRouter
-          key={itemKey}
-          itemKey={itemKey}
+          key={target || itemKey}
+          itemKey={target || itemKey}
           onRefreshSidebar={onRefreshSidebar}
           onNavigateToDocType={onNavigateToDocType}
         />

@@ -29,9 +29,11 @@ This run focused only on metadata authoring UX:
 
 - `src/components/metadata-studio/MetadataStudioHome.tsx`
 - `src/components/metadata/DynamicRouteRenderer.tsx`
+- `src/components/layout/WorkspaceGroup.tsx`
 - `src/lib/metadata/metadata-studio-api.ts`
 - `tests/frontend/metadata-studio-ux.spec.tsx`
 - `progress.md`
+- `tasks.md`
 
 ## Builder Screens Added
 
@@ -66,27 +68,40 @@ Local app availability verified:
 
 - local Vite app served successfully at `http://127.0.0.1:4173`
 
-Interactive authenticated browser verification is still pending:
+Authenticated Playwright verification completed against the local app:
 
-- Metadata Studio builder-first workflow
-- Purchase Invoice builder walkthrough
-- list/form/menu/access verification
-- create/edit/deactivate one Purchase Invoice demo record
+- Metadata Studio now opens a builder-first workflow from `Open Builder Home`
+- legacy Metadata Studio sidebar items (`DocTypes`, `DocFields`, `List Views`, `Form Layouts`, `Workspace Items`, `DocType Actions`) now route to the new builder screens by default
+- Purchase Invoice verified in DocType Builder, Field Builder, List View Builder, Form Layout Builder, Workspace Menu Builder, and Access Builder
+- Field Type uses dropdown selection
+- List View is built without JSON editing
+- Form Layout is built without JSON editing
+- Workspace/menu target uses dropdown selection
+- Access Builder successfully enabled owner/admin access for `purchase_invoice`
+- `Purchasing -> Purchase Invoices` verified with one demo record create -> edit -> deactivate cycle
 
-Reason:
+Observed browser note:
 
-- a local login attempt with the provided test credentials did not progress past the login screen in this CLI/browser environment
-- verification of the authenticated Purchase Invoice flow therefore remains a local interactive follow-up step
+- the Purchase Invoice edit form still shows a backend error banner text: `function row_to_jsonb(record) does not exist`
+- despite that banner, the edit flow completed successfully and the update persisted
 
 ## Screenshots
 
-Local-only note: login-attempt screenshots were generated during verification and then removed without commit because they could expose credential entry state.
+Local-only screenshots captured and not committed:
+
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\01-builder-home.png`
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\02-doctype-builder.png`
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\03-field-builder-purchase-invoice.png`
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\04-list-view-builder-purchase-invoice.png`
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\05-form-layout-builder-purchase-invoice.png`
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\06-workspace-menu-builder-purchasing.png`
+- `C:\tmp\phase-4-8-metadata-studio-builder-ux\07-access-builder-purchase-invoice.png`
 
 ## Final Commit
 
-`8cba392aff71877bb0d7989599366dc8bc94522f`
+Pending next commit.
 
 ## Remaining Gaps
 
-- Builder screens save metadata rows, but the full Purchase Invoice browser walkthrough still depends on a live authenticated app session and Supabase-backed UI verification.
+- Purchase Invoice edit shows a backend error banner about `row_to_jsonb(record)` even though the update still succeeds. This should be cleaned up in a follow-up fix.
 - Raw metadata tables still exist by design for advanced repair/debug work.

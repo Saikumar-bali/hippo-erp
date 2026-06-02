@@ -199,18 +199,20 @@ Add routes for all new builder screens.
 
 Verify:
 
-- [ ] Metadata Studio is builder-first
-- [ ] Purchase Invoice demo can be built using builder screens
-- [ ] Field type is selected from dropdown
-- [ ] List view is built without JSON
-- [ ] Form layout is built without JSON
-- [ ] Menu item target is selected from dropdown
-- [ ] Demo record can be created, edited, and deactivated
+- [x] Metadata Studio is builder-first
+- [x] Purchase Invoice demo can be built using builder screens
+- [x] Field type is selected from dropdown
+- [x] List view is built without JSON
+- [x] Form layout is built without JSON
+- [x] Menu item target is selected from dropdown
+- [x] Demo record can be created, edited, and deactivated
 
 Browser note:
 
 - Local Vite app served successfully at `http://127.0.0.1:4173`
-- Authenticated verification remains pending because the provided local login attempt did not progress past the login screen in this CLI/browser environment
+- Authenticated verification completed with Playwright against the local app using the seeded admin account
+- Metadata Studio legacy menu items now open builder-first screens; raw table views remain available from `Open Builder Home` under `Advanced Metadata Tables`
+- Local-only screenshots were captured to `C:\tmp\phase-4-8-metadata-studio-builder-ux`
 
 ---
 
@@ -247,5 +249,5 @@ Phase 4.8 is complete only when:
 - [x] Form Layout can be built without JSON
 - [x] Menu target uses dropdown
 - [x] Access setup is handled by UI
-- [ ] Purchase Invoice demo works through builder screens
+- [x] Purchase Invoice demo works through builder screens
 - [x] AI run report exists
