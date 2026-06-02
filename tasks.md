@@ -1,224 +1,116 @@
-# Phase 4.8 Tasks: Metadata Studio Builder UX
+# Phase 4.9 Tasks: Builder Hardening + Generic Document Cleanup
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Make Metadata Studio easy to use through builder screens. Raw metadata tables should stay available, but normal work should happen through guided builders.
+Goal: Finish the builder-first Metadata Studio milestone by fixing the visible Purchase Invoice backend banner, updating reports, and adding a clearer publish/check flow before starting Purchase Orders or CRM.
 
 ## Why This Phase Exists
 
-The current UI still feels too raw. A developer should not need to manually type internal schema names, field type strings, list-view JSON, form-layout JSON, or menu target strings.
+Phase 4.8 made Metadata Studio much better. It added builder screens for DocTypes, fields, list views, form layouts, menu items, and access.
 
-Current issues:
+But the Phase 4.8 browser report still shows one visible problem:
 
-- DocTypes still open as raw table rows.
-- DocFields still open as raw table rows.
-- Field Type is not a friendly picker everywhere.
-- List View still expects JSON.
-- Form Layout still expects JSON.
-- Menu item target still requires too much internal knowledge.
+```text
+function row_to_jsonb(record) does not exist
+```
 
----
-
-## A. Docs
-
-- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-7-manual-builder.md`
-- [x] Create `docs/PHASE_4_8_METADATA_STUDIO_BUILDER_UX.md`
-- [x] Create `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md`
-- [x] Update `progress.md`
+The edit persisted, but a visible backend error banner is not acceptable before building more modules.
 
 ---
 
-## B. Metadata Studio Home
+## A. Docs And Review
 
-Update:
-
-- [x] `src/components/metadata-studio/MetadataStudioHome.tsx`
-
-Add clear cards:
-
-- [x] DocType Builder
-- [x] Field Builder
-- [x] List View Builder
-- [x] Form Layout Builder
-- [x] Menu Builder
-- [x] Access Builder
-- [x] Check / Repair DocType
-
-Move raw metadata tables under `Advanced Metadata Tables`.
+- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-8-builder-ux.md`
+- [ ] Update `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md` with final commit hash `6259c72e1337421f06084c00462bfbee2a86d483`
+- [ ] Create `docs/PHASE_4_9_BUILDER_HARDENING_GENERIC_DOCUMENT_CLEANUP.md`
+- [ ] Create `docs/ai-runs/2026-06-01_phase-4-9-builder-hardening-generic-document-cleanup.md`
+- [ ] Update `progress.md`
 
 ---
 
-## C. DocType Builder
+## B. Fix `row_to_jsonb(record)` Error
 
-Create:
+Find the source of this backend error:
 
-- [x] `src/components/metadata-studio/DocTypeBuilder.tsx`
+```text
+function row_to_jsonb(record) does not exist
+```
 
-Must include:
+Likely area:
 
-- [x] Label input
-- [x] Auto-generated key
-- [x] Module dropdown
-- [x] Schema dropdown: `app`, `wh`
-- [x] Storage dropdown: `generic_json`, `physical_rpc`
-- [x] Company Scoped toggle
-- [x] Description
-- [x] Save button
+- generic document RPCs
+- generic document update/get helpers
+- Supabase SQL function returning JSON from record rows
 
-Defaults:
+Tasks:
 
-- [x] schema = `app`
-- [x] storage = `generic_json`
+- [ ] Search migrations and SQL functions for `row_to_jsonb`
+- [ ] Replace invalid `row_to_jsonb(record)` usage with valid PostgreSQL JSON conversion
+- [ ] Add migration if needed, e.g. `0039_generic_document_rpc_cleanup.sql`
+- [ ] Verify Purchase Invoice edit no longer shows the banner
+- [ ] Verify update still persists
 
----
+Expected PostgreSQL alternatives:
 
-## D. Field Builder
-
-Create:
-
-- [x] `src/components/metadata-studio/DocFieldBuilder.tsx`
-
-Must include:
-
-- [x] Select DocType
-- [x] Add/edit/reorder fields
-- [x] Label input
-- [x] Auto-generated fieldname
-- [x] Field Type dropdown
-- [x] Select options editor
-- [x] Link DocType dropdown
-- [x] Required toggle
-- [x] In List View toggle
-- [x] In Filter toggle
-- [x] Hidden toggle
-
-Supported types:
-
-- Data
-- Text
-- Int
-- Float
-- Check
-- Select
-- Link
-- Date
-- Datetime
+- `to_jsonb(row_alias)`
+- `row_to_json(row_alias)::jsonb`
+- explicit `jsonb_build_object(...)`
 
 ---
 
-## E. List View Builder
+## C. Publish Checklist Path
 
-Create:
+Improve builder usability:
 
-- [x] `src/components/metadata-studio/ListViewBuilder.tsx`
+- [ ] Add clear link/button from Metadata Studio home to Check / Repair DocType
+- [ ] From DocType Builder, after save, show next-step buttons:
+  - Fields
+  - List View
+  - Form Layout
+  - Menu
+  - Access
+  - Check / Repair
+- [ ] From Access Builder, show “Open Check / Repair DocType” note or button if practical
 
-Must include:
-
-- [x] Select DocType
-- [x] Available fields
-- [x] Selected columns
-- [x] Add/remove/reorder columns
-- [x] Column label and width controls
-- [x] Search fields selector
-- [x] Filter fields selector
-- [x] Preview table
-- [x] Save generated list metadata
-
-No JSON writing in normal mode.
+Do not build a huge wizard yet. Just make the flow easier to follow.
 
 ---
 
-## F. Form Layout Builder
+## D. Builder Empty States / Guidance
 
-Create:
+Improve first-time usability:
 
-- [x] `src/components/metadata-studio/FormLayoutBuilder.tsx`
-
-Must include:
-
-- [x] Select DocType
-- [x] Add section
-- [x] Rename section
-- [x] One/two-column choice
-- [x] Assign fields to section
-- [x] Reorder fields
-- [x] Preview form
-- [x] Save generated layout metadata
-
-No JSON writing in normal mode.
+- [ ] DocType Builder: explain `generic_json` vs `physical_rpc`
+- [ ] Field Builder: show example first fields
+- [ ] List View Builder: show guidance when no fields are marked list view
+- [ ] Form Layout Builder: show guidance when no fields are assigned
+- [ ] Menu Builder: explain DocType target dropdown and permission suggestion
+- [ ] Access Builder: explain view/create/update/delete access flow
 
 ---
 
-## G. Menu Builder
+## E. Browser Verification
 
-Create:
+Re-run browser verification:
 
-- [x] `src/components/metadata-studio/WorkspaceMenuBuilder.tsx`
+- [ ] Open Metadata Studio
+- [ ] Create or use Purchase Invoice demo
+- [ ] Edit Purchase Invoice demo record
+- [ ] Confirm no `row_to_jsonb(record)` banner appears
+- [ ] Confirm update persists
+- [ ] Run Check / Repair DocType
+- [ ] Confirm checklist passes
 
-Must include:
+Screenshots:
 
-- [x] Select workspace
-- [x] Show menu items
-- [x] Add/edit menu item
-- [x] Item type dropdown
-- [x] DocType target dropdown
-- [x] Page target dropdown for known pages
-- [x] Auto-suggest view key for DocType items
-- [x] Active toggle
-- [x] Sort order controls
-
----
-
-## H. Access Builder
-
-Create:
-
-- [x] `src/components/metadata-studio/AccessBuilder.tsx`
-
-Must include:
-
-- [x] Select DocType
-- [x] Show standard access keys for view/create/update/delete
-- [x] Create missing access keys
-- [x] Enable owner/admin access
-- [x] Show clear result messages
+- [ ] Commit screenshots if practical under `docs/ai-runs/screenshots/phase-4-9-builder-hardening/`
+- [ ] If local-only, document exact local paths
 
 ---
 
-## I. Routing
+## F. Commands
 
-Update:
-
-- [x] `src/components/metadata/DynamicRouteRenderer.tsx`
-
-Add routes for all new builder screens.
-
----
-
-## J. Browser Verification
-
-Verify:
-
-- [x] Metadata Studio is builder-first
-- [x] Purchase Invoice demo can be built using builder screens
-- [x] Field type is selected from dropdown
-- [x] List view is built without JSON
-- [x] Form layout is built without JSON
-- [x] Menu item target is selected from dropdown
-- [x] Demo record can be created, edited, and deactivated
-
-Browser note:
-
-- Local Vite app served successfully at `http://127.0.0.1:4173`
-- Authenticated verification completed with Playwright against the local app using the seeded admin account
-- Metadata Studio legacy menu items now open builder-first screens; raw table views remain available from `Open Builder Home` under `Advanced Metadata Tables`
-- Local-only screenshots were captured to `C:\tmp\phase-4-8-metadata-studio-builder-ux`
-
----
-
-## K. Commands
-
-Run:
+Run and document:
 
 ```bash
 npm run typecheck
@@ -228,26 +120,23 @@ npm run build
 npm run test:simulation
 ```
 
-Results:
-
-- `npm run typecheck` -> PASS
-- `npm run lint` -> PASS with 42 pre-existing warnings
-- `npm run test` -> 44 passed, 6 failed (pre-existing auth/dashboard/users failures outside Phase 4.8)
-- `npm run build` -> PASS
-- `npm run test:simulation` -> PASS as readiness script for manual SQL execution
+Document known pre-existing failures separately.
 
 ---
 
-## L. Acceptance Criteria
+## G. Acceptance Criteria
 
-Phase 4.8 is complete only when:
+Phase 4.9 is complete only when:
 
-- [x] Metadata Studio is builder-first
-- [x] schema uses dropdown
-- [x] field type uses dropdown
-- [x] List View can be built without JSON
-- [x] Form Layout can be built without JSON
-- [x] Menu target uses dropdown
-- [x] Access setup is handled by UI
-- [x] Purchase Invoice demo works through builder screens
-- [x] AI run report exists
+- [ ] Purchase Invoice edit no longer shows `row_to_jsonb(record)` error
+- [ ] Generic document update still persists
+- [ ] Builder flow has clearer next-step guidance
+- [ ] Check / Repair remains accessible from builder workflow
+- [ ] Browser verification is documented
+- [ ] AI run report exists
+
+After Phase 4.9, decide between:
+
+- Phase 5: Purchase Orders
+- Phase 5 alternative: CRM metadata-first module
+- Phase 4.10: Builder publish wizard polish
