@@ -204,7 +204,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 
 ## Phase 4.7 Implementation Summary
 **Status:** Check / Repair DocType self-diagnostic + user experience improvements.
-**Final Commit:** *(pending — working tree has uncommitted changes)*
+**Final Commit:** `01e377b`
 
 ### Files Created
 - `src/components/metadata/CheckRepairPanel.tsx` — Check/Repair UI panel with 6 diagnostic checks and Fix button
