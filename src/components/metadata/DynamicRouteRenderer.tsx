@@ -20,6 +20,7 @@ import { AccessBuilder } from "../metadata-studio/AccessBuilder";
 import { GrnListPage } from "../grn/GrnListPage";
 import { CurrentInventoryPage } from "../grn/CurrentInventoryPage";
 import { InventoryMovementsPage } from "../grn/InventoryMovementsPage";
+import { CrmDashboardPage } from "../crm/CrmDashboardPage";
 
 import { DocFieldList } from "../metadata-studio/DocFieldList";
 import { WorkspaceMetadataList, WorkspaceItemList } from "../metadata-studio/WorkspaceMetadataList";
@@ -206,6 +207,10 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
 
     if (itemKey === "movements") {
       return <InventoryMovementsPage tenantId={tenantId} />;
+    }
+
+    if (itemKey === "crm_dashboard") {
+      return <CrmDashboardPage tenantId={tenantId} onNavigateToDocType={onNavigateToDocType} />;
     }
 
     if (itemKey === "users_and_roles") {

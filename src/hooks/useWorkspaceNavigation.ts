@@ -192,6 +192,10 @@ export function useWorkspaceNavigation() {
         workspaceKey = "administration";
         workspaceLabel = "Administration";
         wsIcon = "Building2";
+      } else if (mod.moduleKey.startsWith("crm")) {
+        workspaceKey = "crm";
+        workspaceLabel = "CRM";
+        wsIcon = "UsersRound";
       }
 
       if (!workspaceMap.has(workspaceKey)) {
@@ -202,7 +206,7 @@ export function useWorkspaceNavigation() {
             label: workspaceLabel,
             description: null,
             icon: wsIcon,
-            sort_order: workspaceKey === "product_master" ? 10 : workspaceKey === "administration" ? 80 : 50,
+            sort_order: workspaceKey === "product_master" ? 10 : workspaceKey === "crm" ? 35 : workspaceKey === "administration" ? 80 : 50,
             is_active: true,
           },
           items: [],
@@ -210,6 +214,23 @@ export function useWorkspaceNavigation() {
       }
 
       if (mod.moduleKey === "metadata_prototype" && !import.meta.env.DEV) continue;
+
+      // Add CRM Dashboard to fallback if this is a CRM item and it's not already added
+      if (workspaceKey === "crm" && !workspaceMap.get("crm")?.items.some(i => i.item_key === "crm_dashboard")) {
+        const crmWs = workspaceMap.get("crm")!;
+        crmWs.items.push({
+          id: "crm-dashboard-fallback",
+          workspace_key: "crm",
+          item_key: "crm_dashboard",
+          label: "Dashboard",
+          item_type: "page",
+          target: "crm_dashboard",
+          icon: "LayoutDashboard",
+          sort_order: 5,
+          is_active: true,
+          required_permission_key: null,
+        });
+      }
 
       const entry = workspaceMap.get(workspaceKey)!;
       entry.items.push({
@@ -220,11 +241,23 @@ export function useWorkspaceNavigation() {
         item_type: mod.moduleKey === "metadata_prototype" ? "page" : "doctype",
         target: mod.route,
         icon: null,
-        sort_order: entry.items.length,
+        sort_order: 
+          mod.moduleKey === "crm_lead" ? 10 :
+          mod.moduleKey === "crm_account" ? 20 :
+          mod.moduleKey === "crm_contact" ? 30 :
+          mod.moduleKey === "crm_opportunity" ? 40 :
+          mod.moduleKey === "crm_followup_task" ? 50 : 
+          entry.items.length * 10 + 100,
         is_active: mod.status === "active",
         required_permission_key: mod.requiredPermissions.length > 0 ? mod.requiredPermissions[0] : null,
       });
     }
+    
+    // Sort items in each workspace group by sort_order
+    for (const ws of workspaceMap.values()) {
+      ws.items.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    }
+
     return ensureMetadataStudioShortcuts(Array.from(workspaceMap.values()));
   }, []);
 

@@ -17,7 +17,11 @@ import {
   CircleDashed,
   CalendarRange,
   Move3D,
-  ListChecks
+  ListChecks,
+  UsersRound,
+  ContactRound,
+  BadgeDollarSign,
+  ListTodo
 } from "lucide-react";
 import type { ModuleLabel } from "./permission-access";
 
@@ -194,6 +198,51 @@ export const ERP_MODULE_REGISTRY: readonly ErpModuleRegistryEntry[] = [
     route: "/company/users-roles",
     icon: ShieldUser,
     requiredPermissions: ["view_users", "view_roles"],
+    scope: "company",
+    status: "active"
+  },
+  {
+    moduleKey: "crm_lead",
+    label: "Leads",
+    route: "/crm/leads",
+    icon: UsersRound,
+    requiredPermissions: ["view_crm_lead"],
+    scope: "company",
+    status: "active"
+  },
+  {
+    moduleKey: "crm_account",
+    label: "Accounts",
+    route: "/crm/accounts",
+    icon: Building2,
+    requiredPermissions: ["view_crm_account"],
+    scope: "company",
+    status: "active"
+  },
+  {
+    moduleKey: "crm_contact",
+    label: "Contacts",
+    route: "/crm/contacts",
+    icon: ContactRound,
+    requiredPermissions: ["view_crm_contact"],
+    scope: "company",
+    status: "active"
+  },
+  {
+    moduleKey: "crm_opportunity",
+    label: "Opportunities",
+    route: "/crm/opportunities",
+    icon: BadgeDollarSign,
+    requiredPermissions: ["view_crm_opportunity"],
+    scope: "company",
+    status: "active"
+  },
+  {
+    moduleKey: "crm_followup_task",
+    label: "Follow-up Tasks",
+    route: "/crm/followups",
+    icon: ListTodo,
+    requiredPermissions: ["view_crm_followup_task"],
     scope: "company",
     status: "active"
   },

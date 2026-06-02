@@ -33,7 +33,12 @@ export type ModuleLabel =
   | "Reorder alerts"
   | "Inventory valuation"
   | "Users and roles"
-  | "Metadata Prototype";
+  | "Metadata Prototype"
+  | "Leads"
+  | "Accounts"
+  | "Contacts"
+  | "Opportunities"
+  | "Follow-up Tasks";
 
 export const MODULE_PERMISSION_MAP: Record<ModuleLabel, ModulePermissionSpec> = {
   "Company profile": {
@@ -116,6 +121,36 @@ export const MODULE_PERMISSION_MAP: Record<ModuleLabel, ModulePermissionSpec> = 
     createPermissions: ["create_product"],
     updatePermissions: ["update_product"],
     deletePermissions: ["delete_product"]
+  },
+  "Leads": {
+    requiredPermissions: ["view_crm_lead"],
+    createPermissions: ["create_crm_lead"],
+    updatePermissions: ["update_crm_lead"],
+    deletePermissions: ["delete_crm_lead"]
+  },
+  "Accounts": {
+    requiredPermissions: ["view_crm_account"],
+    createPermissions: ["create_crm_account"],
+    updatePermissions: ["update_crm_account"],
+    deletePermissions: ["delete_crm_account"]
+  },
+  "Contacts": {
+    requiredPermissions: ["view_crm_contact"],
+    createPermissions: ["create_crm_contact"],
+    updatePermissions: ["update_crm_contact"],
+    deletePermissions: ["delete_crm_contact"]
+  },
+  "Opportunities": {
+    requiredPermissions: ["view_crm_opportunity"],
+    createPermissions: ["create_crm_opportunity"],
+    updatePermissions: ["update_crm_opportunity"],
+    deletePermissions: ["delete_crm_opportunity"]
+  },
+  "Follow-up Tasks": {
+    requiredPermissions: ["view_crm_followup_task"],
+    createPermissions: ["create_crm_followup_task"],
+    updatePermissions: ["update_crm_followup_task"],
+    deletePermissions: ["delete_crm_followup_task"]
   }
 };
 
