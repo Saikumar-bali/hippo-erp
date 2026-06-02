@@ -9,8 +9,14 @@ import { MetadataPrototype } from "../MetadataPrototype";
 import { ModuleView } from "../ModuleView";
 import { MetadataStudioHome } from "../metadata-studio/MetadataStudioHome";
 import { CustomDocTypeWizard } from "../metadata-studio/CustomDocTypeWizard";
+import { DocTypeBuilder } from "../metadata-studio/DocTypeBuilder";
 import { DocTypeList } from "../metadata-studio/DocTypeList";
 import { DocTypeCompletionChecklist } from "../metadata-studio/DocTypeCompletionChecklist";
+import { DocFieldBuilder } from "../metadata-studio/DocFieldBuilder";
+import { ListViewBuilder } from "../metadata-studio/ListViewBuilder";
+import { FormLayoutBuilder } from "../metadata-studio/FormLayoutBuilder";
+import { WorkspaceMenuBuilder } from "../metadata-studio/WorkspaceMenuBuilder";
+import { AccessBuilder } from "../metadata-studio/AccessBuilder";
 import { GrnListPage } from "../grn/GrnListPage";
 import { CurrentInventoryPage } from "../grn/CurrentInventoryPage";
 import { InventoryMovementsPage } from "../grn/InventoryMovementsPage";
@@ -95,6 +101,18 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
           onDocTypeCreated={onNavigateToDocType}
         />
       );
+    case "metadata_studio_doctype_builder":
+      return <DocTypeBuilder onDocTypeSaved={onNavigateToDocType} />;
+    case "metadata_studio_field_builder":
+      return <DocFieldBuilder />;
+    case "metadata_studio_list_view_builder":
+      return <ListViewBuilder />;
+    case "metadata_studio_form_layout_builder":
+      return <FormLayoutBuilder />;
+    case "metadata_studio_workspace_menu_builder":
+      return <WorkspaceMenuBuilder />;
+    case "metadata_studio_access_builder":
+      return <AccessBuilder />;
     case "metadata_studio_doctypes":
       return <DocTypeList />;
     case "metadata_studio_docfields":

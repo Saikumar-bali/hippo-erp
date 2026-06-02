@@ -1,8 +1,14 @@
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MetadataDataTable } from "../../src/components/metadata-studio/MetadataDataTable";
 import { WorkspaceItemsManager } from "../../src/components/metadata-studio/WorkspaceItemsManager";
 import { MetadataStudioHome } from "../../src/components/metadata-studio/MetadataStudioHome";
-import { vi, describe, it, expect } from "vitest";
+import { DocTypeBuilder } from "../../src/components/metadata-studio/DocTypeBuilder";
+import { DocFieldBuilder } from "../../src/components/metadata-studio/DocFieldBuilder";
+
+afterEach(() => {
+  cleanup();
+});
 
 // Mock the API calls
 vi.mock("../../src/lib/metadata/metadata-studio-api", () => ({
@@ -34,6 +40,28 @@ vi.mock("../../src/lib/metadata/metadata-studio-api", () => ({
   createRecord: vi.fn(),
   updateRecord: vi.fn(),
   deleteRecord: vi.fn(),
+  listAllDoctypes: vi.fn(async () => [
+    { id: "dt-1", doctype_key: "purchase_invoice", label: "Purchase Invoice", module_key: "purchasing", schema_name: "app", storage_strategy: "generic_json", is_company_scoped: true },
+  ]),
+  getDocTypeRecord: vi.fn(async (doctypeKey: string) => ({
+    id: "dt-1",
+    doctype_key: doctypeKey,
+    label: "Purchase Invoice",
+    module_key: "purchasing",
+    schema_name: "app",
+    storage_strategy: "generic_json",
+    is_company_scoped: true,
+    description: "Demo doctype",
+  })),
+  loadModuleKeys: vi.fn(async () => [{ value: "purchasing", label: "purchasing (Purchasing)" }]),
+  loadDocTypeKeys: vi.fn(async () => [{ value: "purchase_invoice", label: "purchase_invoice (Purchase Invoice)" }]),
+  checkDuplicateDoctypeKey: vi.fn(async () => false),
+  listDocFieldsForDoctype: vi.fn(async () => [
+    { id: "f1", doctype_key: "purchase_invoice", fieldname: "invoice_number", label: "Invoice Number", fieldtype: "Data", is_required: true, in_list_view: true, in_standard_filter: true, is_hidden: false, sort_order: 1, options: null },
+  ]),
+  METADATA_STUDIO_SCHEMA_OPTIONS: ["app", "wh"],
+  METADATA_STUDIO_STORAGE_OPTIONS: ["generic_json", "physical_rpc"],
+  METADATA_STUDIO_FIELD_TYPES: ["Data", "Text", "Int", "Float", "Check", "Select", "Link", "Date", "Datetime"],
 }));
 
 // Mock lucide-react to avoid icon rendering issues in tests
@@ -51,6 +79,9 @@ vi.mock("lucide-react", () => ({
   Hash: () => <div />,
   GitBranch: () => <div />,
   Zap: () => <div />,
+  Blocks: () => <div />,
+  ListChecks: () => <div />,
+  WandSparkles: () => <div />,
 }));
 
 describe("Metadata Studio UX Polish", () => {
@@ -71,9 +102,26 @@ describe("Metadata Studio UX Polish", () => {
     expect(screen.getByText("Inactive")).toBeTruthy();
   });
 
-  it("MetadataStudioHome shows primary action and helper text", () => {
+  it("MetadataStudioHome is builder-first", () => {
     render(<MetadataStudioHome onNavigate={() => {}} />);
-    expect(screen.getByText("Create Custom DocType")).toBeTruthy();
-    expect(screen.getByText(/Use builders\/wizards for normal work/)).toBeTruthy();
+    expect(screen.getByText("DocType Builder")).toBeTruthy();
+    expect(screen.getByText("Field Builder")).toBeTruthy();
+    expect(screen.getByText("Advanced Metadata Tables")).toBeTruthy();
+  });
+
+  it("DocTypeBuilder uses dropdown-driven metadata inputs", async () => {
+    render(<DocTypeBuilder />);
+    expect(await screen.findByRole("heading", { name: "DocType Builder" })).toBeTruthy();
+    expect(screen.getByText("Schema")).toBeTruthy();
+    expect(screen.getByText("Storage")).toBeTruthy();
+    expect(screen.getByText(/app\.erp_documents/)).toBeTruthy();
+  });
+
+  it("DocFieldBuilder uses field type dropdowns", async () => {
+    render(<DocFieldBuilder />);
+    expect(await screen.findByRole("heading", { name: "Field Builder" })).toBeTruthy();
+    fireEvent.click(screen.getByText("Add Field"));
+    expect((await screen.findAllByText("Field Type")).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Supported types:/)).toBeTruthy();
   });
 });

@@ -26,6 +26,11 @@ export type TableMeta = {
   orderBy: { column: string; ascending: boolean }[];
 };
 
+export const METADATA_STUDIO_SCHEMA_OPTIONS = ["app", "wh"] as const;
+export const METADATA_STUDIO_STORAGE_OPTIONS = ["generic_json", "physical_rpc"] as const;
+export const METADATA_STUDIO_FIELD_TYPES = ["Data", "Text", "Int", "Float", "Check", "Select", "Link", "Date", "Datetime"] as const;
+export const METADATA_STUDIO_WORKSPACE_ITEM_TYPES = ["doctype", "workspace", "page", "report", "external"] as const;
+
 // ── Foreign key lookup helpers ────────────────────────────────────────────────
 
 export async function loadModuleKeys() {
@@ -50,6 +55,68 @@ export async function loadWorkspaceKeys() {
   const { data, error } = await meta().from("erp_workspaces").select("workspace_key, label").order("sort_order", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []).map((r: Record<string, unknown>) => ({ value: r.workspace_key as string, label: `${r.workspace_key} (${r.label})` }));
+}
+
+export async function getDocTypeRecord(doctypeKey: string) {
+  const { data, error } = await meta()
+    .from("erp_doctypes")
+    .select("*")
+    .eq("doctype_key", doctypeKey)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Record<string, unknown> | null) ?? null;
+}
+
+export async function listDocFieldsForDoctype(doctypeKey: string) {
+  const { data, error } = await meta()
+    .from("erp_docfields")
+    .select("*")
+    .eq("doctype_key", doctypeKey)
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return mapRows<Record<string, unknown>>(data);
+}
+
+export async function listDocTypeActionsForDoctype(doctypeKey: string) {
+  const { data, error } = await meta()
+    .from("erp_doctype_actions")
+    .select("*")
+    .eq("doctype_key", doctypeKey)
+    .order("action_key", { ascending: true });
+  if (error) throw new Error(error.message);
+  return mapRows<Record<string, unknown>>(data);
+}
+
+export async function getDefaultListViewRecord(doctypeKey: string) {
+  const { data, error } = await meta()
+    .from("erp_list_views")
+    .select("*")
+    .eq("doctype_key", doctypeKey)
+    .eq("is_default", true)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Record<string, unknown> | null) ?? null;
+}
+
+export async function getDefaultFormLayoutRecord(doctypeKey: string) {
+  const { data, error } = await meta()
+    .from("erp_form_layouts")
+    .select("*")
+    .eq("doctype_key", doctypeKey)
+    .eq("is_default", true)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Record<string, unknown> | null) ?? null;
+}
+
+export async function listWorkspaceItemsForWorkspace(workspaceKey: string) {
+  const { data, error } = await meta()
+    .from("erp_workspace_items")
+    .select("*")
+    .eq("workspace_key", workspaceKey)
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return mapRows<Record<string, unknown>>(data);
 }
 
 export const TABLES: Record<string, TableMeta> = {
