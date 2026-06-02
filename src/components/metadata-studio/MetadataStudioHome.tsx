@@ -35,10 +35,16 @@ export function MetadataStudioHome({ onNavigate }: Props) {
             Builder-first workflow for Developer Studio. Create and refine metadata through guided screens, then fall back to raw tables only when you need advanced inspection or repair.
           </p>
         </div>
-        <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <PlusCircle size={16} />
-          Start With DocType Builder
-        </button>
+        <div className="studio-toolbar">
+          <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate("metadata_studio_doc_check")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <ListChecks size={16} />
+            Open Check / Repair
+          </button>
+          <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <PlusCircle size={16} />
+            Start With DocType Builder
+          </button>
+        </div>
       </div>
 
       <div className="studio-grid studio-grid--two">

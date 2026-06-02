@@ -28,6 +28,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 4.6 | GRN Cancellation / Reversal Implementation | Complete | Migration 0038, `wh_cancel_grn` RPC, CancelGrnDialog, frontend integration, simulation (12/12). Migration applied on Supabase Cloud. Verified E2E. |
 | 4.7 | Manual App Builder + Permission Repair | Complete | DocType completion checklist, safe repair actions, manual Purchase Invoice guide, permission error UX, CRM feasibility doc, and simulation support added for metadata-driven manual app recovery. |
 | 4.8 | Metadata Studio Builder UX | Complete | Builder-first Metadata Studio with dedicated DocType, Field, List View, Form Layout, Menu, and Access builders. Metadata sidebar items now open builders by default, raw tables live under advanced tools, and Purchase Invoice browser verification passed. |
+| 4.9 | Builder Hardening + Generic Document Cleanup | Complete | Generic document `row_to_jsonb(record)` banner fixed via migration 0039, builder next-step guidance improved, and Purchase Invoice + Check/Repair browser verification passed. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.

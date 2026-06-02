@@ -44,7 +44,12 @@ async function loadRoleGrant(permissionKey: string, role: "owner" | "admin") {
   return Boolean(data);
 }
 
-export function AccessBuilder() {
+type Props = {
+  initialDocTypeKey?: string;
+  onNavigate?: (itemKey: string) => void;
+};
+
+export function AccessBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
   const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
   const [modules, setModules] = useState<Array<{ value: string; label: string }>>([]);
   const [selectedDocType, setSelectedDocType] = useState("");
@@ -98,7 +103,7 @@ export function AccessBuilder() {
         if (cancelled) return;
         setDocTypes(doctypeRows);
         setModules(moduleRows);
-        const first = doctypeRows[0]?.value ?? "";
+        const first = doctypeRows.find((row) => row.value === initialDocTypeKey)?.value ?? (initialDocTypeKey || doctypeRows[0]?.value || "");
         setSelectedDocType(first);
         await loadAccessState(first);
       } catch (error) {
@@ -111,7 +116,7 @@ export function AccessBuilder() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialDocTypeKey]);
 
   async function saveActions() {
     if (!selectedDocType) return;
@@ -282,6 +287,14 @@ export function AccessBuilder() {
           <div className="studio-hint">
             Permission keys stay scoped to the selected DocType. This builder only auto-grants owner/admin, matching the safe repair behavior from Phase 4.7.
           </div>
+
+          {selectedDocType && (
+            <div className="studio-toolbar" style={{ justifyContent: "flex-end" }}>
+              <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_doc_check:${selectedDocType}`)}>
+                Open Check / Repair DocType
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

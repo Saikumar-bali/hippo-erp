@@ -99,12 +99,13 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
       ? null
       : legacyBuilderRouteMap[itemKey] ?? itemKey;
   const [subPage, setSubPage] = useState<string | null>(initialSubPage);
+  const [subPageKey, subPageValue] = subPage?.split(":", 2) ?? [];
 
   if (!subPage || subPage === "metadata_studio") {
     return <MetadataStudioHome onNavigate={(k) => setSubPage(k)} />;
   }
 
-  switch (subPage) {
+  switch (subPageKey || subPage) {
     case "metadata_studio_wizard":
       return (
         <CustomDocTypeWizard
@@ -114,17 +115,17 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
         />
       );
     case "metadata_studio_doctype_builder":
-      return <DocTypeBuilder onDocTypeSaved={onNavigateToDocType} />;
+      return <DocTypeBuilder initialDocTypeKey={subPageValue ?? ""} onDocTypeSaved={onNavigateToDocType} onNavigate={setSubPage} />;
     case "metadata_studio_field_builder":
-      return <DocFieldBuilder />;
+      return <DocFieldBuilder initialDocTypeKey={subPageValue ?? ""} onNavigate={setSubPage} />;
     case "metadata_studio_list_view_builder":
-      return <ListViewBuilder />;
+      return <ListViewBuilder initialDocTypeKey={subPageValue ?? ""} onNavigate={setSubPage} />;
     case "metadata_studio_form_layout_builder":
-      return <FormLayoutBuilder />;
+      return <FormLayoutBuilder initialDocTypeKey={subPageValue ?? ""} onNavigate={setSubPage} />;
     case "metadata_studio_workspace_menu_builder":
       return <WorkspaceMenuBuilder />;
     case "metadata_studio_access_builder":
-      return <AccessBuilder />;
+      return <AccessBuilder initialDocTypeKey={subPageValue ?? ""} onNavigate={setSubPage} />;
     case "metadata_studio_doctypes":
       return <DocTypeList />;
     case "metadata_studio_docfields":
@@ -144,7 +145,7 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
     case "metadata_studio_workflows":
       return <WorkflowList />;
     case "metadata_studio_doc_check":
-      return <DocTypeCompletionChecklist />;
+      return <DocTypeCompletionChecklist doctypeKey={subPageValue ?? ""} />;
     default:
       return <DocTypeList />;
   }

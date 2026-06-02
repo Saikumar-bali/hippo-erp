@@ -40,9 +40,10 @@ function tableNameFor(storage: DocTypeFormState["storage_strategy"], doctypeKey:
 type Props = {
   initialDocTypeKey?: string;
   onDocTypeSaved?: (doctypeKey: string) => void;
+  onNavigate?: (itemKey: string) => void;
 };
 
-export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props) {
+export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved, onNavigate }: Props) {
   const [selectedDocTypeKey, setSelectedDocTypeKey] = useState(initialDocTypeKey);
   const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
   const [modules, setModules] = useState<Array<{ value: string; label: string }>>([]);
@@ -51,6 +52,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
+  const [lastSavedDocTypeKey, setLastSavedDocTypeKey] = useState(initialDocTypeKey);
 
   async function loadOptions(preferredKey?: string) {
     setLoading(true);
@@ -177,6 +179,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
       }
 
       await loadOptions(state.doctype_key);
+      setLastSavedDocTypeKey(state.doctype_key);
       onDocTypeSaved?.(state.doctype_key);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save DocType");
@@ -339,11 +342,31 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
             <div className="studio-metric studio-panel--muted">
               <strong>Builder Guidance</strong>
               <div className="studio-subtle">
-                <div>`generic_json` DocTypes store records in <code>app.erp_documents</code>.</div>
-                <div>`physical_rpc` is metadata-only here and should stay for advanced cases.</div>
+                <div><strong>`generic_json`</strong> is the default builder path and stores records in <code>app.erp_documents</code>.</div>
+                <div><strong>`physical_rpc`</strong> is for advanced cases where a DocType needs a dedicated backend API.</div>
               </div>
             </div>
           </div>
+
+          {lastSavedDocTypeKey && (
+            <div className="studio-panel studio-panel--accent">
+              <div className="studio-header">
+                <div>
+                  <p className="studio-kicker">Next Steps</p>
+                  <strong>Continue building <code>{lastSavedDocTypeKey}</code></strong>
+                  <p className="studio-subtle">Move through the core builder path in order so the DocType is ready to publish and verify.</p>
+                </div>
+              </div>
+              <div className="studio-toolbar">
+                <button type="button" className="studio-button studio-button--ghost" onClick={() => onNavigate?.(`metadata_studio_field_builder:${lastSavedDocTypeKey}`)}>Fields</button>
+                <button type="button" className="studio-button studio-button--ghost" onClick={() => onNavigate?.(`metadata_studio_list_view_builder:${lastSavedDocTypeKey}`)}>List View</button>
+                <button type="button" className="studio-button studio-button--ghost" onClick={() => onNavigate?.(`metadata_studio_form_layout_builder:${lastSavedDocTypeKey}`)}>Form Layout</button>
+                <button type="button" className="studio-button studio-button--ghost" onClick={() => onNavigate?.("metadata_studio_workspace_menu_builder")}>Menu</button>
+                <button type="button" className="studio-button studio-button--ghost" onClick={() => onNavigate?.(`metadata_studio_access_builder:${lastSavedDocTypeKey}`)}>Access</button>
+                <button type="button" className="studio-button" onClick={() => onNavigate?.(`metadata_studio_doc_check:${lastSavedDocTypeKey}`)}>Check / Repair</button>
+              </div>
+            </div>
+          )}
 
           <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
             <button className="studio-button" type="button" onClick={handleSave} disabled={saving}>

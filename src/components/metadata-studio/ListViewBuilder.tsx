@@ -74,7 +74,12 @@ function buildFilter(field: FieldRow) {
   return { ...base, type: "text" };
 }
 
-export function ListViewBuilder() {
+type Props = {
+  initialDocTypeKey?: string;
+  onNavigate?: (itemKey: string) => void;
+};
+
+export function ListViewBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
   const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
   const [selectedDocType, setSelectedDocType] = useState("");
   const [availableFields, setAvailableFields] = useState<FieldRow[]>([]);
@@ -137,7 +142,7 @@ export function ListViewBuilder() {
         const rows = await loadDocTypeKeys();
         if (cancelled) return;
         setDocTypes(rows);
-        const first = rows[0]?.value ?? "";
+        const first = rows.find((row) => row.value === initialDocTypeKey)?.value ?? (initialDocTypeKey || rows[0]?.value || "");
         setSelectedDocType(first);
         await loadBuilderState(first);
       } catch (error) {
@@ -248,7 +253,7 @@ export function ListViewBuilder() {
               <strong>Selected Columns</strong>
               <div className="studio-item-list">
                 {columns.length === 0 ? (
-                  <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>Choose at least one column.</span>
+                  <div className="studio-hint">Choose 4 to 8 columns for the default grid. Start with the main identifier, title/name, one date, one amount/value, and status.</div>
                 ) : (
                   columns.map((column, index) => (
                     <div key={`${column.fieldname}-${index}`} className="studio-item" style={{ display: "grid", gridTemplateColumns: "minmax(120px, 1.2fr) minmax(120px, 1.2fr) 90px auto" }}>
@@ -277,6 +282,9 @@ export function ListViewBuilder() {
             <div className="studio-panel">
               <strong>Search Fields</strong>
               <div className="studio-item-list">
+                {availableFields.filter((field) => ["Data", "Text"].includes(field.fieldtype)).length === 0 && (
+                  <div className="studio-hint">No text-like fields are available yet. Add a `Data` or `Text` field in Field Builder if you want search to feel useful.</div>
+                )}
                 {availableFields.map((field) => (
                   <label key={`search-${field.fieldname}`} className="studio-check">
                     <input
@@ -333,9 +341,16 @@ export function ListViewBuilder() {
           </div>
 
           <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
-            <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
-              {saving ? "Saving..." : "Save List View"}
-            </button>
+            <div className="studio-toolbar">
+              {selectedDocType && (
+                <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_form_layout_builder:${selectedDocType}`)}>
+                  Next: Form Layout
+                </button>
+              )}
+              <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
+                {saving ? "Saving..." : "Save List View"}
+              </button>
+            </div>
           </div>
         </>
       )}

@@ -29,7 +29,12 @@ function makeSection(index: number): LayoutSection {
   };
 }
 
-export function FormLayoutBuilder() {
+type Props = {
+  initialDocTypeKey?: string;
+  onNavigate?: (itemKey: string) => void;
+};
+
+export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
   const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
   const [selectedDocType, setSelectedDocType] = useState("");
   const [availableFields, setAvailableFields] = useState<FieldOption[]>([]);
@@ -79,7 +84,7 @@ export function FormLayoutBuilder() {
         const rows = await loadDocTypeKeys();
         if (cancelled) return;
         setDocTypes(rows);
-        const first = rows[0]?.value ?? "";
+        const first = rows.find((row) => row.value === initialDocTypeKey)?.value ?? (initialDocTypeKey || rows[0]?.value || "");
         setSelectedDocType(first);
         await loadBuilderState(first);
       } catch (error) {
@@ -234,7 +239,7 @@ export function FormLayoutBuilder() {
                     <strong>Section Fields</strong>
                     <div className="studio-item-list">
                       {section.fields.length === 0 ? (
-                        <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>No fields assigned yet.</span>
+                        <div className="studio-hint">No fields assigned yet. Use “Assign Fields” to place the first identifier and the most important business fields into this section.</div>
                       ) : (
                         section.fields.map((fieldname, fieldIndex) => {
                           const meta = availableFields.find((field) => field.fieldname === fieldname);
@@ -283,9 +288,16 @@ export function FormLayoutBuilder() {
           </div>
 
           <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
-            <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
-              {saving ? "Saving..." : "Save Form Layout"}
-            </button>
+            <div className="studio-toolbar">
+              {selectedDocType && (
+                <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.("metadata_studio_workspace_menu_builder")}>
+                  Next: Menu
+                </button>
+              )}
+              <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
+                {saving ? "Saving..." : "Save Form Layout"}
+              </button>
+            </div>
           </div>
         </>
       )}

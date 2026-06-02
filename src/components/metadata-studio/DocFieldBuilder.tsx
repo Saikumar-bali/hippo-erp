@@ -49,7 +49,12 @@ function optionsFromRecord(record: Record<string, unknown>) {
   };
 }
 
-export function DocFieldBuilder() {
+type Props = {
+  initialDocTypeKey?: string;
+  onNavigate?: (itemKey: string) => void;
+};
+
+export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
   const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
   const [selectedDocType, setSelectedDocType] = useState("");
   const [fields, setFields] = useState<BuilderField[]>([]);
@@ -88,7 +93,7 @@ export function DocFieldBuilder() {
         const rows = await loadDocTypeKeys();
         if (cancelled) return;
         setDocTypes(rows);
-        const first = rows[0]?.value ?? "";
+        const first = rows.find((row) => row.value === initialDocTypeKey)?.value ?? (initialDocTypeKey || rows[0]?.value || "");
         setSelectedDocType(first);
         await loadFields(first);
       } catch (error) {
@@ -101,7 +106,7 @@ export function DocFieldBuilder() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialDocTypeKey]);
 
   const availableLinkTargets = useMemo(
     () => docTypes.filter((docType) => docType.value !== selectedDocType),
@@ -238,8 +243,8 @@ export function DocFieldBuilder() {
       {loading ? (
         <div className="state-info">Loading Field Builder…</div>
       ) : fields.length === 0 ? (
-        <div style={{ padding: "18px", border: "1px dashed var(--border)", borderRadius: "var(--border-radius-sm)", color: "var(--muted)" }}>
-          No fields yet. Start with a title or invoice number field, then add list/filter toggles as needed.
+        <div className="studio-hint">
+          No fields yet. Start with 4 core fields: a title or document number, a primary party name, a date, and an active/status field. Then mark the ones that belong in list view and filters.
         </div>
       ) : (
         <div className="studio-stack">
@@ -341,9 +346,16 @@ export function DocFieldBuilder() {
         <span className="studio-subtle">
           Supported types: {METADATA_STUDIO_FIELD_TYPES.join(", ")}
         </span>
-        <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
-          {saving ? "Saving..." : "Save Fields"}
-        </button>
+        <div className="studio-toolbar">
+          {selectedDocType && (
+            <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_list_view_builder:${selectedDocType}`)}>
+              Next: List View
+            </button>
+          )}
+          <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
+            {saving ? "Saving..." : "Save Fields"}
+          </button>
+        </div>
       </div>
     </div>
   );

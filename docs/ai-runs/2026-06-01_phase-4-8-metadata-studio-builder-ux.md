@@ -99,7 +99,7 @@ Local-only screenshots captured and not committed:
 
 ## Final Commit
 
-Pending next commit.
+`6259c72e1337421f06084c00462bfbee2a86d483`
 
 ## Remaining Gaps
 

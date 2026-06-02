@@ -8,23 +8,23 @@ Goal: Finish the builder-first Metadata Studio milestone by fixing the visible P
 
 Phase 4.8 made Metadata Studio much better. It added builder screens for DocTypes, fields, list views, form layouts, menu items, and access.
 
-But the Phase 4.8 browser report still shows one visible problem:
+But the Phase 4.8 browser report still showed one visible problem:
 
 ```text
 function row_to_jsonb(record) does not exist
 ```
 
-The edit persisted, but a visible backend error banner is not acceptable before building more modules.
+That error is now fixed, the builder flow is clearer, and the generic_json Purchase Invoice demo is re-verified.
 
 ---
 
 ## A. Docs And Review
 
 - [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-8-builder-ux.md`
-- [ ] Update `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md` with final commit hash `6259c72e1337421f06084c00462bfbee2a86d483`
-- [ ] Create `docs/PHASE_4_9_BUILDER_HARDENING_GENERIC_DOCUMENT_CLEANUP.md`
-- [ ] Create `docs/ai-runs/2026-06-01_phase-4-9-builder-hardening-generic-document-cleanup.md`
-- [ ] Update `progress.md`
+- [x] Update `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md` with final commit hash `6259c72e1337421f06084c00462bfbee2a86d483`
+- [x] Create `docs/PHASE_4_9_BUILDER_HARDENING_GENERIC_DOCUMENT_CLEANUP.md`
+- [x] Create `docs/ai-runs/2026-06-01_phase-4-9-builder-hardening-generic-document-cleanup.md`
+- [x] Update `progress.md`
 
 ---
 
@@ -36,25 +36,19 @@ Find the source of this backend error:
 function row_to_jsonb(record) does not exist
 ```
 
-Likely area:
-
-- generic document RPCs
-- generic document update/get helpers
-- Supabase SQL function returning JSON from record rows
-
 Tasks:
 
-- [ ] Search migrations and SQL functions for `row_to_jsonb`
-- [ ] Replace invalid `row_to_jsonb(record)` usage with valid PostgreSQL JSON conversion
-- [ ] Add migration if needed, e.g. `0039_generic_document_rpc_cleanup.sql`
-- [ ] Verify Purchase Invoice edit no longer shows the banner
-- [ ] Verify update still persists
+- [x] Search migrations and SQL functions for `row_to_jsonb`
+- [x] Replace invalid `row_to_jsonb(record)` usage with valid PostgreSQL JSON conversion
+- [x] Add migration `0039_generic_document_rpc_cleanup.sql`
+- [x] Verify Purchase Invoice edit no longer shows the banner
+- [x] Verify update still persists
 
-Expected PostgreSQL alternatives:
+Implemented with:
 
-- `to_jsonb(row_alias)`
-- `row_to_json(row_alias)::jsonb`
-- explicit `jsonb_build_object(...)`
+- `supabase/migrations/0039_generic_document_rpc_cleanup.sql`
+- `erp_get_document()` now returns an explicit `jsonb_build_object(...)`
+- legacy helper `public.row_to_jsonb(record)` dropped after the RPC stopped using it
 
 ---
 
@@ -62,15 +56,15 @@ Expected PostgreSQL alternatives:
 
 Improve builder usability:
 
-- [ ] Add clear link/button from Metadata Studio home to Check / Repair DocType
-- [ ] From DocType Builder, after save, show next-step buttons:
-  - Fields
-  - List View
-  - Form Layout
-  - Menu
-  - Access
-  - Check / Repair
-- [ ] From Access Builder, show “Open Check / Repair DocType” note or button if practical
+- [x] Add clear link/button from Metadata Studio home to Check / Repair DocType
+- [x] From DocType Builder, after save, show next-step buttons:
+  - [x] Fields
+  - [x] List View
+  - [x] Form Layout
+  - [x] Menu
+  - [x] Access
+  - [x] Check / Repair
+- [x] From Access Builder, show `Open Check / Repair DocType` note or button
 
 Do not build a huge wizard yet. Just make the flow easier to follow.
 
@@ -80,12 +74,12 @@ Do not build a huge wizard yet. Just make the flow easier to follow.
 
 Improve first-time usability:
 
-- [ ] DocType Builder: explain `generic_json` vs `physical_rpc`
-- [ ] Field Builder: show example first fields
-- [ ] List View Builder: show guidance when no fields are marked list view
-- [ ] Form Layout Builder: show guidance when no fields are assigned
-- [ ] Menu Builder: explain DocType target dropdown and permission suggestion
-- [ ] Access Builder: explain view/create/update/delete access flow
+- [x] DocType Builder: explain `generic_json` vs `physical_rpc`
+- [x] Field Builder: show example first fields
+- [x] List View Builder: show guidance when no fields are marked list view
+- [x] Form Layout Builder: show guidance when no fields are assigned
+- [x] Menu Builder: explain DocType target dropdown and permission suggestion
+- [x] Access Builder: explain view/create/update/delete access flow
 
 ---
 
@@ -93,18 +87,18 @@ Improve first-time usability:
 
 Re-run browser verification:
 
-- [ ] Open Metadata Studio
-- [ ] Create or use Purchase Invoice demo
-- [ ] Edit Purchase Invoice demo record
-- [ ] Confirm no `row_to_jsonb(record)` banner appears
-- [ ] Confirm update persists
-- [ ] Run Check / Repair DocType
-- [ ] Confirm checklist passes
+- [x] Open Metadata Studio
+- [x] Create or use Purchase Invoice demo
+- [x] Edit Purchase Invoice demo record
+- [x] Confirm no `row_to_jsonb(record)` banner appears
+- [x] Confirm update persists
+- [x] Run Check / Repair DocType
+- [x] Confirm checklist passes
 
 Screenshots:
 
-- [ ] Commit screenshots if practical under `docs/ai-runs/screenshots/phase-4-9-builder-hardening/`
-- [ ] If local-only, document exact local paths
+- [x] Local-only screenshots captured under `C:\tmp\phase-4-9-builder-hardening`
+- [ ] Not committed into the repo
 
 ---
 
@@ -120,7 +114,7 @@ npm run build
 npm run test:simulation
 ```
 
-Document known pre-existing failures separately.
+Known pre-existing failures remain separate from Phase 4.9.
 
 ---
 
@@ -128,12 +122,12 @@ Document known pre-existing failures separately.
 
 Phase 4.9 is complete only when:
 
-- [ ] Purchase Invoice edit no longer shows `row_to_jsonb(record)` error
-- [ ] Generic document update still persists
-- [ ] Builder flow has clearer next-step guidance
-- [ ] Check / Repair remains accessible from builder workflow
-- [ ] Browser verification is documented
-- [ ] AI run report exists
+- [x] Purchase Invoice edit no longer shows `row_to_jsonb(record)` error
+- [x] Generic document update still persists
+- [x] Builder flow has clearer next-step guidance
+- [x] Check / Repair remains accessible from builder workflow
+- [x] Browser verification is documented
+- [x] AI run report exists
 
 After Phase 4.9, decide between:
 
