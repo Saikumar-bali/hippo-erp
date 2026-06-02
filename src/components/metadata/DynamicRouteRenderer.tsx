@@ -10,6 +10,7 @@ import { ModuleView } from "../ModuleView";
 import { MetadataStudioHome } from "../metadata-studio/MetadataStudioHome";
 import { CustomDocTypeWizard } from "../metadata-studio/CustomDocTypeWizard";
 import { DocTypeList } from "../metadata-studio/DocTypeList";
+import { DocTypeCompletionChecklist } from "../metadata-studio/DocTypeCompletionChecklist";
 import { GrnListPage } from "../grn/GrnListPage";
 import { CurrentInventoryPage } from "../grn/CurrentInventoryPage";
 import { InventoryMovementsPage } from "../grn/InventoryMovementsPage";
@@ -112,6 +113,8 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
       return <NamingSeriesList />;
     case "metadata_studio_workflows":
       return <WorkflowList />;
+    case "metadata_studio_doc_check":
+      return <DocTypeCompletionChecklist />;
     default:
       return <DocTypeList />;
   }

@@ -294,7 +294,25 @@ export function DynamicListPage({
       </div>
     );
   }
-  if (error) return <div className="card state-error">{error}</div>;
+  if (error) {
+    const isPermissionError = error.toLowerCase().includes("permission denied") || error.toLowerCase().includes("permission");
+    if (isPermissionError) {
+      const permMatch = error.match(/permission[:\s]+(\S+)/i);
+      const permKey = permMatch ? permMatch[1] : "view_" + doctypeKey;
+      return (
+        <div className="card state-error">
+          <h3>Permission Required: {permKey}</h3>
+          <p>{error}</p>
+          <p style={{ fontSize: "var(--font-size-sm, 12px)", marginTop: "12px", padding: "8px 12px", background: "#fffbeb", borderRadius: "4px", borderLeft: "4px solid #d97706" }}>
+            <strong>Repair:</strong> Open <strong>Metadata Studio → Check / Repair DocType → {doctypeKey}</strong>
+            <br />
+            This will scan and fix missing permissions, actions, and workspace settings.
+          </p>
+        </div>
+      );
+    }
+    return <div className="card state-error">{error}</div>;
+  }
 
   if (creating) {
     return (

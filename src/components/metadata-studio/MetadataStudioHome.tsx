@@ -14,7 +14,9 @@ const advancedSections = [
   { key: "metadata_studio_workflows", label: "Workflows", icon: GitBranch, desc: "Document workflow state machines" },
 ];
 
-const quickKeys = new Set(["metadata_studio_doctypes", "metadata_studio_workspaces", "metadata_studio_workspace_items", "metadata_studio_list_views", "metadata_studio_form_layouts"]);
+const quickKeys = new Set(["metadata_studio_doctypes", "metadata_studio_workspaces", "metadata_studio_workspace_items", "metadata_studio_list_views", "metadata_studio_form_layouts", "metadata_studio_doc_check"]);
+
+const repairSection = { key: "metadata_studio_doc_check", label: "Check / Repair DocType", icon: ShieldCheck, desc: "Diagnose and fix DocType completeness" };
 
 type Props = {
   onNavigate: (itemKey: string) => void;
@@ -72,6 +74,31 @@ export function MetadataStudioHome({ onNavigate }: Props) {
       >
         <PlusCircle size={20} />
         Create Custom DocType
+      </div>
+
+      <div
+        className="logout"
+        onClick={() => onNavigate(repairSection.key)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "10px",
+          padding: "12px 20px",
+          fontSize: "var(--font-size-sm)",
+          cursor: "pointer",
+          marginBottom: "16px",
+          fontWeight: 600,
+          border: "2px dashed #d1d5db",
+          borderRadius: "var(--border-radius-sm)",
+          background: "#fffbeb",
+          color: "#92400e",
+          width: "100%",
+        }}
+      >
+        <repairSection.icon size={18} />
+        {repairSection.label}
+        <span style={{ fontSize: "10px", opacity: 0.7 }}>— {repairSection.desc}</span>
       </div>
 
       <p style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", marginBottom: "24px", lineHeight: 1.6, padding: "12px", background: "var(--bg)", borderLeft: "4px solid var(--primary)", borderRadius: "4px" }}>

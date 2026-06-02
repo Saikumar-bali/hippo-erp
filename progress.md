@@ -165,7 +165,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 
 ## Phase 4.6 Implementation Summary
 **Status:** GRN cancellation / reversal implementation complete.
-**Final Commit:** *(not yet committed)*
+**Final Commit:** `c2aa2ee`
 
 ### Files Created
 - `supabase/migrations/0038_grn_cancellation_reversal.sql` — table columns, `cancel_grn` permission, `wh_cancel_grn` RPC
@@ -201,6 +201,39 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - No partial reversal support
 - No `grn_status_events` audit table (deferred)
 - Insufficient-stock-with-consumption test requires outbound movement (future phase)
+
+## Phase 4.7 Implementation Summary
+**Status:** Check / Repair DocType self-diagnostic + user experience improvements.
+**Final Commit:** *(pending — working tree has uncommitted changes)*
+
+### Files Created
+- `src/components/metadata/CheckRepairPanel.tsx` — Check/Repair UI panel with 6 diagnostic checks and Fix button
+- `docs/MANUAL_DOCTYPE_CREATION_GUIDE.md` — step-by-step guide for creating Purchase Invoice manually from browser
+- `docs/CRM_ON_METADATA_ENGINE.md` — feasibility analysis of CRM on metadata engine vs. custom RPCs
+- `tests/simulations/manual_doctype_completion_flow.sql` — 8-test simulation for incomplete doctype → repair flow
+- `tests/simulations/metadata_check_performance_plan.sql` — dry-run performance plan for check/repair diagnostics
+
+### Files Modified
+- `supabase/migrations/0028_warehouse_hierarchy_metadata.sql` — added `check_and_repair_doctype()` SQL function
+- `src/components/metadata/DynamicListPage.tsx` — permission error detection + repair instructions
+- `src/components/metadata/CardWorkspaceItem.tsx` — active-state highlight for workspace items
+- `src/routes/metadataStudioRoutes.ts` — check-repair route
+
+### Key Design Decisions
+- `check_and_repair_doctype()` is a server-side SQL function in existing migration 0028 (no new migration)
+- 6 diagnostic checks: DocType exists, fields exist, list view exists, form layout exists, actions exist, permissions+grants exist
+- Fix auto-creates missing permission keys, grants them to owner/admin, and activates workspace items
+- Permission error in DynamicListPage detected via `error.toLowerCase().includes("permission")` — shows repair instructions with link to Check/Repair
+- Workspace items highlight when active (green left border, opacity change)
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+
+### Remaining Gaps
+- No automated frontend test for Check/Repair workflow
+- Supabase CLI binary unavailable on win32-x64 — simulations require Linux/macOS or Supabase Cloud SQL Editor
 
 ## Phase 3.1 Implementation Summary
 **Final Commit:** `d9e495b`
