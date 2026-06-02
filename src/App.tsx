@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 import { useAuth } from "./context/AuthContext";
 import { usePermissions } from "./hooks/usePermissions";
@@ -11,6 +11,7 @@ import { DynamicRouteRenderer } from "./components/metadata/DynamicRouteRenderer
 import type { WorkspaceItemMeta } from "./lib/metadata/workspace-types";
 
 export default function App() {
+  const { pageKey } = useParams();
   const [selectedItem, setSelectedItem] = useState<WorkspaceItemMeta | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const { session, signOut, tenantLoadError, tenants } = useAuth();
@@ -18,6 +19,43 @@ export default function App() {
   const [membershipToastShown, setMembershipToastShown] = useState(false);
   const permissions = usePermissions();
   const { tree, loading: navLoading, refresh: refreshSidebar } = useWorkspaceNavigation();
+
+  // Sync selectedItem with URL pageKey
+  useEffect(() => {
+    if (navLoading || permissions.loading) return;
+
+    if (pageKey) {
+      console.log("[app] deep link detected:", pageKey);
+      // 1. Try to find a real item in the tree
+      let found: WorkspaceItemMeta | undefined;
+      for (const ws of tree) {
+        found = ws.items.find((item) => item.item_key === pageKey || item.target === pageKey);
+        if (found) break;
+      }
+
+      if (found) {
+        console.log("[app] found matching item in tree:", found.item_key);
+        setSelectedItem(found);
+      } else if (pageKey.startsWith("metadata_studio")) {
+        console.log("[app] creating virtual item for:", pageKey);
+        // 2. Virtual item for metadata studio diagnostic sub-pages
+        setSelectedItem({
+          id: `virtual-${pageKey}`,
+          workspace_key: "metadata_studio",
+          item_key: pageKey,
+          label: pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+          item_type: "page",
+          target: pageKey,
+          icon: "Activity",
+          sort_order: 0,
+          is_active: true,
+          required_permission_key: "manage_metadata",
+        });
+      } else {
+        console.log("[app] pageKey did not match any item or virtual pattern:", pageKey);
+      }
+    }
+  }, [pageKey, tree, navLoading, permissions.loading]);
 
   const doLogout = async () => {
     setSigningOut(true);
@@ -69,10 +107,12 @@ export default function App() {
 
   const handleItemClick = (item: WorkspaceItemMeta) => {
     setSelectedItem(item);
+    navigate(`/${item.item_key}`);
   };
 
   const handleHomeClick = () => {
     setSelectedItem(null);
+    navigate("/");
   };
 
   const handleNavigateToDocType = useCallback((doctypeKey: string) => {

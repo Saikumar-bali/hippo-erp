@@ -43,6 +43,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/auth/callback" element={<AuthCallbackRoute />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<App />} />
+            <Route path="/:pageKey" element={<App />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
