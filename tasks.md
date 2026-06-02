@@ -1,108 +1,281 @@
-# Phase 4.9 Tasks: Builder Hardening + Generic Document Cleanup
+# Phase 5.0 Tasks: CRM Metadata-First Module
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Finish the builder-first Metadata Studio milestone by fixing the visible Purchase Invoice backend banner, updating reports, and adding a clearer publish/check flow before starting Purchase Orders or CRM.
+Goal: Prove that Hippo ERP can create a complete business module using the metadata engine and builder workflow, without writing custom CRUD code. CRM is the best next module because its core records are normal documents, unlike GRN or Purchase Orders.
 
-## Why This Phase Exists
+## Why CRM Before Purchase Orders
 
-Phase 4.8 made Metadata Studio much better. It added builder screens for DocTypes, fields, list views, form layouts, menu items, and access.
+Purchase Orders are transactional. They need explicit lifecycle rules, supplier linkage, line items, status handling, GRN linkage, and later accounting integration.
 
-But the Phase 4.8 browser report still showed one visible problem:
+CRM is a better next proof because the core CRM records can start as `generic_json` DocTypes:
 
-```text
-function row_to_jsonb(record) does not exist
-```
+- Lead
+- Contact
+- Account
+- Opportunity
+- Follow-up Task
 
-That error is now fixed, the builder flow is clearer, and the generic_json Purchase Invoice demo is re-verified.
+This phase should prove that the builder-first Metadata Studio can create and run a full module from metadata.
 
 ---
 
 ## A. Docs And Review
 
-- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-8-builder-ux.md`
-- [x] Update `docs/ai-runs/2026-06-01_phase-4-8-metadata-studio-builder-ux.md` with final commit hash `6259c72e1337421f06084c00462bfbee2a86d483`
-- [x] Create `docs/PHASE_4_9_BUILDER_HARDENING_GENERIC_DOCUMENT_CLEANUP.md`
-- [x] Create `docs/ai-runs/2026-06-01_phase-4-9-builder-hardening-generic-document-cleanup.md`
-- [x] Update `progress.md`
+- [x] GPT review report: `docs/ai-runs/2026-06-01_gpt-review-phase-4-9-builder-hardening.md`
+- [ ] Create `docs/PHASE_5_0_CRM_METADATA_FIRST_MODULE.md`
+- [ ] Create `docs/ai-runs/2026-06-01_phase-5-0-crm-metadata-first-module.md`
+- [ ] Update `progress.md`
 
 ---
 
-## B. Fix `row_to_jsonb(record)` Error
+## B. CRM Module And Workspace Metadata
 
-Find the source of this backend error:
+Create migration:
 
-```text
-function row_to_jsonb(record) does not exist
-```
+- [ ] `supabase/migrations/0040_crm_metadata_first_module.sql`
 
-Tasks:
+Seed:
 
-- [x] Search migrations and SQL functions for `row_to_jsonb`
-- [x] Replace invalid `row_to_jsonb(record)` usage with valid PostgreSQL JSON conversion
-- [x] Add migration `0039_generic_document_rpc_cleanup.sql`
-- [x] Verify Purchase Invoice edit no longer shows the banner
-- [x] Verify update still persists
+- [ ] `app.erp_modules` row for `crm`
+- [ ] `app.erp_workspaces` row for `crm`
+- [ ] workspace sidebar/menu items for CRM DocTypes
 
-Implemented with:
+Module:
 
-- `supabase/migrations/0039_generic_document_rpc_cleanup.sql`
-- `erp_get_document()` now returns an explicit `jsonb_build_object(...)`
-- legacy helper `public.row_to_jsonb(record)` dropped after the RPC stopped using it
+- module_key: `crm`
+- label: `CRM`
+- description: `Customer relationship management using metadata-driven documents`
+- active: true
 
----
+Workspace:
 
-## C. Publish Checklist Path
-
-Improve builder usability:
-
-- [x] Add clear link/button from Metadata Studio home to Check / Repair DocType
-- [x] From DocType Builder, after save, show next-step buttons:
-  - [x] Fields
-  - [x] List View
-  - [x] Form Layout
-  - [x] Menu
-  - [x] Access
-  - [x] Check / Repair
-- [x] From Access Builder, show `Open Check / Repair DocType` note or button
-
-Do not build a huge wizard yet. Just make the flow easier to follow.
+- workspace_key: `crm`
+- label: `CRM`
+- active: true
 
 ---
 
-## D. Builder Empty States / Guidance
+## C. CRM DocTypes
 
-Improve first-time usability:
+Seed these as `generic_json` DocTypes:
 
-- [x] DocType Builder: explain `generic_json` vs `physical_rpc`
-- [x] Field Builder: show example first fields
-- [x] List View Builder: show guidance when no fields are marked list view
-- [x] Form Layout Builder: show guidance when no fields are assigned
-- [x] Menu Builder: explain DocType target dropdown and permission suggestion
-- [x] Access Builder: explain view/create/update/delete access flow
+### 1. Lead
+
+- doctype_key: `crm_lead`
+- label: `Lead`
+- module_key: `crm`
+- schema_name: `app`
+- table_name: `erp_documents`
+- storage_strategy: `generic_json`
+- company scoped: true
+
+Fields:
+
+- lead_name Data required list/filter
+- company_name Data list/filter
+- email Data list/filter
+- phone Data list/filter
+- source Select list/filter: Website, Referral, Campaign, Social, Other
+- status Select list/filter: New, Contacted, Qualified, Lost, Converted
+- owner_name Data list/filter
+- notes Text
+- is_active Check list/filter default true
+
+### 2. Contact
+
+- doctype_key: `crm_contact`
+- label: `Contact`
+
+Fields:
+
+- full_name Data required list/filter
+- account_name Data list/filter
+- email Data list/filter
+- phone Data list/filter
+- designation Data
+- contact_type Select list/filter: Decision Maker, Influencer, User, Other
+- notes Text
+- is_active Check list/filter default true
+
+### 3. Account
+
+- doctype_key: `crm_account`
+- label: `Account`
+
+Fields:
+
+- account_name Data required list/filter
+- industry Data list/filter
+- website Data
+- phone Data
+- city Data list/filter
+- status Select list/filter: Active, Prospect, Dormant, Lost
+- notes Text
+- is_active Check list/filter default true
+
+### 4. Opportunity
+
+- doctype_key: `crm_opportunity`
+- label: `Opportunity`
+
+Fields:
+
+- opportunity_name Data required list/filter
+- account_name Data list/filter
+- contact_name Data list/filter
+- stage Select list/filter: Qualification, Proposal, Negotiation, Won, Lost
+- expected_value Float list/filter
+- expected_close_date Date list/filter
+- probability Int
+- notes Text
+- is_active Check list/filter default true
+
+### 5. Follow-up Task
+
+- doctype_key: `crm_followup_task`
+- label: `Follow-up Task`
+
+Fields:
+
+- subject Data required list/filter
+- related_to Data list/filter
+- due_date Date list/filter
+- status Select list/filter: Open, Done, Cancelled
+- priority Select list/filter: Low, Medium, High
+- assigned_to Data list/filter
+- notes Text
+- is_active Check list/filter default true
 
 ---
 
-## E. Browser Verification
+## D. List Views And Form Layouts
 
-Re-run browser verification:
+For each CRM DocType:
 
-- [x] Open Metadata Studio
-- [x] Create or use Purchase Invoice demo
-- [x] Edit Purchase Invoice demo record
-- [x] Confirm no `row_to_jsonb(record)` banner appears
-- [x] Confirm update persists
-- [x] Run Check / Repair DocType
-- [x] Confirm checklist passes
+- [ ] create default list view with useful columns
+- [ ] create search_fields_json
+- [ ] create filters_json from list/filter fields
+- [ ] create default form layout with logical sections
+- [ ] ensure no raw UUIDs or raw JSON show in normal UI
+
+Suggested sections:
+
+- Lead: Lead Details, Qualification, Notes
+- Contact: Contact Details, Relationship, Notes
+- Account: Account Details, Status, Notes
+- Opportunity: Deal Details, Forecast, Notes
+- Follow-up Task: Task Details, Assignment, Notes
+
+---
+
+## E. Actions, Permissions, And Grants
+
+For each CRM DocType, create actions:
+
+- read → `view_<doctype_key>`
+- create → `create_<doctype_key>`
+- update → `update_<doctype_key>`
+- deactivate → `delete_<doctype_key>`
+
+Seed permission catalog rows for all CRM permission keys.
+
+Grant default access to:
+
+- owner
+- admin
+
+Optional if roles exist:
+
+- sales_manager: full access
+- sales_user: view/create/update, no delete
+
+Do not grant broadly to viewer/auditor unless an existing policy already does so.
+
+---
+
+## F. Workspace Items
+
+Add active CRM workspace items:
+
+- Leads → target `crm_lead`
+- Contacts → target `crm_contact`
+- Accounts → target `crm_account`
+- Opportunities → target `crm_opportunity`
+- Follow-up Tasks → target `crm_followup_task`
+
+All item_type should be `doctype`.
+
+Required permission should be the read/view permission for the DocType.
+
+---
+
+## G. Builder Verification
+
+Use Metadata Studio builder screens to inspect at least two seeded DocTypes:
+
+- [ ] `crm_lead`
+- [ ] `crm_opportunity`
+
+Verify:
+
+- [ ] DocType Builder loads them
+- [ ] Field Builder shows fields with dropdown types
+- [ ] List View Builder shows columns without JSON editing
+- [ ] Form Layout Builder shows sections
+- [ ] Menu Builder shows CRM workspace items
+- [ ] Access Builder shows permission keys and owner/admin grants
+- [ ] Check / Repair passes
+
+---
+
+## H. Browser Verification
+
+Verify in browser:
+
+- [ ] CRM workspace appears in sidebar
+- [ ] Leads opens
+- [ ] Create Lead
+- [ ] Edit Lead
+- [ ] Deactivate Lead
+- [ ] Opportunities opens
+- [ ] Create Opportunity
+- [ ] Edit Opportunity
+- [ ] Deactivate Opportunity
+- [ ] Search/filter works where practical
+- [ ] No permission error for owner/admin
 
 Screenshots:
 
-- [x] Local-only screenshots captured under `C:\tmp\phase-4-9-builder-hardening`
-- [ ] Not committed into the repo
+- [ ] Commit screenshots if practical under `docs/ai-runs/screenshots/phase-5-0-crm/`
+- [ ] If local-only, document exact local paths
 
 ---
 
-## F. Commands
+## I. CRM Scope Documentation
+
+Document what this proves and what remains future custom work.
+
+Generic metadata can handle now:
+
+- master/simple records
+- basic lead/opportunity tracking
+- list/filter/form UI
+- owner/admin permission setup
+
+Needs custom services later:
+
+- email sync
+- call logs integration
+- lead scoring automation
+- pipeline forecast dashboards
+- activity timeline aggregation
+- workflow automation
+- conversion flow from Lead to Account/Contact/Opportunity
+
+---
+
+## J. Commands
 
 Run and document:
 
@@ -114,23 +287,26 @@ npm run build
 npm run test:simulation
 ```
 
-Known pre-existing failures remain separate from Phase 4.9.
+Document known pre-existing failures separately.
 
 ---
 
-## G. Acceptance Criteria
+## K. Acceptance Criteria
 
-Phase 4.9 is complete only when:
+Phase 5.0 is complete only when:
 
-- [x] Purchase Invoice edit no longer shows `row_to_jsonb(record)` error
-- [x] Generic document update still persists
-- [x] Builder flow has clearer next-step guidance
-- [x] Check / Repair remains accessible from builder workflow
-- [x] Browser verification is documented
-- [x] AI run report exists
+- [ ] CRM module/workspace exists
+- [ ] five CRM DocTypes exist as `generic_json`
+- [ ] list views and form layouts render without raw JSON editing
+- [ ] actions, permissions, and owner/admin grants exist
+- [ ] CRM workspace items are visible
+- [ ] Lead create/edit/deactivate works in browser
+- [ ] Opportunity create/edit/deactivate works in browser
+- [ ] Check / Repair passes for Lead and Opportunity
+- [ ] AI run report exists
 
-After Phase 4.9, decide between:
+After Phase 5.0, decide between:
 
-- Phase 5: Purchase Orders
-- Phase 5 alternative: CRM metadata-first module
-- Phase 4.10: Builder publish wizard polish
+- Phase 5.1: CRM polish and activity timeline
+- Phase 6: Purchase Order architecture
+- Phase 4.10: full Metadata Studio publish wizard
