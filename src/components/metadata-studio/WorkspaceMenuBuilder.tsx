@@ -158,15 +158,17 @@ export function WorkspaceMenuBuilder() {
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h3 style={{ margin: 0 }}>Workspace Menu Builder</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <p className="studio-kicker">Navigation</p>
+          <h3>Workspace Menu Builder</h3>
+          <p>
             Add and edit workspace items with dropdown targets for DocTypes and known pages.
           </p>
         </div>
         <select
+          className="studio-control"
           value={selectedWorkspace}
           onChange={async (event) => {
             const workspaceKey = event.target.value;
@@ -188,12 +190,12 @@ export function WorkspaceMenuBuilder() {
         <div className="state-info">Loading Workspace Menu Builder…</div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(240px, 1fr) minmax(320px, 1.2fr)", gap: "14px" }}>
-            <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+          <div className="studio-grid studio-grid--two">
+            <div className="studio-panel">
+              <div className="studio-header" style={{ alignItems: "center", marginBottom: "10px" }}>
                 <strong>Menu Items</strong>
                 <button
-                  className="btn"
+                  className="studio-button"
                   type="button"
                   onClick={() => setEditing(emptyItem(selectedWorkspace, nextSortOrder(items)))}
                   disabled={!selectedWorkspace}
@@ -201,12 +203,12 @@ export function WorkspaceMenuBuilder() {
                   New Item
                 </button>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div className="studio-item-list">
                 {items.map((item) => (
                   <button
                     key={String(item.id)}
                     type="button"
-                    className="logout"
+                    className="studio-item"
                     onClick={() => setEditing({
                       id: String(item.id),
                       workspace_key: String(item.workspace_key),
@@ -218,7 +220,6 @@ export function WorkspaceMenuBuilder() {
                       sort_order: Number(item.sort_order ?? 0),
                       is_active: Boolean(item.is_active ?? true),
                     })}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
                   >
                     <span>{String(item.label ?? item.item_key)}</span>
                     <code>{String(item.target ?? "")}</code>
@@ -228,20 +229,20 @@ export function WorkspaceMenuBuilder() {
               </div>
             </div>
 
-            <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="studio-panel">
               <strong>Edit Item</strong>
               {editing ? (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div className="studio-form-columns">
+                    <label className="studio-field">
                       <span>Label</span>
                       <input value={editing.label} onChange={(event) => setEditing((prev) => prev ? { ...prev, label: event.target.value } : prev)} />
                     </label>
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label className="studio-field">
                       <span>Item Key</span>
                       <input value={editing.item_key} onChange={(event) => setEditing((prev) => prev ? { ...prev, item_key: toSnakeCase(event.target.value) } : prev)} />
                     </label>
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label className="studio-field">
                       <span>Item Type</span>
                       <select
                         value={editing.item_type}
@@ -258,7 +259,7 @@ export function WorkspaceMenuBuilder() {
                         ))}
                       </select>
                     </label>
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label className="studio-field">
                       <span>Sort Order</span>
                       <input
                         type="number"
@@ -269,7 +270,7 @@ export function WorkspaceMenuBuilder() {
                   </div>
 
                   {currentTargetOptions.length > 0 ? (
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label className="studio-field">
                       <span>Target</span>
                       <select
                         value={editing.target}
@@ -291,13 +292,13 @@ export function WorkspaceMenuBuilder() {
                       </select>
                     </label>
                   ) : (
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label className="studio-field">
                       <span>Target</span>
                       <input value={editing.target} onChange={(event) => setEditing((prev) => prev ? { ...prev, target: event.target.value } : prev)} />
                     </label>
                   )}
 
-                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label className="studio-field">
                     <span>Required Permission</span>
                     <input
                       value={editing.required_permission_key}
@@ -306,7 +307,7 @@ export function WorkspaceMenuBuilder() {
                     />
                   </label>
 
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label className="studio-check">
                     <input
                       type="checkbox"
                       checked={editing.is_active}
@@ -315,7 +316,7 @@ export function WorkspaceMenuBuilder() {
                     <span>{editing.is_active ? "Active" : "Inactive"}</span>
                   </label>
 
-                  <div style={{ padding: "10px", border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", background: "#f7fafb", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+                  <div className="studio-hint">
                     DocType items auto-suggest the item key and read permission when you pick a target from the dropdown.
                   </div>
                 </>
@@ -325,8 +326,8 @@ export function WorkspaceMenuBuilder() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="btn" type="button" onClick={handleSave} disabled={saving || !editing}>
+          <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
+            <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !editing}>
               {saving ? "Saving..." : "Save Menu Item"}
             </button>
           </div>

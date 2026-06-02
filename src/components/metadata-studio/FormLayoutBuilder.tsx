@@ -145,16 +145,18 @@ export function FormLayoutBuilder() {
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h3 style={{ margin: 0 }}>Form Layout Builder</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <p className="studio-kicker">Form Experience</p>
+          <h3>Form Layout Builder</h3>
+          <p>
             Build sections and field placement visually without editing layout JSON.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div className="studio-toolbar">
           <select
+            className="studio-control"
             value={selectedDocType}
             onChange={async (event) => {
               const doctypeKey = event.target.value;
@@ -170,7 +172,7 @@ export function FormLayoutBuilder() {
               </option>
             ))}
           </select>
-          <button className="btn" type="button" onClick={() => setSections((prev) => [...prev, makeSection(prev.length)])}>
+          <button className="studio-button" type="button" onClick={() => setSections((prev) => [...prev, makeSection(prev.length)])}>
             Add Section
           </button>
         </div>
@@ -180,16 +182,16 @@ export function FormLayoutBuilder() {
         <div className="state-info">Loading Form Layout Builder…</div>
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="studio-stack">
             {sections.map((section, index) => (
-              <div key={`${section.section}-${index}`} style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1.5fr) 140px", gap: "10px", flex: 1 }}>
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div key={`${section.section}-${index}`} className="studio-panel">
+                <div className="studio-header">
+                  <div className="studio-grid" style={{ gridTemplateColumns: "minmax(180px, 1.5fr) 140px", flex: 1 }}>
+                    <label className="studio-field">
                       <span>Section Name</span>
                       <input value={section.section} onChange={(event) => updateSection(index, { section: event.target.value })} />
                     </label>
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label className="studio-field">
                       <span>Columns</span>
                       <select value={section.columns} onChange={(event) => updateSection(index, { columns: Number(event.target.value) === 2 ? 2 : 1 })}>
                         <option value={1}>1 column</option>
@@ -197,21 +199,21 @@ export function FormLayoutBuilder() {
                       </select>
                     </label>
                   </div>
-                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "end" }}>
-                    <button className="logout" type="button" onClick={() => setSections((prev) => moveItem(prev, index, -1))}>Up</button>
-                    <button className="logout" type="button" onClick={() => setSections((prev) => moveItem(prev, index, 1))}>Down</button>
-                    <button className="logout" type="button" onClick={() => setSections((prev) => prev.length === 1 ? prev : prev.filter((_, itemIndex) => itemIndex !== index))} style={{ color: "var(--danger)" }}>
+                  <div className="studio-toolbar" style={{ alignItems: "end" }}>
+                    <button className="studio-button studio-button--ghost" type="button" onClick={() => setSections((prev) => moveItem(prev, index, -1))}>Up</button>
+                    <button className="studio-button studio-button--ghost" type="button" onClick={() => setSections((prev) => moveItem(prev, index, 1))}>Down</button>
+                    <button className="studio-button studio-button--danger" type="button" onClick={() => setSections((prev) => prev.length === 1 ? prev : prev.filter((_, itemIndex) => itemIndex !== index))}>
                       Remove
                     </button>
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1fr) minmax(280px, 1.6fr)", gap: "12px" }}>
-                  <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "10px" }}>
-                    <strong style={{ display: "block", marginBottom: "8px" }}>Assign Fields</strong>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div className="studio-grid studio-grid--two">
+                  <div className="studio-panel studio-panel--muted">
+                    <strong>Assign Fields</strong>
+                    <div className="studio-item-list">
                       {unassignedFieldsFor(index).map((field) => (
-                        <label key={`${section.section}-${field.fieldname}`} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <label key={`${section.section}-${field.fieldname}`} className="studio-check">
                           <input
                             type="checkbox"
                             checked={section.fields.includes(field.fieldname)}
@@ -228,24 +230,24 @@ export function FormLayoutBuilder() {
                     </div>
                   </div>
 
-                  <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "10px" }}>
-                    <strong style={{ display: "block", marginBottom: "8px" }}>Section Fields</strong>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div className="studio-panel">
+                    <strong>Section Fields</strong>
+                    <div className="studio-item-list">
                       {section.fields.length === 0 ? (
                         <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>No fields assigned yet.</span>
                       ) : (
                         section.fields.map((fieldname, fieldIndex) => {
                           const meta = availableFields.find((field) => field.fieldname === fieldname);
                           return (
-                            <div key={`${fieldname}-${fieldIndex}`} style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
+                            <div key={`${fieldname}-${fieldIndex}`} className="studio-item">
                               <div>
                                 <div>{meta?.label ?? fieldname}</div>
-                                <code style={{ fontSize: "10px", color: "var(--muted)" }}>{fieldname}</code>
+                                <code>{fieldname}</code>
                               </div>
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <button className="logout" type="button" onClick={() => updateSection(index, { fields: moveItem(section.fields, fieldIndex, -1) })}>Up</button>
-                                <button className="logout" type="button" onClick={() => updateSection(index, { fields: moveItem(section.fields, fieldIndex, 1) })}>Down</button>
-                                <button className="logout" type="button" onClick={() => updateSection(index, { fields: section.fields.filter((value) => value !== fieldname) })} style={{ color: "var(--danger)" }}>Remove</button>
+                              <div className="studio-toolbar">
+                                <button className="studio-button studio-button--ghost" type="button" onClick={() => updateSection(index, { fields: moveItem(section.fields, fieldIndex, -1) })}>Up</button>
+                                <button className="studio-button studio-button--ghost" type="button" onClick={() => updateSection(index, { fields: moveItem(section.fields, fieldIndex, 1) })}>Down</button>
+                                <button className="studio-button studio-button--danger" type="button" onClick={() => updateSection(index, { fields: section.fields.filter((value) => value !== fieldname) })}>Remove</button>
                               </div>
                             </div>
                           );
@@ -258,17 +260,17 @@ export function FormLayoutBuilder() {
             ))}
           </div>
 
-          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px" }}>
-            <strong style={{ display: "block", marginBottom: "10px" }}>Preview Form</strong>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="studio-preview">
+            <div className="studio-preview-head">Preview Form</div>
+            <div className="studio-stack" style={{ padding: "12px" }}>
               {sections.map((section) => (
-                <div key={`preview-${section.section}`} style={{ border: "1px solid #e9eef2", borderRadius: "8px", padding: "12px" }}>
+                <div key={`preview-${section.section}`} className="studio-panel studio-panel--muted">
                   <div style={{ marginBottom: "10px", fontWeight: 700 }}>{section.section}</div>
                   <div style={{ display: "grid", gridTemplateColumns: section.columns === 2 ? "repeat(2, minmax(0, 1fr))" : "1fr", gap: "10px" }}>
                     {section.fields.map((fieldname) => {
                       const meta = availableFields.find((field) => field.fieldname === fieldname);
                       return (
-                        <label key={`preview-${fieldname}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <label key={`preview-${fieldname}`} className="studio-field">
                           <span>{meta?.label ?? fieldname}</span>
                           <input value="" readOnly placeholder={fieldname} />
                         </label>
@@ -280,8 +282,8 @@ export function FormLayoutBuilder() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="btn" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
+          <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
+            <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
               {saving ? "Saving..." : "Save Form Layout"}
             </button>
           </div>

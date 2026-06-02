@@ -26,27 +26,28 @@ type Props = {
 
 export function MetadataStudioHome({ onNavigate }: Props) {
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "18px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "14px", flexWrap: "wrap", alignItems: "start" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h2 style={{ margin: 0 }}>Metadata Studio</h2>
-          <p style={{ margin: "6px 0 0", color: "var(--muted)", fontSize: "var(--font-size-sm)", maxWidth: "720px", lineHeight: 1.6 }}>
+          <p className="studio-kicker">Developer Studio</p>
+          <h2>Metadata Studio</h2>
+          <p style={{ marginTop: "6px", maxWidth: "720px" }}>
             Builder-first workflow for Developer Studio. Create and refine metadata through guided screens, then fall back to raw tables only when you need advanced inspection or repair.
           </p>
         </div>
-        <button className="btn" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <PlusCircle size={16} />
           Start With DocType Builder
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(260px, 1.4fr) minmax(220px, 1fr)", gap: "14px" }}>
-        <div style={{ padding: "14px", borderRadius: "var(--border-radius-sm)", border: "1px solid var(--border)", background: "linear-gradient(135deg, rgba(15,95,99,0.08), rgba(15,95,99,0.02))" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+      <div className="studio-grid studio-grid--two">
+        <div className="studio-panel studio-panel--accent">
+          <div className="studio-icon-title">
             <WandSparkles size={18} />
             <strong>Recommended Builder Flow</strong>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <div className="studio-pills">
             <span>1. DocType Builder</span>
             <span>2. Field Builder</span>
             <span>3. List View Builder</span>
@@ -55,58 +56,56 @@ export function MetadataStudioHome({ onNavigate }: Props) {
             <span>6. Access Builder</span>
           </div>
         </div>
-        <div style={{ padding: "14px", borderRadius: "var(--border-radius-sm)", border: "1px solid #f4d7a0", background: "#fff9ef" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+        <div className="studio-panel studio-panel--warm">
+          <div className="studio-icon-title">
             <Blocks size={18} />
             <strong>Phase 4.8 Focus</strong>
           </div>
-          <div style={{ fontSize: "var(--font-size-xs)", color: "#8b5e00", lineHeight: 1.6 }}>
+          <div className="studio-subtle" style={{ color: "#8b5e00" }}>
             Keep this builder focused on metadata-driven master/demo records like Purchase Invoice learning flows. Do not add ERP transaction logic here.
           </div>
         </div>
       </div>
 
-      <div>
-        <h3 style={{ margin: "0 0 10px", fontSize: "var(--font-size-sm)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+      <div className="studio-home-section">
+        <h3 className="studio-kicker" style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
           Builder Screens
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+        <div className="studio-grid studio-grid--auto">
           {builderSections.map((section) => (
             <button
               key={section.key}
               type="button"
-              className="btn"
+              className="studio-card-button"
               onClick={() => onNavigate(section.key)}
-              style={{ textAlign: "left", padding: "14px", display: "flex", flexDirection: "column", gap: "10px", alignItems: "start" }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="studio-icon-title">
                 <section.icon size={18} />
                 <strong>{section.label}</strong>
               </div>
-              <span style={{ fontSize: "var(--font-size-xs)", lineHeight: 1.6, opacity: 0.85 }}>{section.desc}</span>
+              <span className="studio-subtle">{section.desc}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ borderTop: "1px solid var(--border)", paddingTop: "14px" }}>
-        <h3 style={{ margin: "0 0 10px", fontSize: "var(--font-size-sm)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+      <div className="studio-home-section" style={{ borderTop: "1px solid var(--border)", paddingTop: "14px" }}>
+        <h3 className="studio-kicker" style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
           Advanced Metadata Tables
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+        <div className="studio-grid studio-grid--auto">
           {advancedSections.map((section) => (
             <button
               key={section.key}
               type="button"
-              className="logout"
+              className="studio-card-button"
               onClick={() => onNavigate(section.key)}
-              style={{ textAlign: "left", padding: "12px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "start" }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="studio-icon-title">
                 <section.icon size={16} />
                 <strong>{section.label}</strong>
               </div>
-              <span style={{ fontSize: "var(--font-size-xs)", lineHeight: 1.6, color: "var(--muted)" }}>{section.desc}</span>
+              <span className="studio-subtle">{section.desc}</span>
             </button>
           ))}
         </div>

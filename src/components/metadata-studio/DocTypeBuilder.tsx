@@ -186,16 +186,18 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h3 style={{ margin: 0 }}>DocType Builder</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <p className="studio-kicker">Foundation</p>
+          <h3>DocType Builder</h3>
+          <p>
             Create and edit DocTypes with guided defaults instead of raw table rows.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div className="studio-toolbar">
           <select
+            className="studio-control"
             value={selectedDocTypeKey}
             onChange={async (event) => {
               const key = event.target.value;
@@ -230,7 +232,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
             ))}
           </select>
           <button
-            className="logout"
+            className="studio-button studio-button--ghost"
             onClick={() => {
               setSelectedDocTypeKey("");
               setState(emptyState);
@@ -247,12 +249,12 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
         <div className="state-info">Loading DocType Builder…</div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div className="studio-form-columns">
+            <label className="studio-field">
               <span>Label</span>
               <input value={state.label} onChange={(event) => handleLabelChange(event.target.value)} placeholder="Purchase Invoice" />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label className="studio-field">
               <span>Key</span>
               <input
                 value={state.doctype_key}
@@ -264,7 +266,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
               />
               {duplicate && <span style={{ fontSize: "10px", color: "var(--danger)" }}>This key already exists.</span>}
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label className="studio-field">
               <span>Module</span>
               <select value={state.module_key} onChange={(event) => set("module_key", event.target.value)}>
                 <option value="">Select module</option>
@@ -275,7 +277,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
                 ))}
               </select>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label className="studio-field">
               <span>Schema</span>
               <select
                 value={state.storage_strategy === "generic_json" ? "app" : state.schema_name}
@@ -289,7 +291,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
                 ))}
               </select>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label className="studio-field">
               <span>Storage</span>
               <select
                 value={state.storage_strategy}
@@ -302,9 +304,9 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
                 ))}
               </select>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px", justifyContent: "end" }}>
+            <label className="studio-field">
               <span>Company Scoped</span>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "36px" }}>
+              <label className="studio-check">
                 <input
                   type="checkbox"
                   checked={state.is_company_scoped}
@@ -315,7 +317,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
             </label>
           </div>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <label className="studio-field">
             <span>Description</span>
             <textarea
               value={state.description}
@@ -325,26 +327,26 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved }: Props
             />
           </label>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-            <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", background: "var(--bg)" }}>
-              <strong style={{ display: "block", marginBottom: "6px" }}>Save Preview</strong>
-              <div style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", lineHeight: 1.6 }}>
+          <div className="studio-metric-grid">
+            <div className="studio-metric">
+              <strong>Save Preview</strong>
+              <div className="studio-subtle">
                 <div>Route: <code>{routePreview}</code></div>
                 <div>Table: <code>{tableName}</code></div>
                 <div>Schema: <code>{state.storage_strategy === "generic_json" ? "app" : state.schema_name}</code></div>
               </div>
             </div>
-            <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", background: "#f7fafb" }}>
-              <strong style={{ display: "block", marginBottom: "6px" }}>Builder Guidance</strong>
-              <div style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)", lineHeight: 1.6 }}>
+            <div className="studio-metric studio-panel--muted">
+              <strong>Builder Guidance</strong>
+              <div className="studio-subtle">
                 <div>`generic_json` DocTypes store records in <code>app.erp_documents</code>.</div>
                 <div>`physical_rpc` is metadata-only here and should stay for advanced cases.</div>
               </div>
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="btn" type="button" onClick={handleSave} disabled={saving}>
+          <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
+            <button className="studio-button" type="button" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : state.id ? "Save DocType" : "Create DocType"}
             </button>
           </div>

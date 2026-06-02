@@ -202,16 +202,18 @@ export function DocFieldBuilder() {
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h3 style={{ margin: 0 }}>Field Builder</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <p className="studio-kicker">Schema Design</p>
+          <h3>Field Builder</h3>
+          <p>
             Add, edit, and reorder fields with dropdowns for field type and link targets.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div className="studio-toolbar">
           <select
+            className="studio-control"
             value={selectedDocType}
             onChange={async (event) => {
               const doctypeKey = event.target.value;
@@ -227,7 +229,7 @@ export function DocFieldBuilder() {
               </option>
             ))}
           </select>
-          <button className="btn" type="button" onClick={addField}>
+          <button className="studio-button" type="button" onClick={addField}>
             Add Field
           </button>
         </div>
@@ -240,20 +242,20 @@ export function DocFieldBuilder() {
           No fields yet. Start with a title or invoice number field, then add list/filter toggles as needed.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="studio-stack">
           {fields.map((field, index) => (
-            <div key={field.id ?? `${field.fieldname}-${index}`} style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <div key={field.id ?? `${field.fieldname}-${index}`} className="studio-panel">
+              <div className="studio-header" style={{ alignItems: "center" }}>
                 <strong>Field {index + 1}</strong>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  <button className="logout" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, -1)))}>Up</button>
-                  <button className="logout" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, 1)))}>Down</button>
-                  <button className="logout" type="button" onClick={() => removeField(index)} style={{ color: "var(--danger)" }}>Remove</button>
+                <div className="studio-toolbar">
+                  <button className="studio-button studio-button--ghost" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, -1)))}>Up</button>
+                  <button className="studio-button studio-button--ghost" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, 1)))}>Down</button>
+                  <button className="studio-button studio-button--danger" type="button" onClick={() => removeField(index)}>Remove</button>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div className="studio-form-columns">
+                <label className="studio-field">
                   <span>Label</span>
                   <input
                     value={field.label}
@@ -266,7 +268,7 @@ export function DocFieldBuilder() {
                     }}
                   />
                 </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label className="studio-field">
                   <span>Fieldname</span>
                   <input
                     value={field.fieldname}
@@ -274,7 +276,7 @@ export function DocFieldBuilder() {
                     placeholder="invoice_number"
                   />
                 </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label className="studio-field">
                   <span>Field Type</span>
                   <select value={field.fieldtype} onChange={(event) => updateField(index, { fieldtype: event.target.value, selectOptionsText: "", linkTo: "" })}>
                     {METADATA_STUDIO_FIELD_TYPES.map((fieldType) => (
@@ -287,7 +289,7 @@ export function DocFieldBuilder() {
               </div>
 
               {field.fieldtype === "Select" && (
-                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label className="studio-field">
                   <span>Select Options</span>
                   <textarea
                     value={field.selectOptionsText}
@@ -299,7 +301,7 @@ export function DocFieldBuilder() {
               )}
 
               {field.fieldtype === "Link" && (
-                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label className="studio-field">
                   <span>Link DocType</span>
                   <select value={field.linkTo} onChange={(event) => updateField(index, { linkTo: event.target.value })}>
                     <option value="">Select linked DocType</option>
@@ -312,20 +314,20 @@ export function DocFieldBuilder() {
                 </label>
               )}
 
-              <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", fontSize: "var(--font-size-xs)" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div className="studio-checkbox-row">
+                <label className="studio-check">
                   <input type="checkbox" checked={field.is_required} onChange={(event) => updateField(index, { is_required: event.target.checked })} />
                   Required
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <label className="studio-check">
                   <input type="checkbox" checked={field.in_list_view} onChange={(event) => updateField(index, { in_list_view: event.target.checked })} />
                   In List View
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <label className="studio-check">
                   <input type="checkbox" checked={field.in_standard_filter} onChange={(event) => updateField(index, { in_standard_filter: event.target.checked })} />
                   In Filter
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <label className="studio-check">
                   <input type="checkbox" checked={field.is_hidden} onChange={(event) => updateField(index, { is_hidden: event.target.checked })} />
                   Hidden
                 </label>
@@ -335,11 +337,11 @@ export function DocFieldBuilder() {
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+      <div className="studio-actions">
+        <span className="studio-subtle">
           Supported types: {METADATA_STUDIO_FIELD_TYPES.join(", ")}
         </span>
-        <button className="btn" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
+        <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
           {saving ? "Saving..." : "Save Fields"}
         </button>
       </div>

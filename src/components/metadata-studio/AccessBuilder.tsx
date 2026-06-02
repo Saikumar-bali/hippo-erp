@@ -197,15 +197,17 @@ export function AccessBuilder() {
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h3 style={{ margin: 0 }}>Access Builder</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <p className="studio-kicker">Permissions</p>
+          <h3>Access Builder</h3>
+          <p>
             Set up standard read/create/update/delete access through UI-managed action keys, permission keys, and grants.
           </p>
         </div>
         <select
+          className="studio-control"
           value={selectedDocType}
           onChange={async (event) => {
             const doctypeKey = event.target.value;
@@ -227,7 +229,7 @@ export function AccessBuilder() {
         <div className="state-info">Loading Access Builder…</div>
       ) : (
         <>
-          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", overflow: "hidden" }}>
+          <div className="studio-preview">
             <table className="erp-table" style={{ width: "100%" }}>
               <thead>
                 <tr>
@@ -244,6 +246,7 @@ export function AccessBuilder() {
                     <td style={{ textTransform: "capitalize", fontWeight: 600 }}>{action.action_key}</td>
                     <td>
                       <input
+                        className="studio-inline-input studio-table-input"
                         value={action.permission_key}
                         onChange={(event) => setActions((prev) => prev.map((item) => item.action_key === action.action_key ? { ...item, permission_key: event.target.value } : item))}
                         placeholder={`${action.action_key}_${selectedDocType}`}
@@ -258,14 +261,14 @@ export function AccessBuilder() {
             </table>
           </div>
 
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button className="btn" type="button" onClick={saveActions} disabled={saving || !selectedDocType}>
+          <div className="studio-toolbar">
+            <button className="studio-button" type="button" onClick={saveActions} disabled={saving || !selectedDocType}>
               Save Action Mappings
             </button>
-            <button className="logout" type="button" onClick={createMissingAccessKeys} disabled={saving || !selectedDocType}>
+            <button className="studio-button studio-button--ghost" type="button" onClick={createMissingAccessKeys} disabled={saving || !selectedDocType}>
               Create Missing Access Keys
             </button>
-            <button className="logout" type="button" onClick={enableOwnerAdminAccess} disabled={saving || !selectedDocType}>
+            <button className="studio-button studio-button--ghost" type="button" onClick={enableOwnerAdminAccess} disabled={saving || !selectedDocType}>
               Enable Owner/Admin Access
             </button>
           </div>
@@ -276,7 +279,7 @@ export function AccessBuilder() {
             </div>
           )}
 
-          <div style={{ padding: "10px", border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", background: "#f7fafb", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <div className="studio-hint">
             Permission keys stay scoped to the selected DocType. This builder only auto-grants owner/admin, matching the safe repair behavior from Phase 4.7.
           </div>
         </>

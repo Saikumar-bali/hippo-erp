@@ -190,15 +190,17 @@ export function ListViewBuilder() {
   }
 
   return (
-    <div className="card" style={{ padding: "var(--card-padding)", display: "flex", flexDirection: "column", gap: "14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div className="studio-shell">
+      <div className="studio-header">
         <div>
-          <h3 style={{ margin: 0 }}>List View Builder</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>
+          <p className="studio-kicker">List Experience</p>
+          <h3>List View Builder</h3>
+          <p>
             Build default list columns, search fields, and filters visually without editing JSON.
           </p>
         </div>
         <select
+          className="studio-control"
           value={selectedDocType}
           onChange={async (event) => {
             const doctypeKey = event.target.value;
@@ -220,10 +222,10 @@ export function ListViewBuilder() {
         <div className="state-info">Loading List View Builder…</div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1fr) minmax(320px, 2fr)", gap: "14px" }}>
-            <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px" }}>
-              <strong style={{ display: "block", marginBottom: "10px" }}>Available Fields</strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="studio-grid studio-grid--two">
+            <div className="studio-panel">
+              <strong>Available Fields</strong>
+              <div className="studio-item-list">
                 {addableFields.length === 0 ? (
                   <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>All visible fields are already in the list.</span>
                 ) : (
@@ -231,9 +233,8 @@ export function ListViewBuilder() {
                     <button
                       key={field.fieldname}
                       type="button"
-                      className="logout"
+                      className="studio-item"
                       onClick={() => setColumns((prev) => [...prev, defaultColumn(field)])}
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
                     >
                       <span>{field.label}</span>
                       <code>{field.fieldname}</code>
@@ -243,26 +244,27 @@ export function ListViewBuilder() {
               </div>
             </div>
 
-            <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px" }}>
-              <strong style={{ display: "block", marginBottom: "10px" }}>Selected Columns</strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="studio-panel">
+              <strong>Selected Columns</strong>
+              <div className="studio-item-list">
                 {columns.length === 0 ? (
                   <span style={{ fontSize: "var(--font-size-xs)", color: "var(--muted)" }}>Choose at least one column.</span>
                 ) : (
                   columns.map((column, index) => (
-                    <div key={`${column.fieldname}-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 1.2fr) minmax(120px, 1.2fr) 90px auto", gap: "8px", alignItems: "center" }}>
+                    <div key={`${column.fieldname}-${index}`} className="studio-item" style={{ display: "grid", gridTemplateColumns: "minmax(120px, 1.2fr) minmax(120px, 1.2fr) 90px auto" }}>
                       <code>{column.fieldname}</code>
-                      <input value={column.label} onChange={(event) => setColumns((prev) => prev.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
+                      <input className="studio-inline-input studio-table-input" value={column.label} onChange={(event) => setColumns((prev) => prev.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
                       <input
+                        className="studio-inline-input studio-table-input"
                         type="number"
                         min={80}
                         value={column.width}
                         onChange={(event) => setColumns((prev) => prev.map((item, itemIndex) => itemIndex === index ? { ...item, width: Number(event.target.value) || 160 } : item))}
                       />
-                      <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                        <button className="logout" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, -1))}>Up</button>
-                        <button className="logout" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, 1))}>Down</button>
-                        <button className="logout" type="button" onClick={() => setColumns((prev) => prev.filter((_, itemIndex) => itemIndex !== index))} style={{ color: "var(--danger)" }}>Remove</button>
+                      <div className="studio-toolbar" style={{ justifyContent: "flex-end" }}>
+                        <button className="studio-button studio-button--ghost" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, -1))}>Up</button>
+                        <button className="studio-button studio-button--ghost" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, 1))}>Down</button>
+                        <button className="studio-button studio-button--danger" type="button" onClick={() => setColumns((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>
                       </div>
                     </div>
                   ))
@@ -271,12 +273,12 @@ export function ListViewBuilder() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px" }}>
-            <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px" }}>
-              <strong style={{ display: "block", marginBottom: "10px" }}>Search Fields</strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div className="studio-grid studio-grid--two">
+            <div className="studio-panel">
+              <strong>Search Fields</strong>
+              <div className="studio-item-list">
                 {availableFields.map((field) => (
-                  <label key={`search-${field.fieldname}`} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label key={`search-${field.fieldname}`} className="studio-check">
                     <input
                       type="checkbox"
                       checked={searchFields.includes(field.fieldname)}
@@ -288,11 +290,11 @@ export function ListViewBuilder() {
               </div>
             </div>
 
-            <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", padding: "12px" }}>
-              <strong style={{ display: "block", marginBottom: "10px" }}>Filter Fields</strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="studio-panel">
+              <strong>Filter Fields</strong>
+              <div className="studio-item-list">
                 {availableFields.map((field) => (
-                  <label key={`filter-${field.fieldname}`} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label key={`filter-${field.fieldname}`} className="studio-check">
                     <input
                       type="checkbox"
                       checked={filterFields.includes(field.fieldname)}
@@ -306,8 +308,8 @@ export function ListViewBuilder() {
             </div>
           </div>
 
-          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--border-radius-sm)", overflowX: "auto" }}>
-            <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)", background: "#f7fafb", fontWeight: 600 }}>
+          <div className="studio-preview">
+            <div className="studio-preview-head">
               Preview Table
             </div>
             <table className="erp-table" style={{ minWidth: "100%" }}>
@@ -330,8 +332,8 @@ export function ListViewBuilder() {
             </table>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="btn" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
+          <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
+            <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
               {saving ? "Saving..." : "Save List View"}
             </button>
           </div>
