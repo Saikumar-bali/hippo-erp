@@ -1,162 +1,143 @@
-# Phase 5.1 Tasks: CRM Polish + Usability Proof
+# Phase 6.0 Tasks: Access Control Manager Foundation
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Polish the metadata-first CRM module so it feels like a usable business module, not just seeded metadata. Do not start Purchase Orders yet.
+Goal: build the company-level access control foundation before adding more ERP transaction modules.
 
-## Current status
+## Why this phase
 
-Phase 5.0 and 5.0.1 are complete:
+Phase 5.1 polished CRM. The next gap is platform security and administration. A company can have many roles and many users, and each role needs clear rights for each DocType, page, report, print, import, and export action.
 
-- CRM workspace exists
-- five CRM `generic_json` DocTypes exist
-- Lead and Opportunity CRUD works
-- CRM Check / Repair passes for `crm_lead` and `crm_opportunity`
-- Metadata Studio sidebar shortcuts are available
+Do not start Purchase Orders yet.
 
 ---
 
 ## A. Docs
 
-- [x] Create `docs/PHASE_5_1_CRM_POLISH_USABILITY.md`
-- [x] Create `docs/ai-runs/2026-06-02_phase-5-1-crm-polish-usability.md`
-- [x] Update progress.md
+- [x] Create `docs/REMAINING_FRAPPE_GAP_ROADMAP.md`
+- [ ] Create `docs/PHASE_6_0_ACCESS_CONTROL_MANAGER.md`
+- [ ] Create `docs/ai-runs/2026-06-02_phase-6-0-access-control-manager.md`
+- [ ] Update `progress.md`
 
 ---
 
-## B. CRM Workspace Usability
+## B. Inspect existing schema
 
-Improve CRM sidebar/workspace user flow:
+Before coding, inspect current tables and migrations for:
 
-- [x] Ensure CRM workspace appears cleanly in sidebar
-- [x] Ensure menu item order is Leads, Accounts, Contacts, Opportunities, Follow-up Tasks (Refined in Migration 0041)
-- [x] Ensure labels are plural and user-friendly (Refined in Migration 0041)
-- [x] Ensure each CRM list opens without stale filters from another DocType (Confirmed in DynamicListPage.tsx)
-- [x] Ensure empty states explain what to create next (Confirmed in DynamicListPage.tsx)
+- [ ] users
+- [ ] roles
+- [ ] permission catalog
+- [ ] company membership
+- [ ] role grants
+- [ ] company or tenant id usage
 
----
-
-## C. CRM Dashboard / Landing Page
-
-Create a simple CRM landing page if practical:
-
-- [x] `src/components/crm/CrmDashboardPage.tsx`
-
-Show compact cards:
-
-- [x] Leads count
-- [x] Opportunities count
-- [x] Open follow-up tasks count
-- [x] Won opportunities count if available
-
-Add quick links:
-
-- [x] New Lead
-- [x] New Opportunity
-- [x] Open Leads
-- [x] Open Opportunities
+Document actual table names in the AI run report. Do not create duplicate tables if existing tables can be extended safely.
 
 ---
 
-## D. CRM Sample Data
+## C. Data model
 
-Create optional demo/sample records for development or verification:
+Create migration if needed:
 
-- [x] 3 sample Leads (Created script `seed_crm_samples.mjs`)
-- [x] 2 sample Accounts
-- [x] 2 sample Contacts
-- [x] 2 sample Opportunities
-- [x] 2 sample Follow-up Tasks
+- [ ] `supabase/migrations/0042_access_control_manager.sql`
 
-Rules:
+Support:
 
-- [x] Use Supabase Cloud-safe seed or script
-- [x] Do not duplicate samples on repeated runs
-- [x] Document whether samples are enabled or skipped (Scripts provided for optional run)
+- [ ] company roles
+- [ ] user role assignment per company
+- [ ] DocType rights matrix
+- [ ] page/menu/report rights
+- [ ] rights for read, create, update, delete, submit, cancel, print, export, import, report
+- [ ] owner/admin default setup
 
----
-
-## E. List View Polish
-
-For CRM list pages:
-
-- [x] Lead list has useful columns: Lead Name, Company, Email, Source, Status, Owner
-- [x] Opportunity list has useful columns: Opportunity, Account, Stage, Value, Close Date, Probability
-- [x] Follow-up Task list has useful columns: Subject, Related To, Due Date, Status, Priority, Assigned To
-- [x] Status fields display clearly
-- [x] Search works after switching between CRM DocTypes (Confirmed in DynamicListPage.tsx)
-- [x] Filters are useful and not confusing
+Keep compatibility with current permission checks.
 
 ---
 
-## F. Form UX Polish
+## D. UI
 
-For CRM forms:
+Create:
 
-- [x] Required fields show clearly
-- [x] Select fields use dropdowns
-- [x] Notes fields are comfortable textareas (Switched to 'Small Text' in Migration 0041)
-- [x] Form section order makes sense
-- [x] Create/edit/deactivate still works
+- [ ] `src/components/permissions/AccessControlManagerPage.tsx`
+- [ ] `src/components/permissions/UserRoleAssignmentPage.tsx`
+- [ ] `src/components/permissions/PermissionMatrix.tsx`
 
----
+Required UX:
 
-## G. Builder Proof
-
-Use Metadata Studio builders to inspect and adjust CRM:
-
-- [x] Field Builder loads `crm_lead`
-- [x] List View Builder loads `crm_lead`
-- [x] Form Layout Builder loads `crm_lead`
-- [x] Access Builder loads `crm_lead`
-- [x] Check / Repair passes for `crm_lead` (Verified 12/12)
-- [x] Check / Repair passes for `crm_opportunity` (Verified 12/12)
+- [ ] select company
+- [ ] select or create role
+- [ ] select module or DocType
+- [ ] edit matrix of rights
+- [ ] save role changes
+- [ ] assign users to roles
+- [ ] show effective rights for selected user
+- [ ] show clear diagnostics for missing access
 
 ---
 
-## H. Browser Verification
+## E. Metadata Studio integration
 
-Verify:
+Update:
 
-- [x] CRM workspace visible
-- [x] Leads list opens
-- [x] Lead create/edit/deactivate works
-- [x] Opportunities list opens
-- [x] Opportunity create/edit/deactivate works
-- [x] Follow-up Tasks opens
-- [x] Switching Lead → Opportunity does not keep stale filters (Confirmed in DynamicListPage.tsx)
-- [x] No permission errors for owner/admin
-- [x] No raw JSON shown in normal CRM use
+- [ ] Access Builder links to Access Control Manager
+- [ ] Check / Repair explains where to fix missing grants
+- [ ] Metadata Studio home exposes access management clearly
 
 ---
 
-## I. Commands
+## F. Better error messages
 
-Run and document:
+Improve UI errors so missing access tells the user what is missing and where to fix it.
 
-```bash
-npm run typecheck # PASS
-npm run lint      # PASS (pre-existing warnings)
-npm run test      # PASS (baseline failures)
-npm run build     # PASS
-npm run test:simulation # PASS (files ready)
+Example:
+
+```text
+Access required: view_crm_lead
+Open Access Control Manager and grant this right to the user role.
 ```
 
 ---
 
-## J. Acceptance
+## G. Verification
 
-Phase 5.1 is complete only when:
+Browser verify:
 
-- [x] CRM feels usable from the sidebar
-- [x] Lead and Opportunity flows are polished and verified
-- [x] Follow-up Tasks opens cleanly
-- [x] CRM list/form metadata is polished
-- [x] Builder proof still passes
-- [x] AI run report exists
+- [ ] create a test role
+- [ ] grant CRM Lead read/create/update
+- [ ] assign role to a user or simulate effective rights
+- [ ] show effective rights
+- [ ] remove one right and confirm diagnostics explain the missing right
+- [ ] restore the right
 
-After Phase 5.1, choose:
+---
 
-- Phase 6: Purchase Order architecture
-- Phase 5.2: CRM activity timeline
-- Phase 4.10: full Metadata Studio publish wizard
+## H. Commands
+
+Run and document:
+
+```bash
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+npm run test:simulation
+```
+
+---
+
+## I. Acceptance
+
+Phase 6.0 is complete only when:
+
+- [ ] access control architecture doc exists
+- [ ] current schema is documented
+- [ ] manager UI exists
+- [ ] user-role assignment UI exists or limitation documented
+- [ ] matrix supports core right types
+- [ ] Metadata Studio links are updated
+- [ ] error messages are actionable
+- [ ] browser verification is documented
+- [ ] AI run report exists
+
+Next recommended phase after this: Phase 6.1 Company Branding / Theme Studio.
