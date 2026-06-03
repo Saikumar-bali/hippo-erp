@@ -429,6 +429,14 @@ export function DocTypeCompletionChecklist({ doctypeKey: initialKey }: Props) {
       <p style={{ fontSize: "var(--font-size-sm, 12px)", color: "#6b7280", margin: "0 0 16px" }}>
         Diagnose and repair missing metadata for a DocType. Menu item visible does not mean the DocType is complete.
       </p>
+      <div className="studio-panel studio-panel--warm" style={{ marginBottom: "16px" }}>
+        <div className="studio-icon-title">
+          <strong>Missing Grants?</strong>
+        </div>
+        <div className="studio-subtle" style={{ color: "#8b5e00" }}>
+          Use Check / Repair to create missing action rows, permission catalog keys, and owner or admin defaults. Use Access Control Manager to grant the resulting rights to company roles and users.
+        </div>
+      </div>
 
       {!initialKey && (
         <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>

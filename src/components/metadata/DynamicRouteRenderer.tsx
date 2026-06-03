@@ -17,6 +17,7 @@ import { ListViewBuilder } from "../metadata-studio/ListViewBuilder";
 import { FormLayoutBuilder } from "../metadata-studio/FormLayoutBuilder";
 import { WorkspaceMenuBuilder } from "../metadata-studio/WorkspaceMenuBuilder";
 import { AccessBuilder } from "../metadata-studio/AccessBuilder";
+import { AccessControlManagerPage } from "../permissions/AccessControlManagerPage";
 import { GrnListPage } from "../grn/GrnListPage";
 import { CurrentInventoryPage } from "../grn/CurrentInventoryPage";
 import { InventoryMovementsPage } from "../grn/InventoryMovementsPage";
@@ -127,6 +128,8 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
       return <WorkspaceMenuBuilder />;
     case "metadata_studio_access_builder":
       return <AccessBuilder initialDocTypeKey={subPageValue ?? ""} onNavigate={setSubPage} />;
+    case "metadata_studio_access_control_manager":
+      return <AccessControlManagerPage initialTargetKey={subPageValue ?? ""} />;
     case "metadata_studio_doctypes":
       return <DocTypeList />;
     case "metadata_studio_docfields":

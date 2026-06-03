@@ -290,6 +290,9 @@ export function AccessBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
 
           {selectedDocType && (
             <div className="studio-toolbar" style={{ justifyContent: "flex-end" }}>
+              <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_access_control_manager:${selectedDocType}`)}>
+                Open Access Control Manager
+              </button>
               <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_doc_check:${selectedDocType}`)}>
                 Open Check / Repair DocType
               </button>

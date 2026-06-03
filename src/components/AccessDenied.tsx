@@ -26,6 +26,11 @@ export function AccessDenied({ title, requiredPermissions, message }: Props) {
           {requiredPermissions.length === 0 ? <span className="mini-badge mini-badge--muted">No permission configured</span> : requiredPermissions.map((permission) => <span key={permission} className="mini-badge mini-badge--role">{permission}</span>)}
         </div>
       </div>
+      {requiredPermissions.length > 0 && (
+        <p style={{ marginTop: "12px", fontSize: "0.82rem", color: "#5b7188" }}>
+          Fix path: open <strong>Access Control Manager</strong> and grant the required right to the user role.
+        </p>
+      )}
     </section>
   );
 }

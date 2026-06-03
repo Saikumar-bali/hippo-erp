@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { getDocTypeApi } from "./doctype-api-map";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
+import { buildAccessErrorMessage } from "../../lib/access-control";
 
 type Props = {
   doctypeKey: string;
@@ -152,8 +153,18 @@ export function DynamicFormPage({
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed.";
-      toast.error(msg);
-      setErrors({ form: msg });
+      const isPermissionError = msg.toLowerCase().includes("permission denied") || msg.toLowerCase().includes("access required") || msg.toLowerCase().includes("permission");
+      if (isPermissionError) {
+        const inferredPrefix = action === "create" ? "create" : "update";
+        const permMatch = msg.match(/permission[:\s]+(\S+)/i);
+        const permKey = permMatch ? permMatch[1] : `${inferredPrefix}_${doctypeKey}`;
+        const accessMessage = buildAccessErrorMessage(permKey);
+        toast.error(accessMessage);
+        setErrors({ form: accessMessage });
+      } else {
+        toast.error(msg);
+        setErrors({ form: msg });
+      }
     } finally {
       setSaving(false);
     }

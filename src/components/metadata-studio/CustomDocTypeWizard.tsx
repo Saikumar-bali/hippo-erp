@@ -8,6 +8,7 @@ import {
   checkDuplicateRoute,
   createCustomDocTypeBundle,
 } from "../../lib/metadata/metadata-studio-api";
+import { toSnakeCase } from "./builder-utils";
 
 type WizardField = {
   fieldname: string;
@@ -49,14 +50,6 @@ const STEPS = [
   "Workspace",
   "Preview & Create",
 ];
-
-function toSnakeCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/[\s-]+/g, "_")
-    .replace(/^_|_$/g, "");
-}
 
 function pluralize(str: string): string {
   if (str.endsWith("s") || str.endsWith("x") || str.endsWith("z") || str.endsWith("ch") || str.endsWith("sh"))

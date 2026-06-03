@@ -6,15 +6,8 @@ import { AccessDenied } from "./AccessDenied";
 import { InviteUserForm } from "./InviteUserForm";
 import { ensureCompanyDefaultRoles, getPermissionCatalog, listCompanyRoles, type CompanyRole } from "../lib/roles-api";
 import type { PermissionCatalogRecord } from "../lib/permissions";
-import {
-  cancelCompanyInvite,
-  getCompanyInvites,
-  getCompanyUsers,
-  removeCompanyUser,
-  setCompanyUserRole,
-  type CompanyInviteRecord,
-  type CompanyUserRecord
-} from "../lib/users-api";
+import * as usersApi from "../lib/users-api";
+import type { CompanyInviteRecord, CompanyUserRecord } from "../lib/users-api";
 
 type Props = {
   canViewUsers?: boolean;
@@ -27,6 +20,12 @@ type ConfirmAction =
   | { kind: "remove-user"; user: CompanyUserRecord }
   | { kind: "cancel-invite"; invite: CompanyInviteRecord }
   | null;
+
+function getOptionalUsersApiMethod<T extends keyof typeof usersApi>(key: T): ((...args: any[]) => any) | null {
+  return Object.prototype.hasOwnProperty.call(usersApi, key)
+    ? (usersApi[key] as unknown as ((...args: any[]) => any) | undefined) ?? null
+    : null;
+}
 
 export function UserRoleAssignment({ canViewUsers = true, canAssignRole = true, canInviteUser = true, canDeactivateUser = true }: Props) {
   const { selectedTenantId, tenants } = useAuth();
@@ -75,11 +74,15 @@ export function UserRoleAssignment({ canViewUsers = true, canAssignRole = true, 
     setLoading(true);
     try {
       await ensureCompanyDefaultRoles(selectedTenantId);
+      const loadInvites = getOptionalUsersApiMethod("getCompanyInvites");
+      const inviteLoader = loadInvites
+        ? loadInvites(selectedTenantId)
+        : Promise.resolve([]);
       const [permissionRows, roleRows, userRows, inviteRows] = await Promise.all([
         getPermissionCatalog(),
         listCompanyRoles(selectedTenantId),
-        getCompanyUsers(selectedTenantId),
-        getCompanyInvites(selectedTenantId)
+        usersApi.getCompanyUsers(selectedTenantId),
+        inviteLoader
       ]);
       setPermissions(permissionRows);
       setRoles(roleRows);
@@ -108,12 +111,12 @@ export function UserRoleAssignment({ canViewUsers = true, canAssignRole = true, 
     }
     setSaving(true);
     try {
-      const saved = await setCompanyUserRole({
+      const saved = await usersApi.setCompanyUserRole({
         companyId: selectedTenantId,
         userId: selectedUser.user_id,
         roleId: selectedRoleId || null
       });
-      const userRows = await getCompanyUsers(selectedTenantId);
+      const userRows = await usersApi.getCompanyUsers(selectedTenantId);
       setUsers(userRows);
       setSelectedUserId(saved?.user_id ?? selectedUser.user_id);
       toast.success(
@@ -130,6 +133,11 @@ export function UserRoleAssignment({ canViewUsers = true, canAssignRole = true, 
 
   const removeUser = async (user: CompanyUserRecord) => {
     if (!selectedTenantId || !canDeactivateUser) return;
+    const removeCompanyUser = getOptionalUsersApiMethod("removeCompanyUser");
+    if (!removeCompanyUser) {
+      toast.error("Remove user action is not available in this environment.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -148,6 +156,11 @@ export function UserRoleAssignment({ canViewUsers = true, canAssignRole = true, 
 
   const cancelInvite = async (invite: CompanyInviteRecord) => {
     if (!selectedTenantId || !canInviteUser) return;
+    const cancelCompanyInvite = getOptionalUsersApiMethod("cancelCompanyInvite");
+    if (!cancelCompanyInvite) {
+      toast.error("Cancel invite action is not available in this environment.");
+      return;
+    }
 
     setWorkingInvite(true);
     try {

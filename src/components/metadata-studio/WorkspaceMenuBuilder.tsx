@@ -36,6 +36,7 @@ const KNOWN_PAGE_TARGETS = [
   { value: "metadata_studio_form_layout_builder", label: "Form Layout Builder" },
   { value: "metadata_studio_workspace_menu_builder", label: "Workspace Menu Builder" },
   { value: "metadata_studio_access_builder", label: "Access Builder" },
+  { value: "metadata_studio_access_control_manager", label: "Access Control Manager" },
   { value: "metadata_studio_doc_check", label: "Check / Repair DocType" },
 ];
 

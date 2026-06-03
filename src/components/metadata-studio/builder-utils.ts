@@ -1,8 +1,9 @@
 export function toSnakeCase(value: string) {
   return value
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[^a-z0-9\s-_]/g, "")
     .replace(/[\s-]+/g, "_")
+    .replace(/_{2,}/g, "_")
     .replace(/^_+|_+$/g, "");
 }
 

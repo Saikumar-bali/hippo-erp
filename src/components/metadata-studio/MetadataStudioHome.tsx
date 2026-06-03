@@ -6,7 +6,8 @@ const builderSections = [
   { key: "metadata_studio_list_view_builder", label: "List View Builder", icon: Table, desc: "Build columns, filters, and search fields visually" },
   { key: "metadata_studio_form_layout_builder", label: "Form Layout Builder", icon: LayoutTemplate, desc: "Place fields into sections without JSON" },
   { key: "metadata_studio_workspace_menu_builder", label: "Menu Builder", icon: ListTree, desc: "Add workspace items with target dropdowns" },
-  { key: "metadata_studio_access_builder", label: "Access Builder", icon: ShieldCheck, desc: "Create action keys, permissions, and owner/admin grants" },
+  { key: "metadata_studio_access_builder", label: "Access Builder", icon: ShieldCheck, desc: "Create action keys and baseline permission mappings" },
+  { key: "metadata_studio_access_control_manager", label: "Access Control Manager", icon: ShieldCheck, desc: "Grant role rights, assign users, and diagnose missing access" },
   { key: "metadata_studio_doc_check", label: "Check / Repair DocType", icon: ListChecks, desc: "Diagnose incomplete metadata and fix safe defaults" },
 ];
 
@@ -40,6 +41,10 @@ export function MetadataStudioHome({ onNavigate }: Props) {
             <ListChecks size={16} />
             Open Check / Repair
           </button>
+          <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate("metadata_studio_access_control_manager")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <ShieldCheck size={16} />
+            Open Access Control
+          </button>
           <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <PlusCircle size={16} />
             Start With DocType Builder
@@ -60,6 +65,7 @@ export function MetadataStudioHome({ onNavigate }: Props) {
             <span>4. Form Layout Builder</span>
             <span>5. Menu Builder</span>
             <span>6. Access Builder</span>
+            <span>7. Access Control Manager</span>
           </div>
         </div>
         <div className="studio-panel studio-panel--warm">

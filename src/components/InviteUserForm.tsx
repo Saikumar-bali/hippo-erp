@@ -158,7 +158,7 @@ export function InviteUserForm({
           </label>
 
           <label className="invite-field">
-            <span>Company role</span>
+            <span>Invite access role</span>
             <select value={selectedCompanyRoleId} onChange={(event) => setSelectedCompanyRoleId(event.target.value)}>
               <option value="">No company role yet</option>
               {roles.map((role) => (

@@ -10,6 +10,7 @@ import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api
 import type { DocTypeApi } from "./doctype-api-map";
 import { DynamicFormPage } from "./DynamicFormPage";
 import type { DocFieldMeta, ListViewColumn } from "../../lib/metadata/types";
+import { buildAccessErrorMessage } from "../../lib/access-control";
 
 type Props = {
   doctypeKey: string;
@@ -305,12 +306,12 @@ export function DynamicListPage({
       const permKey = permMatch ? permMatch[1] : "view_" + doctypeKey;
       return (
         <div className="card state-error">
-          <h3>Permission Required: {permKey}</h3>
-          <p>{error}</p>
+          <h3>Access Required: {permKey}</h3>
+          <p style={{ whiteSpace: "pre-line" }}>{buildAccessErrorMessage(permKey)}</p>
           <p style={{ fontSize: "var(--font-size-sm, 12px)", marginTop: "12px", padding: "8px 12px", background: "#fffbeb", borderRadius: "4px", borderLeft: "4px solid #d97706" }}>
-            <strong>Repair:</strong> Open <strong>Metadata Studio → Check / Repair DocType → {doctypeKey}</strong>
+            <strong>Fix here:</strong> Open <strong>Metadata Studio → Access Control Manager</strong> and grant <strong>{permKey}</strong> to the user role.
             <br />
-            This will scan and fix missing permissions, actions, and workspace settings.
+            If the permission key or action mapping does not exist yet, run <strong>Metadata Studio → Check / Repair DocType → {doctypeKey}</strong> first.
           </p>
         </div>
       );
