@@ -193,7 +193,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved, onNavig
       <div className="studio-header">
         <div>
           <p className="studio-kicker">Foundation</p>
-          <h3>DocType Builder</h3>
+          <h3>{loading ? "Loading DocType Builder" : "DocType Builder"}</h3>
           <p>
             Create and edit DocTypes with guided defaults instead of raw table rows.
           </p>

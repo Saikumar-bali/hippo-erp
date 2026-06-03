@@ -22,6 +22,8 @@ import { GrnListPage } from "../grn/GrnListPage";
 import { CurrentInventoryPage } from "../grn/CurrentInventoryPage";
 import { InventoryMovementsPage } from "../grn/InventoryMovementsPage";
 import { CrmDashboardPage } from "../crm/CrmDashboardPage";
+import { ThemeStudioPage } from "../theme/ThemeStudioPage";
+import type { CompanyThemeSettings } from "../../lib/theme-types";
 
 import { DocFieldList } from "../metadata-studio/DocFieldList";
 import { WorkspaceMetadataList, WorkspaceItemList } from "../metadata-studio/WorkspaceMetadataList";
@@ -34,6 +36,7 @@ type Props = {
   permissions: PermissionChecker;
   onRefreshSidebar?: () => Promise<void>;
   onNavigateToDocType?: (doctypeKey: string) => void;
+  onThemeChanged?: (theme: CompanyThemeSettings) => void;
 };
 
 const can = (fn: (key: string) => boolean) => (required: string | readonly string[]) => {
@@ -155,7 +158,7 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
   }
 }
 
-export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRefreshSidebar, onNavigateToDocType }: Props) {
+export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRefreshSidebar, onNavigateToDocType, onThemeChanged }: Props) {
   if (!selectedItem) {
     return (
       <div className="card state-info">
@@ -198,6 +201,10 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
 
     if (itemKey === "company_profile") {
       return <CompanyProfileView canUpdate={permissions.can("update_company")} />;
+    }
+
+    if (itemKey === "theme_studio" || target === "theme_studio") {
+      return <ThemeStudioPage initialCompanyId={tenantId} onThemeChanged={onThemeChanged} />;
     }
 
     if (itemKey === "grn") {

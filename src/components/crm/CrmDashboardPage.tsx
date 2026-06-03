@@ -85,63 +85,66 @@ export function CrmDashboardPage({ tenantId, onNavigateToDocType }: Props) {
   ];
 
   return (
-    <div className="module-stack" style={{ padding: "24px" }}>
-      <header style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#0f172a", marginBottom: "8px" }}>CRM Dashboard</h1>
-        <p style={{ color: "#64748b" }}>Overview of your sales pipeline and activities.</p>
+    <div className="module-stack">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Sales workspace</p>
+          <h1>CRM Dashboard</h1>
+          <p>Compact overview of your sales pipeline and follow-up work.</p>
+        </div>
       </header>
 
       {loading ? (
         <div className="card state-info">Loading metrics...</div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px", marginBottom: "40px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-6)", marginBottom: "var(--space-8)" }}>
             {cards.map(card => (
-              <div key={card.label} className="card" style={{ padding: "24px", display: "flex", alignItems: "center", gap: "20px" }}>
-                <div style={{ padding: "12px", borderRadius: "12px", backgroundColor: `${card.color}15`, color: card.color }}>
+              <div key={card.label} className="card" style={{ display: "flex", alignItems: "center", gap: "var(--space-6)" }}>
+                <div style={{ padding: "var(--space-4)", borderRadius: "var(--radius-md)", backgroundColor: `${card.color}15`, color: card.color }}>
                   <card.icon size={28} />
                 </div>
                 <div>
-                  <div style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>{card.label}</div>
-                  <div style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a" }}>{card.count}</div>
+                  <div style={{ fontSize: "var(--font-size-sm)", color: "#64748b", fontWeight: 500 }}>{card.label}</div>
+                  <div style={{ fontSize: "1.35rem", fontWeight: 700, color: "#0f172a" }}>{card.count}</div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-            <section className="card" style={{ padding: "24px" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "var(--space-6)" }}>
+            <section className="card">
+              <h3 style={{ fontSize: "var(--font-size-lg)", fontWeight: 700, marginBottom: "var(--space-6)", display: "flex", alignItems: "center", gap: "8px" }}>
                 <PlusCircle size={20} color="#64748b" /> Quick Actions
               </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 <button 
                   className="primary-action" 
-                  style={{ justifyContent: "space-between", width: "100%", padding: "12px 16px" }}
+                  style={{ justifyContent: "space-between", width: "100%", padding: "0 var(--space-6)" }}
                   onClick={() => onNavigateToDocType?.("crm_lead")}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><UserPlus size={16} /> New Lead</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><UserPlus size={16} /> Open leads</span>
                   <ChevronRight size={16} opacity={0.5} />
                 </button>
                 <button 
                   className="primary-action" 
-                  style={{ justifyContent: "space-between", width: "100%", padding: "12px 16px" }}
+                  style={{ justifyContent: "space-between", width: "100%", padding: "0 var(--space-6)" }}
                   onClick={() => onNavigateToDocType?.("crm_opportunity")}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><BadgeDollarSign size={16} /> New Opportunity</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><BadgeDollarSign size={16} /> Open opportunities</span>
                   <ChevronRight size={16} opacity={0.5} />
                 </button>
               </div>
             </section>
 
-            <section className="card" style={{ padding: "24px" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <section className="card">
+              <h3 style={{ fontSize: "var(--font-size-lg)", fontWeight: 700, marginBottom: "var(--space-6)", display: "flex", alignItems: "center", gap: "8px" }}>
                 <ChevronRight size={20} color="#64748b" /> Browse
               </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 <button 
                   className="logout" 
-                  style={{ justifyContent: "space-between", width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0" }}
+                  style={{ justifyContent: "space-between", width: "100%", padding: "0 var(--space-6)", border: "1px solid #e2e8f0" }}
                   onClick={() => onNavigateToDocType?.("crm_lead")}
                 >
                   <span>Open Leads</span>
@@ -149,7 +152,7 @@ export function CrmDashboardPage({ tenantId, onNavigateToDocType }: Props) {
                 </button>
                 <button 
                   className="logout" 
-                  style={{ justifyContent: "space-between", width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0" }}
+                  style={{ justifyContent: "space-between", width: "100%", padding: "0 var(--space-6)", border: "1px solid #e2e8f0" }}
                   onClick={() => onNavigateToDocType?.("crm_opportunity")}
                 >
                   <span>Open Opportunities</span>
