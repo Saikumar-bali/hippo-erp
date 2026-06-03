@@ -1,192 +1,107 @@
-# Phase 6.2 Tasks: Export / Import Foundation
+# Phase 6.2.1 Tasks: Secure Browser Verification Cleanup
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: add safe, permission-controlled CSV export/import for metadata-driven DocTypes. Start with CRM Lead and Opportunity as the proof. Do not start Purchase Orders, Print Format Builder, Client Scripts, Report Builder, or Workflow yet.
-
-## Current status
-
-Phase 6.1 and 6.1.1 are accepted:
-
-- Theme Studio foundation exists
-- company branding settings save/load path is implemented
-- app shell applies company theme safely
-- local visual QA passed
-- theme test stderr was cleaned up
-- `npm run test` is clean with 50/50 passing
+Goal: clean up Phase 6.2 browser verification so it is strict, repeatable, and does not commit credentials. Do not start Print Format Builder yet.
 
 ## Why this phase exists
 
-ERP users need to move data in and out of the system:
+Phase 6.2 added export/import foundation and browser verification, but the verifier committed a real email/password in `scripts/verify_phase6_export_import.mjs`.
 
-- export lists for Excel review
-- export filtered records
-- download import templates
-- validate CSV before import
-- see row-level import errors
-
-This must be permission-controlled. Users should not export/import data unless their role allows it.
+A follow-up patch removed the hardcoded credentials from the latest file, but the password was still exposed in git history. The account password must be rotated outside the repo.
 
 ---
 
-## A. Docs
+## A. Immediate security action
 
-- [x] GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-1-1-theme-qa.md`
-- [ ] Create `docs/PHASE_6_2_EXPORT_IMPORT_FOUNDATION.md`
-- [ ] Create `docs/ai-runs/2026-06-03_phase-6-2-export-import-foundation.md`
+- [ ] Change/rotate the exposed login password outside the repository.
+- [ ] Do not commit real passwords again.
+- [ ] Do not paste real passwords into CLI-AI prompts.
+- [ ] Use environment variables for browser verification.
+
+Required local environment variables:
+
+```bash
+PLAYWRIGHT_TEST_EMAIL=your-test-email
+PLAYWRIGHT_TEST_PASSWORD=your-rotated-password
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173
+```
+
+Optional:
+
+```bash
+PLAYWRIGHT_HEADLESS=false
+PHASE6_EXPORT_IMPORT_OUT_DIR=C:/tmp/phase-6-2-export-import
+```
+
+---
+
+## B. Docs
+
+- [x] GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-2-export-import.md`
+- [ ] Create `docs/PHASE_6_2_1_SECURE_BROWSER_VERIFICATION.md`
+- [ ] Create `docs/ai-runs/2026-06-03_phase-6-2-1-secure-browser-verification.md`
 - [ ] Update `progress.md`
 
 ---
 
-## B. Permission model
+## C. Verify script cleanup
 
-Add/verify permission actions:
+Check:
 
-- [ ] export
-- [ ] import
+- [ ] `scripts/verify_phase6_export_import.mjs` uses env vars only
+- [ ] script fails clearly when env vars are missing
+- [ ] script exits non-zero when any verification check fails
+- [ ] no real password remains in the latest script
 
-For generic metadata DocTypes, permission keys should follow:
+Run:
 
-- [ ] `export_<doctype_key>`
-- [ ] `import_<doctype_key>`
+```bash
+node scripts/verify_phase6_export_import.mjs
+```
 
-Seed or repair for CRM proof DocTypes:
+Expected without env vars:
 
-- [ ] `export_crm_lead`
-- [ ] `import_crm_lead`
-- [ ] `export_crm_opportunity`
-- [ ] `import_crm_opportunity`
+```text
+Missing browser-test credentials...
+```
 
-Grant to owner/admin by default.
-
-Update Access Control Manager if needed so export/import rights appear in the matrix.
-
----
-
-## C. Export foundation
-
-Create frontend utility:
-
-- [ ] `src/lib/export-import/csv-export.ts`
-
-Required behavior:
-
-- [ ] export current list records to CSV
-- [ ] use visible/list-view columns by default
-- [ ] preserve column labels
-- [ ] escape commas, quotes, and newlines correctly
-- [ ] include filtered/current result set, not hidden stale records
-- [ ] filename format: `<doctype_key>_<YYYY-MM-DD>.csv`
-
-Add UI:
-
-- [ ] Export CSV button in `DynamicListPage` for metadata-driven DocTypes
-- [ ] button visible only when user has `export_<doctype_key>` permission
-- [ ] friendly disabled/hidden behavior when permission is missing
-- [ ] no export button for transaction pages unless explicitly implemented later
+Then run with env vars from local shell.
 
 ---
 
-## D. Import template foundation
+## D. Strengthen Playwright/Chrome DevTools verification rules
 
-Create frontend utility:
+Update docs/report to require:
 
-- [ ] `src/lib/export-import/csv-template.ts`
-
-Required behavior:
-
-- [ ] generate CSV template from DocFields
-- [ ] include visible/editable fields
-- [ ] include required columns
-- [ ] optional second row with field hints if practical
-- [ ] filename format: `<doctype_key>_template.csv`
-
-Add UI:
-
-- [ ] Download Template button in DynamicListPage or import dialog
-- [ ] visible only with `import_<doctype_key>` permission
+- [ ] browser verification must use Playwright or Chrome DevTools MCP
+- [ ] no “manual assumed pass” allowed
+- [ ] screenshots or Playwright logs must be produced
+- [ ] script must fail non-zero on any failed check
+- [ ] credentials must come from local env only
+- [ ] final report must include exact verifier command and PASS/FAIL table
 
 ---
 
-## E. Import preview foundation
+## E. Re-run Phase 6.2 verification securely
 
-Create:
+Using env vars, re-run browser verification:
 
-- [ ] `src/components/import/ImportPreviewDialog.tsx`
-- [ ] `src/lib/export-import/csv-parse.ts`
-- [ ] `src/lib/export-import/import-validate.ts`
+- [ ] CRM Lead Export button visible
+- [ ] CRM Lead Template button visible
+- [ ] CRM Lead Import button visible
+- [ ] missing required `lead_name` detected
+- [ ] invalid Select value detected
+- [ ] CRM Opportunity Export button visible
+- [ ] CRM Opportunity Template button visible
+- [ ] CRM Opportunity Import button visible
+- [ ] no page errors
 
-Required behavior:
-
-- [ ] upload/paste CSV file
-- [ ] parse CSV safely
-- [ ] map headers to DocFields
-- [ ] validate required fields
-- [ ] validate field types for Data/Text/Int/Float/Check/Select/Date/Datetime
-- [ ] validate Select values against options
-- [ ] show preview rows
-- [ ] show row-level errors
-- [ ] do not write records until user confirms
-
-Implementation scope:
-
-- [ ] preview/validation first
-- [ ] actual insert/update can be limited to create-only generic_json records if safe
-- [ ] if write is deferred, document clearly
+Document output path for screenshots/results JSON.
 
 ---
 
-## F. Import execution for generic_json DocTypes
-
-If safe within this phase, implement create-only import:
-
-- [ ] use existing generic document API
-- [ ] create one record per valid row
-- [ ] stop or skip invalid rows with clear result
-- [ ] show success/failure summary
-
-Rules:
-
-- [ ] enforce `import_<doctype_key>` permission before import UI/write
-- [ ] do not import into GRN or physical transaction pages
-- [ ] do not bypass generic document validation
-
----
-
-## G. CRM verification
-
-Browser verify with CRM Lead:
-
-- [ ] export Lead list to CSV
-- [ ] CSV includes visible columns and labels
-- [ ] download Lead template
-- [ ] import preview catches missing required `lead_name`
-- [ ] import preview validates Select values for `source` and `status`
-- [ ] if create import is implemented, import one valid Lead row
-
-Browser verify with CRM Opportunity:
-
-- [ ] export Opportunity list to CSV
-- [ ] CSV includes visible columns and labels
-- [ ] download Opportunity template
-- [ ] import preview validates numeric/date fields
-
----
-
-## H. Tests
-
-Add/update tests:
-
-- [ ] CSV export escaping
-- [ ] CSV parse with quotes/newlines
-- [ ] template generation from DocFields
-- [ ] import validation required field
-- [ ] import validation Select field
-- [ ] permission visibility for export/import buttons if practical
-
----
-
-## I. Commands
+## F. Commands
 
 Run and document:
 
@@ -200,20 +115,16 @@ npm run test:simulation
 
 ---
 
-## J. Acceptance
+## G. Acceptance
 
-Phase 6.2 is complete only when:
+Phase 6.2.1 is complete only when:
 
-- [ ] export/import permission keys are supported
-- [ ] export CSV works for CRM Lead and Opportunity
-- [ ] template download works
-- [ ] import preview validates rows and shows clear errors
-- [ ] create-only import works or is explicitly deferred with reason
-- [ ] export/import buttons respect permissions
-- [ ] browser verification is documented
-- [ ] tests cover CSV utilities and validation
+- [ ] exposed password has been rotated outside repo
+- [ ] verifier uses environment variables only
+- [ ] verifier fails clearly without env vars
+- [ ] secure verifier passes with env vars
+- [ ] Playwright/Chrome DevTools strict rules are documented
+- [ ] command results are documented
 - [ ] AI run report exists
 
-After Phase 6.2, recommended next phase:
-
-- Phase 6.3: Print Format Foundation
+After Phase 6.2.1, proceed to Phase 6.3 Print Format Foundation.
