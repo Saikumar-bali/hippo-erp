@@ -32,6 +32,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 4.7 | Manual App Builder + Permission Repair | Complete | DocType completion checklist, safe repair actions, manual Purchase Invoice guide, permission error UX, CRM feasibility doc, and simulation support added for metadata-driven manual app recovery. |
 | 4.8 | Metadata Studio Builder UX | Complete | Builder-first Metadata Studio with dedicated DocType, Field, List View, Form Layout, Menu, and Access builders. Metadata sidebar items now open builders by default, raw tables live under advanced tools, and Purchase Invoice browser verification passed. |
 | 4.9 | Builder Hardening + Generic Document Cleanup | Complete | Generic document `row_to_jsonb(record)` banner fixed via migration 0039, builder next-step guidance improved, and Purchase Invoice + Check/Repair browser verification passed. |
+| 6.0 | Access Control Manager Foundation | Complete | Added migration 0042, Access Control Manager UI, rights-matrix APIs, user effective-right diagnostics, Access Builder/Metadata Studio integration, and improved permission guidance without duplicating role tables. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.
@@ -240,6 +241,59 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 ### Remaining Gaps
 - No automated frontend test for Check/Repair workflow
 - Supabase CLI binary unavailable on win32-x64 — simulations require Linux/macOS or Supabase Cloud SQL Editor
+
+## Phase 6.0 Implementation Summary
+**Status:** Access Control Manager foundation complete.
+
+### Files Created
+- `docs/PHASE_6_0_ACCESS_CONTROL_MANAGER.md` — implementation and schema-extension notes
+- `docs/ai-runs/2026-06-02_phase-6-0-access-control-manager.md` — AI run log
+- `supabase/migrations/0042_access_control_manager.sql` — access-control matrix and multi-role assignment RPCs
+- `src/components/permissions/AccessControlManagerPage.tsx` — company role and rights matrix UI
+- `src/components/permissions/UserRoleAssignmentPage.tsx` — multi-role user assignment UI
+- `src/components/permissions/PermissionMatrix.tsx` — reusable rights matrix and diagnostics
+- `src/lib/access-control.ts` — rights constants, diagnostics helpers, permission error messaging
+- `src/lib/access-control-api.ts` — frontend RPC wrappers for access-control operations
+- `scripts/verify_phase6_access_control.mjs` — local Playwright verification script
+
+### Files Modified
+- `src/components/AccessDenied.tsx` — fix-path guidance to Access Control Manager
+- `src/components/InviteUserForm.tsx` — invite-role label clarification for accessibility/test stability
+- `src/components/UserRoleAssignment.tsx` — compatibility-safe optional API handling in legacy user-role screen
+- `src/components/metadata-studio/AccessBuilder.tsx` — link to Access Control Manager
+- `src/components/metadata-studio/DocTypeCompletionChecklist.tsx` — Check / Repair guidance points to access grants
+- `src/components/metadata-studio/MetadataStudioHome.tsx` — clear access-management entry point
+- `src/components/metadata-studio/WorkspaceMenuBuilder.tsx` — access-management target option
+- `src/components/metadata/DynamicFormPage.tsx` — improved access-required error wording
+- `src/components/metadata/DynamicListPage.tsx` — improved permission repair guidance
+- `src/components/metadata/DynamicRouteRenderer.tsx` — Access Control Manager route integration
+- `src/styles.css` — layout and diagnostics styling for new permissions pages
+
+### Schema Inspection Summary
+- Reused existing `app.permissions`, `app.company_roles`, `app.company_role_permissions`, `app.company_role_assignments`, and `app.tenant_members`.
+- Reused existing metadata permission sources: `app.erp_doctype_actions` and `app.erp_workspace_items.required_permission_key`.
+- Preserved internal `tenant_id` usage while keeping user-facing terminology as Company.
+- Extended behavior through RPCs instead of introducing duplicate tables.
+
+### Verification Results
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | Pass |
+| `npm run lint` | Pass with warnings only |
+| `npm run build` | Pass |
+| `npm run test:simulation` | Pass |
+| `npm run test -- tests/frontend/users-roles.spec.tsx` | Pass |
+| `npm run test` | 45 pass, 5 fail (remaining unrelated frontend/auth/dashboard issues) |
+
+### Browser Verification
+- Local Vite app launched successfully for verification.
+- A real Playwright verifier was added in `scripts/verify_phase6_access_control.mjs`.
+- The live authenticated walkthrough is currently blocked because the stored local login flow does not leave `/login` in this environment, so role creation and CRM Lead grant validation could not be completed against a logged-in session.
+
+### Remaining Gaps
+- Multi-role assignment page is implemented but not yet the default Users/Roles route.
+- Full live browser verification needs valid working local credentials/session.
+- Remaining `npm run test` failures are outside the core Phase 6.0 access-control implementation path.
 
 ## Phase 3.1 Implementation Summary
 **Final Commit:** `d9e495b`

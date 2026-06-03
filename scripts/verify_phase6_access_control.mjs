@@ -36,9 +36,14 @@ async function waitForAppReady() {
     await page.getByLabel(/email/i).first().fill(email);
     await page.getByLabel(/password/i).first().fill(password);
     await page.getByRole("button", { name: /login|sign in/i }).first().click();
+    await page.waitForLoadState("networkidle");
+    if (/\/login$/i.test(page.url())) {
+      const body = await page.locator("body").innerText().catch(() => "");
+      throw new Error(`Login did not leave the login page.\nURL: ${page.url()}\nBODY:\n${body}`);
+    }
   }
   await page.waitForLoadState("networkidle");
-  await page.getByText("Hippo ERP").first().waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: /logout/i }).waitFor({ timeout: 30_000 });
 
   const tenantSelect = page.locator(".tenant-selector select");
   if (await tenantSelect.count()) {
