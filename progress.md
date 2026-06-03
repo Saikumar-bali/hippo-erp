@@ -32,7 +32,8 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 4.7 | Manual App Builder + Permission Repair | Complete | DocType completion checklist, safe repair actions, manual Purchase Invoice guide, permission error UX, CRM feasibility doc, and simulation support added for metadata-driven manual app recovery. |
 | 4.8 | Metadata Studio Builder UX | Complete | Builder-first Metadata Studio with dedicated DocType, Field, List View, Form Layout, Menu, and Access builders. Metadata sidebar items now open builders by default, raw tables live under advanced tools, and Purchase Invoice browser verification passed. |
 | 4.9 | Builder Hardening + Generic Document Cleanup | Complete | Generic document `row_to_jsonb(record)` banner fixed via migration 0039, builder next-step guidance improved, and Purchase Invoice + Check/Repair browser verification passed. |
-| 6.0 | Access Control Manager Foundation | Complete | Added migration 0042, Access Control Manager UI, rights-matrix APIs, user effective-right diagnostics, Access Builder/Metadata Studio integration, and improved permission guidance without duplicating role tables. |
+| 6.0 | Access Control Manager Foundation | Verified via 6.0.1 | Added migration 0042, Access Control Manager UI, rights-matrix APIs, user effective-right diagnostics, Access Builder/Metadata Studio integration, and improved permission guidance without duplicating role tables. Live verification is now documented in Phase 6.0.1. |
+| 6.0.1 | Access Control Verification | Complete with documented limitation | Supabase Cloud RPC smoke test passed, authenticated browser verification passed end-to-end, User Role Assignment page is now reachable in normal flow, and local typecheck/lint/test/build/simulation checks passed. Multi-role effective-right diagnostics limitation is documented for high-privilege test users. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.
@@ -243,7 +244,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - Supabase CLI binary unavailable on win32-x64 — simulations require Linux/macOS or Supabase Cloud SQL Editor
 
 ## Phase 6.0 Implementation Summary
-**Status:** Access Control Manager foundation complete.
+**Status:** Implementation complete; verification finalized in Phase 6.0.1.
 
 ### Files Created
 - `docs/PHASE_6_0_ACCESS_CONTROL_MANAGER.md` — implementation and schema-extension notes

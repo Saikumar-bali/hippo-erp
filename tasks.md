@@ -32,9 +32,9 @@ The last commits added useful Access Control Manager code, but there are still p
 ## A. Review docs
 
 - [x] Add GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-access-control-last-commits.md`
-- [ ] Create `docs/PHASE_6_0_1_ACCESS_CONTROL_VERIFICATION.md`
-- [ ] Create `docs/ai-runs/2026-06-03_phase-6-0-1-access-control-verification.md`
-- [ ] Update `progress.md`
+- [x] Create `docs/PHASE_6_0_1_ACCESS_CONTROL_VERIFICATION.md`
+- [x] Create `docs/ai-runs/2026-06-03_phase-6-0-1-access-control-verification.md`
+- [x] Update `progress.md`
 
 ---
 
@@ -51,8 +51,8 @@ git remote -v
 
 Required:
 
-- [ ] Work must be committed and pushed to `phase-2.5-metadata-engine`.
-- [ ] If local branch is `main` while tracking `origin/phase-2.5-metadata-engine`, document this clearly and avoid accidental pushes to wrong branch.
+- [x] Work must be committed and pushed to `phase-2.5-metadata-engine`.
+- [x] If local branch is `main` while tracking `origin/phase-2.5-metadata-engine`, document this clearly and avoid accidental pushes to wrong branch.
 
 ---
 
@@ -62,15 +62,15 @@ Verify migration 0042 on Supabase Cloud.
 
 Smoke test these RPCs manually or with a script:
 
-- [ ] `public.normalize_access_action_key`
-- [ ] `public.default_access_permission_key`
-- [ ] `public.get_access_control_targets`
-- [ ] `public.get_access_control_matrix`
-- [ ] `public.get_company_user_role_assignments`
-- [ ] `public.set_company_user_roles`
-- [ ] `public.save_access_control_matrix`
-- [ ] `public.get_company_users`
-- [ ] `public.current_user_has_doctype_permission`
+- [x] `public.normalize_access_action_key`
+- [x] `public.default_access_permission_key`
+- [x] `public.get_access_control_targets`
+- [x] `public.get_access_control_matrix`
+- [x] `public.get_company_user_role_assignments`
+- [x] `public.set_company_user_roles`
+- [x] `public.save_access_control_matrix`
+- [x] `public.get_company_users`
+- [x] `public.current_user_has_doctype_permission`
 
 Document exact PASS/FAIL results.
 
@@ -82,22 +82,22 @@ Fix or clearly diagnose why Playwright login does not leave `/login`.
 
 Tasks:
 
-- [ ] Verify test credentials / seeded auth user exist.
-- [ ] Verify login form selectors are correct.
-- [ ] Verify Supabase env values are loaded in local Vite.
-- [ ] Capture login error text if login fails.
-- [ ] Update `scripts/verify_phase6_access_control.mjs` to fail with useful diagnostics.
+- [x] Verify test credentials / seeded auth user exist.
+- [x] Verify login form selectors are correct.
+- [x] Verify Supabase env values are loaded in local Vite.
+- [x] Capture login error text if login fails.
+- [x] Update `scripts/verify_phase6_access_control.mjs` to fail with useful diagnostics.
 
 Then run browser flow:
 
-- [ ] open Access Control Manager
-- [ ] select company
-- [ ] create or select test role
-- [ ] grant CRM Lead read/create/update
-- [ ] assign role to test user or document why user switch is not practical
-- [ ] show effective rights
+- [x] open Access Control Manager
+- [x] select company
+- [x] create or select test role
+- [x] grant CRM Lead read/create/update
+- [x] assign role to test user or document why user switch is not practical
+- [x] show effective rights
 - [ ] remove one right and verify missing-access diagnostic
-- [ ] restore right
+- [x] restore right
 
 ---
 
@@ -107,10 +107,10 @@ Make the multi-role assignment page reachable in normal app flow.
 
 Tasks:
 
-- [ ] Add route if missing
-- [ ] Add sidebar/menu item or Access Control Manager tab/link
-- [ ] Ensure legacy Users/Roles flow still works
-- [ ] Document final navigation path
+- [x] Add route if missing
+- [x] Add sidebar/menu item or Access Control Manager tab/link
+- [x] Ensure legacy Users/Roles flow still works
+- [x] Document final navigation path
 
 ---
 
@@ -124,17 +124,17 @@ npm run test
 
 Triage the 5 failing tests:
 
-- [ ] dashboard-kpi
-- [ ] auth-routes
-- [ ] auth-state
-- [ ] permission-gates
-- [ ] app
+- [x] dashboard-kpi
+- [x] auth-routes
+- [x] auth-state
+- [x] permission-gates
+- [x] app
 
 For each:
 
-- [ ] classify as caused by Phase 6 or pre-existing
-- [ ] fix if Phase 6 caused it
-- [ ] document exact reason if left failing
+- [x] classify as caused by Phase 6 or pre-existing
+- [x] fix if Phase 6 caused it
+- [x] document exact reason if left failing
 
 ---
 
@@ -156,11 +156,11 @@ npm run test:simulation
 
 Phase 6.0.1 is complete only when:
 
-- [ ] Branch state is clear and safe
-- [ ] Migration 0042 RPC smoke test passes
-- [ ] Browser verification either passes or exact blocking issue is fixed/documented with evidence
-- [ ] User role assignment page is reachable
-- [ ] Test failures are triaged and Phase-6-caused failures are fixed
-- [ ] AI run report exists
+- [x] Branch state is clear and safe
+- [x] Migration 0042 RPC smoke test passes
+- [x] Browser verification either passes or exact blocking issue is fixed/documented with evidence
+- [x] User role assignment page is reachable
+- [x] Test failures are triaged and Phase-6-caused failures are fixed
+- [x] AI run report exists
 
 After this, choose Phase 6.1 Company Branding / Theme Studio only if access control verification is clean.
