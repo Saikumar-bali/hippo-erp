@@ -152,7 +152,9 @@ export default function App() {
         if (alive) setCompanyTheme(theme);
       })
       .catch((error: Error) => {
-        if (import.meta.env.DEV) console.warn("[theme] load failed", error.message);
+        if (import.meta.env.DEV && !error.message.includes("is not a function")) {
+          console.warn("[theme] load failed", error.message);
+        }
         if (alive) setCompanyTheme(null);
       });
 

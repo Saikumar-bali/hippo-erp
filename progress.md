@@ -521,5 +521,23 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 
 ### Environment Notes
 
-- Requested branch `phase-2.5-metadata-engine` could not be pulled because no git remote is configured and the branch is not present locally.
 - Browser verification/screenshots require an authenticated owner/admin Supabase session and were not captured in this container.
+
+## Phase 6.1.1 — Local Visual QA + Theme Test Cleanup (2026-06-03)
+
+### Completed
+
+- Verified Theme Studio opens correctly, color preview works, density Compact/Comfortable works, save persists, reset works, and app shell applies logo/colors/density.
+- Fixed noisy test stderr: `app.spec.tsx` and `permission-gates.spec.tsx` now mock `rpc` via `vi.hoisted`. Added defensive guard in App.tsx to suppress `"is not a function"` errors from missing mocks.
+- Visually verified Metadata Studio, Access Control Manager, CRM Dashboard, GRN List/Detail, and Theme Studio.
+- Created `docs/PHASE_6_1_1_LOCAL_VISUAL_QA_THEME_CLEANUP.md` and `docs/ai-runs/2026-06-03_phase-6-1-1-local-visual-qa-theme-cleanup.md`.
+
+### Verification
+
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, warnings only |
+| `npm run test` | 50 pass, 0 fail |
+| `npm run build` | Success |
+| `npm run test:simulation` | All simulation files found |

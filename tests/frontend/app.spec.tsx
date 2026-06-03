@@ -2,13 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
+const mockThemeRpc = vi.hoisted(() => vi.fn().mockResolvedValue({ data: [], error: null }));
+
 vi.mock("../../src/lib/supabase", () => ({
   supabase: {
     auth: {
       getSession: async () => ({ data: { session: { user: { email: "test@example.com" } } } }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
       signOut: async () => ({})
-    }
+    },
+    rpc: mockThemeRpc,
   }
 }));
 vi.mock("../../src/lib/inventory-api", () => ({
