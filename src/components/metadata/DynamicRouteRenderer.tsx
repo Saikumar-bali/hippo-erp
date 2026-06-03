@@ -212,7 +212,7 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
       return <InventoryMovementsPage tenantId={tenantId} />;
     }
 
-    if (itemKey === "crm_dashboard") {
+    if (itemKey === "crm_dashboard" || target === "crm_dashboard") {
       return <CrmDashboardPage tenantId={tenantId} onNavigateToDocType={onNavigateToDocType} />;
     }
 

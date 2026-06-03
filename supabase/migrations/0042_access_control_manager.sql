@@ -95,7 +95,7 @@ as $$
         order by da.action_key
         limit 1
       ) as required_permission_key,
-      coalesce(d.sort_order, 0) as sort_order
+      coalesce(m.sort_order, 0) as sort_order
     from app.erp_doctypes d
     left join app.erp_modules m on m.module_key = d.module_key
     where d.is_active = true
@@ -202,7 +202,7 @@ as $$
         order by read_da.action_key
         limit 1
       ) as required_permission_key,
-      coalesce(d.sort_order, 0) as sort_order
+      coalesce(m.sort_order, 0) as sort_order
     from app.erp_doctypes d
     left join app.erp_modules m on m.module_key = d.module_key
     cross join (
@@ -347,6 +347,8 @@ as $$
     and ra.user_id = p_user_id
   order by ra.is_active desc, r.sort_order, r.role_name;
 $$;
+
+drop function if exists public.get_company_users(uuid);
 
 create or replace function public.get_company_users(p_company_id uuid)
 returns table (
