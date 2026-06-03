@@ -219,10 +219,10 @@ export function AccessControlManagerPage({
     <div className="studio-shell">
       <div className="studio-header">
         <div>
-          <p className="studio-kicker">Security Foundation</p>
+          <p className="studio-kicker">Role access</p>
           <h3>Access Control Manager</h3>
           <p>
-            Manage company roles, DocType rights, and page or report access from one place. Missing user access can be diagnosed here and fixed by saving the right role matrix.
+            Choose a role, grant the business rights it needs, and preview what a user can actually do. If a user has multiple roles, their effective rights are the combined permissions from every active role assignment.
           </p>
         </div>
         <div className="studio-toolbar">
@@ -240,7 +240,7 @@ export function AccessControlManagerPage({
             <RotateCcw size={16} /> Refresh
           </button>
           <button className="studio-button studio-button--ghost" type="button" onClick={() => navigate("/users_and_roles_access_assignments")}>
-            Manage User Assignments
+            Assign users to roles
           </button>
         </div>
       </div>
@@ -251,7 +251,7 @@ export function AccessControlManagerPage({
         <div className="acm-layout">
           <aside className="studio-panel acm-roles-panel">
             <div className="studio-icon-title">
-              <strong>Company Roles</strong>
+              <strong>Roles</strong>
               <span className="mini-badge mini-badge--muted">{roles.length}</span>
             </div>
             <div className="roles-items">
@@ -264,7 +264,7 @@ export function AccessControlManagerPage({
                 >
                   <strong>{role.role_name}</strong>
                   <span>{role.role_key}</span>
-                  <small>{role.permission_count} granted rights</small>
+                  <small>{role.permission_count} rights granted</small>
                 </button>
               ))}
             </div>
@@ -272,11 +272,11 @@ export function AccessControlManagerPage({
             {canCreateRole && (
               <div className="studio-stack" style={{ marginTop: "8px" }}>
                 <label className="studio-field">
-                  <span>Create Role</span>
+                  <span>Create role</span>
                   <input value={newRoleName} onChange={(event) => setNewRoleName(event.target.value)} placeholder="Sales Coordinator" />
                 </label>
                 <button className="studio-button" type="button" onClick={() => void handleCreateRole()} disabled={saving}>
-                  <Plus size={16} /> Create Role
+                  <Plus size={16} /> Create role
                 </button>
               </div>
             )}
@@ -297,10 +297,10 @@ export function AccessControlManagerPage({
               </label>
 
               <label className="studio-field">
-                <span>Target Scope</span>
+                <span>Screen type</span>
                 <select className="studio-control" value={targetFilter} onChange={(event) => setTargetFilter(event.target.value)}>
                   <option value="all">All targets</option>
-                  <option value="doctype_only">DocTypes only</option>
+                  <option value="doctype_only">Document types only</option>
                   <option value="non_doctype">Pages, reports, and menus</option>
                 </select>
               </label>
@@ -308,7 +308,7 @@ export function AccessControlManagerPage({
 
             <div className="studio-grid studio-grid--two">
               <label className="studio-field">
-                <span>Select DocType or Target</span>
+                <span>Select screen or document</span>
                 <select className="studio-control" value={selectedTargetId} onChange={(event) => setSelectedTargetId(event.target.value)}>
                   {filteredTargets.map((target) => (
                     <option key={target.key} value={target.key}>
@@ -319,7 +319,7 @@ export function AccessControlManagerPage({
               </label>
 
               <label className="studio-field">
-                <span>Effective Rights For User</span>
+                <span>Preview user effective rights</span>
                 <select className="studio-control" value={selectedUser?.user_id ?? ""} onChange={(event) => setSelectedUserId(event.target.value)}>
                   {users.map((user) => (
                     <option key={user.user_id} value={user.user_id}>
@@ -333,12 +333,12 @@ export function AccessControlManagerPage({
             <div className="studio-panel studio-panel--accent">
               <div className="studio-icon-title">
                 <ShieldCheck size={18} />
-                <strong>Effective Rights Preview</strong>
+                <strong>Effective rights explained</strong>
               </div>
               <div className="studio-subtle">
                 {selectedUser
-                  ? `${selectedUser.full_name || selectedUser.email} currently has ${selectedUser.effective_permission_count} effective permission(s) across ${selectedUser.active_assignment_count} active role assignment(s).`
-                  : "Select a user to review effective rights."}
+                  ? `${selectedUser.full_name || selectedUser.email} can currently use ${selectedUser.effective_permission_count} permission(s), combined across ${selectedUser.active_assignment_count} active role assignment(s). Multiple active roles add together; this preview shows the aggregate access, not only the selected role.`
+                  : "Select a user to see the combined rights they receive from all active roles."}
               </div>
               {selectedUser && (
                 <div className="permission-chips">
@@ -368,10 +368,10 @@ export function AccessControlManagerPage({
 
             <div className="studio-toolbar" style={{ justifyContent: "space-between" }}>
               <div className="studio-subtle">
-                Permission errors should point here: Access required, then grant the right to the user role and save.
+                When a user sees Access required, find this screen or document, turn on the needed right for one of their roles, then save.
               </div>
               <button className="studio-button" type="button" onClick={() => void handleSaveMatrix()} disabled={saving || !selectedTarget || !selectedRoleId || !canUpdateRole}>
-                {saving ? "Saving..." : "Save Role Changes"}
+                {saving ? "Saving..." : "Save role access"}
               </button>
             </div>
           </section>

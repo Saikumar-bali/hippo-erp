@@ -6,16 +6,18 @@ import { WorkspaceItem } from "./WorkspaceItem";
 
 type Props = {
   tree: WorkspaceTreeItem[];
+  companyName?: string;
+  logoUrl?: string | null;
   activeItemKey: string | null;
   onItemClick: (item: WorkspaceItemMeta) => void;
   onHomeClick: () => void;
 };
 
-export function WorkspaceSidebar({ tree, activeItemKey, onItemClick, onHomeClick }: Props) {
+export function WorkspaceSidebar({ tree, companyName = "Hippo ERP", logoUrl, activeItemKey, onItemClick, onHomeClick }: Props) {
   return (
     <aside className="sidebar">
       <button className="brand ws-home-btn" onClick={onHomeClick}>
-        <Boxes size={18} /> Hippo ERP
+        {logoUrl ? <img className="brand-logo" src={logoUrl} alt={`${companyName} logo`} /> : <Boxes size={18} />} <span>{companyName}</span>
       </button>
 
       <nav className="ws-nav">

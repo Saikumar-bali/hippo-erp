@@ -496,3 +496,30 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - Sort from `sort_json` not yet wired to DynamicListPage (default sort used).
 - Wizard does not auto-create naming series or workflow for new DocTypes.
 - Permission keys mapped by wizard do not auto-create role permissions.
+
+## Phase 6.1 — Professional UX Foundation + Company Branding (2026-06-03)
+
+### Completed
+
+- Created Phase 6.1 professional UX and branding documentation.
+- Completed UX audit across shell, Metadata Studio, builders, Access Control, CRM, and GRN pages.
+- Added compact/comfortable enterprise design tokens for spacing, typography, cards, tables, forms, buttons, inputs, sidebar, topbar, badges, empty states, and page headers.
+- Added company branding migration `0043_company_branding_theme.sql` with safe theme columns and RPCs.
+- Added Theme Studio page, theme API, and theme types.
+- Applied saved company branding to the authenticated app shell with safe fallbacks.
+- Added company logo rendering in sidebar/topbar.
+- Improved Metadata Studio and Access Control copy to prefer business language and explain effective rights.
+- Polished CRM Dashboard spacing and GRN page header/status badges.
+
+### Verification
+
+- `npm run typecheck` passed.
+- `npm run lint` passed with 48 warnings only.
+- `npm run test` passed.
+- `npm run build` passed with Vite chunk-size warning.
+- `npm run test:simulation` passed; SQL simulations are ready for manual Supabase execution.
+
+### Environment Notes
+
+- Requested branch `phase-2.5-metadata-engine` could not be pulled because no git remote is configured and the branch is not present locally.
+- Browser verification/screenshots require an authenticated owner/admin Supabase session and were not captured in this container.

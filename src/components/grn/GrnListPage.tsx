@@ -165,6 +165,17 @@ export function GrnListPage({ tenantId }: Props) {
 
   return (
     <div className="module-stack">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Inventory receiving</p>
+          <h1>Goods Receipt Notes</h1>
+          <p>Review draft, posted, and cancelled receiving documents in a compact list.</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="primary-action" onClick={handleCreate}>+ New GRN</button>
+        </div>
+      </header>
+
       {confirmPostId && (
         <div style={confirmOverlayStyle} onClick={() => setConfirmPostId(null)}>
           <div style={confirmDialogStyle} onClick={(e) => e.stopPropagation()}>
@@ -186,7 +197,7 @@ export function GrnListPage({ tenantId }: Props) {
 
       <div className="card">
         <div className="card-head">
-          <h3>Goods Receipt Notes</h3>
+          <h3>Receiving list</h3>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <input
               type="text"
@@ -205,9 +216,7 @@ export function GrnListPage({ tenantId }: Props) {
               <option value="posted">Posted</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <button className="primary-action" onClick={handleCreate}>
-              + New GRN
-            </button>
+
           </div>
         </div>
 

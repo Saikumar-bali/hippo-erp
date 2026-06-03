@@ -4,11 +4,12 @@ type Props = {
   sidebar: ReactNode;
   topbar: ReactNode;
   content: ReactNode;
+  densityMode?: "compact" | "comfortable";
 };
 
-export function AppShell({ sidebar, topbar, content }: Props) {
+export function AppShell({ sidebar, topbar, content, densityMode = "compact" }: Props) {
   return (
-    <div className="app-shell">
+    <div className={`app-shell density-${densityMode}`}>
       {sidebar}
       <main className="main">
         {topbar}

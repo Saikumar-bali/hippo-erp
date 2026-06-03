@@ -1,24 +1,24 @@
 import { Blocks, Columns3, FileJson, LayoutDashboard, LayoutTemplate, ListChecks, ListTree, PlusCircle, ShieldCheck, Table, WandSparkles } from "lucide-react";
 
 const builderSections = [
-  { key: "metadata_studio_doctype_builder", label: "DocType Builder", icon: FileJson, desc: "Create DocTypes with schema and storage dropdowns" },
-  { key: "metadata_studio_field_builder", label: "Field Builder", icon: Columns3, desc: "Add and reorder fields with type and link pickers" },
-  { key: "metadata_studio_list_view_builder", label: "List View Builder", icon: Table, desc: "Build columns, filters, and search fields visually" },
-  { key: "metadata_studio_form_layout_builder", label: "Form Layout Builder", icon: LayoutTemplate, desc: "Place fields into sections without JSON" },
-  { key: "metadata_studio_workspace_menu_builder", label: "Menu Builder", icon: ListTree, desc: "Add workspace items with target dropdowns" },
-  { key: "metadata_studio_access_builder", label: "Access Builder", icon: ShieldCheck, desc: "Create action keys and baseline permission mappings" },
-  { key: "metadata_studio_access_control_manager", label: "Access Control Manager", icon: ShieldCheck, desc: "Grant role rights, assign users, and diagnose missing access" },
-  { key: "metadata_studio_doc_check", label: "Check / Repair DocType", icon: ListChecks, desc: "Diagnose incomplete metadata and fix safe defaults" },
+  { key: "metadata_studio_doctype_builder", label: "DocType Builder", icon: FileJson, desc: "Create a business document type, then choose storage details only when needed" },
+  { key: "metadata_studio_field_builder", label: "Field Builder", icon: Columns3, desc: "Add the fields users see on forms, with technical field keys shown second" },
+  { key: "metadata_studio_list_view_builder", label: "List View Designer", icon: Table, desc: "Choose useful columns, filters, and search fields for daily work" },
+  { key: "metadata_studio_form_layout_builder", label: "Form Layout Designer", icon: LayoutTemplate, desc: "Arrange fields into clean sections without editing JSON" },
+  { key: "metadata_studio_workspace_menu_builder", label: "Workspace Menu Designer", icon: ListTree, desc: "Put pages and records where users expect to find them" },
+  { key: "metadata_studio_access_builder", label: "Access Setup", icon: ShieldCheck, desc: "Create the standard actions and permission mapping for a document" },
+  { key: "metadata_studio_access_control_manager", label: "Access Control Manager", icon: ShieldCheck, desc: "See effective rights, assign users, and fix missing access in plain language" },
+  { key: "metadata_studio_doc_check", label: "Check / Repair Document Type", icon: ListChecks, desc: "Use when a screen is missing fields, list columns, actions, or menu links" },
 ];
 
 const advancedSections = [
-  { key: "metadata_studio_doctypes", label: "DocTypes Table", icon: FileJson, desc: "Raw rows in app.erp_doctypes" },
-  { key: "metadata_studio_docfields", label: "DocFields Table", icon: Columns3, desc: "Raw rows in app.erp_docfields" },
-  { key: "metadata_studio_workspaces", label: "Workspaces Table", icon: LayoutDashboard, desc: "Workspace metadata and sort orders" },
-  { key: "metadata_studio_workspace_items", label: "Workspace Items Table", icon: ListTree, desc: "Raw menu records and permissions" },
-  { key: "metadata_studio_list_views", label: "List Views Table", icon: Table, desc: "JSON-backed list metadata rows" },
-  { key: "metadata_studio_form_layouts", label: "Form Layouts Table", icon: LayoutTemplate, desc: "JSON-backed form layout rows" },
-  { key: "metadata_studio_actions", label: "DocType Actions Table", icon: ShieldCheck, desc: "Action-to-permission mappings" },
+  { key: "metadata_studio_doctypes", label: "Document Types (advanced)", icon: FileJson, desc: "Advanced inspection of document type metadata rows" },
+  { key: "metadata_studio_docfields", label: "Fields (advanced)", icon: Columns3, desc: "Advanced inspection of field metadata rows" },
+  { key: "metadata_studio_workspaces", label: "Workspaces (advanced)", icon: LayoutDashboard, desc: "Workspace metadata and sort orders" },
+  { key: "metadata_studio_workspace_items", label: "Workspace Items (advanced)", icon: ListTree, desc: "Advanced menu records and permission keys" },
+  { key: "metadata_studio_list_views", label: "List Views (advanced)", icon: Table, desc: "Advanced list layout metadata" },
+  { key: "metadata_studio_form_layouts", label: "Form Layouts (advanced)", icon: LayoutTemplate, desc: "Advanced form layout metadata" },
+  { key: "metadata_studio_actions", label: "Actions & Permissions (advanced)", icon: ShieldCheck, desc: "Advanced action-to-permission mappings" },
 ];
 
 type Props = {
@@ -33,17 +33,17 @@ export function MetadataStudioHome({ onNavigate }: Props) {
           <p className="studio-kicker">Developer Studio</p>
           <h2>Metadata Studio</h2>
           <p style={{ marginTop: "6px", maxWidth: "720px" }}>
-            Builder-first workflow for Developer Studio. Create and refine metadata through guided screens, then fall back to raw tables only when you need advanced inspection or repair.
+            Start with guided builders for business-friendly screens. Technical tables are still available below for inspection, but daily setup should happen through the guided flow.
           </p>
         </div>
         <div className="studio-toolbar">
           <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate("metadata_studio_doc_check")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <ListChecks size={16} />
-            Open Check / Repair
+            Check or repair a screen
           </button>
           <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate("metadata_studio_access_control_manager")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <ShieldCheck size={16} />
-            Open Access Control
+            Review role access
           </button>
           <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <PlusCircle size={16} />
@@ -56,32 +56,32 @@ export function MetadataStudioHome({ onNavigate }: Props) {
         <div className="studio-panel studio-panel--accent">
           <div className="studio-icon-title">
             <WandSparkles size={18} />
-            <strong>Recommended Builder Flow</strong>
+            <strong>Recommended setup flow</strong>
           </div>
           <div className="studio-pills">
             <span>1. DocType Builder</span>
             <span>2. Field Builder</span>
-            <span>3. List View Builder</span>
-            <span>4. Form Layout Builder</span>
-            <span>5. Menu Builder</span>
-            <span>6. Access Builder</span>
+            <span>3. List View Designer</span>
+            <span>4. Form Layout Designer</span>
+            <span>5. Workspace Menu Designer</span>
+            <span>6. Access Setup</span>
             <span>7. Access Control Manager</span>
           </div>
         </div>
         <div className="studio-panel studio-panel--warm">
           <div className="studio-icon-title">
             <Blocks size={18} />
-            <strong>Phase 4.8 Focus</strong>
+            <strong>Professional UX guardrail</strong>
           </div>
           <div className="studio-subtle" style={{ color: "#8b5e00" }}>
-            Keep this builder focused on metadata-driven master/demo records like Purchase Invoice learning flows. Do not add ERP transaction logic here.
+            Keep this area focused on metadata and user experience. Transaction workflows belong in future phases, not in this polish pass.
           </div>
         </div>
       </div>
 
       <div className="studio-home-section">
         <h3 className="studio-kicker" style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
-          Builder Screens
+          Guided builders
         </h3>
         <div className="studio-grid studio-grid--auto">
           {builderSections.map((section) => (

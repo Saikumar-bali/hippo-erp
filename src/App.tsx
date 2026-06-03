@@ -9,6 +9,8 @@ import { WorkspaceSidebar } from "./components/layout/WorkspaceSidebar";
 import { TopBar } from "./components/layout/TopBar";
 import { DynamicRouteRenderer } from "./components/metadata/DynamicRouteRenderer";
 import type { WorkspaceItemMeta } from "./lib/metadata/workspace-types";
+import { getCompanyTheme } from "./lib/theme-api";
+import { DEFAULT_THEME_SETTINGS, type CompanyThemeSettings } from "./lib/theme-types";
 
 export default function App() {
   const { pageKey } = useParams();
@@ -17,6 +19,7 @@ export default function App() {
   const { session, signOut, tenantLoadError, tenants } = useAuth();
   const navigate = useNavigate();
   const [membershipToastShown, setMembershipToastShown] = useState(false);
+  const [companyTheme, setCompanyTheme] = useState<CompanyThemeSettings | null>(null);
   const permissions = usePermissions();
   const { tree, loading: navLoading, refresh: refreshSidebar } = useWorkspaceNavigation();
 
@@ -36,24 +39,26 @@ export default function App() {
       if (found) {
         console.log("[app] found matching item in tree:", found.item_key);
         setSelectedItem(found);
-      } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard" || pageKey === "users_and_roles_access_assignments") {
+      } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard" || pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio") {
         console.log("[app] creating virtual item for:", pageKey);
         // 2. Virtual item for metadata studio diagnostic sub-pages or CRM dashboard
         setSelectedItem({
           id: `virtual-${pageKey}`,
-          workspace_key: pageKey === "crm_dashboard" ? "crm" : pageKey === "users_and_roles_access_assignments" ? "company_admin" : "metadata_studio",
+          workspace_key: pageKey === "crm_dashboard" ? "crm" : pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio" ? "company_admin" : "metadata_studio",
           item_key: pageKey,
           label: pageKey === "crm_dashboard"
             ? "CRM Dashboard"
             : pageKey === "users_and_roles_access_assignments"
               ? "Users and Roles Access Assignments"
-              : pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+              : pageKey === "theme_studio"
+                ? "Theme Studio"
+                : pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
           item_type: "page",
           target: pageKey,
-          icon: pageKey === "crm_dashboard" ? "LayoutDashboard" : pageKey === "users_and_roles_access_assignments" ? "ShieldCheck" : "Activity",
+          icon: pageKey === "crm_dashboard" ? "LayoutDashboard" : pageKey === "users_and_roles_access_assignments" ? "ShieldCheck" : pageKey === "theme_studio" ? "Palette" : "Activity",
           sort_order: 0,
           is_active: true,
-          required_permission_key: pageKey === "crm_dashboard" ? "view_crm_lead" : pageKey === "users_and_roles_access_assignments" ? "view_users" : "manage_metadata",
+          required_permission_key: pageKey === "crm_dashboard" ? "view_crm_lead" : pageKey === "users_and_roles_access_assignments" ? "view_users" : pageKey === "theme_studio" ? "update_company" : "manage_metadata",
         });
       } else {
         console.log("[app] pageKey did not match any item or virtual pattern:", pageKey);
@@ -130,6 +135,54 @@ export default function App() {
   }, [tree]);
 
   const tenantId = localStorage.getItem("tenant_id") ?? "";
+  const effectiveTheme = companyTheme ?? { company_id: tenantId, ...DEFAULT_THEME_SETTINGS };
+
+  useEffect(() => {
+    let alive = true;
+    if (!tenantId) {
+      queueMicrotask(() => {
+        if (alive) setCompanyTheme(null);
+      });
+      return () => {
+        alive = false;
+      };
+    }
+    getCompanyTheme(tenantId)
+      .then((theme) => {
+        if (alive) setCompanyTheme(theme);
+      })
+      .catch((error: Error) => {
+        if (import.meta.env.DEV) console.warn("[theme] load failed", error.message);
+        if (alive) setCompanyTheme(null);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [tenantId]);
+
+  useEffect(() => {
+    const theme = companyTheme ?? { company_id: tenantId, ...DEFAULT_THEME_SETTINGS };
+    const root = document.documentElement;
+    root.style.setProperty("--color-primary", theme.primary_color);
+    root.style.setProperty("--color-accent", theme.accent_color);
+    root.style.setProperty("--color-sidebar", theme.sidebar_color);
+    root.style.setProperty("--color-topbar", theme.topbar_color);
+    Object.entries(theme.custom_variables ?? {}).forEach(([key, value]) => {
+      if (key.startsWith("--hippo-")) root.style.setProperty(key, value);
+    });
+    root.dataset.density = theme.density_mode;
+
+    let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (theme.favicon_url) {
+      if (!favicon) {
+        favicon = document.createElement("link");
+        favicon.rel = "icon";
+        document.head.appendChild(favicon);
+      }
+      favicon.href = theme.favicon_url;
+    }
+  }, [companyTheme, tenantId]);
 
   return (
     <>
@@ -138,6 +191,8 @@ export default function App() {
         sidebar={
           <WorkspaceSidebar
             tree={tree}
+            companyName={effectiveTheme.company_name ?? "Hippo ERP"}
+            logoUrl={effectiveTheme.logo_url}
             activeItemKey={selectedItem?.item_key ?? null}
             onItemClick={handleItemClick}
             onHomeClick={handleHomeClick}
@@ -146,10 +201,13 @@ export default function App() {
         topbar={
           <TopBar
             userEmail={session?.user.email}
+            companyName={effectiveTheme.company_name ?? "Hippo ERP"}
+            logoUrl={effectiveTheme.logo_url}
             signingOut={signingOut}
             onLogout={() => void doLogout()}
           />
         }
+        densityMode={effectiveTheme.density_mode}
         content={
           <DynamicRouteRenderer
             selectedItem={selectedItem}
@@ -157,6 +215,7 @@ export default function App() {
             permissions={permissions}
             onRefreshSidebar={refreshSidebar}
             onNavigateToDocType={handleNavigateToDocType}
+            onThemeChanged={setCompanyTheme}
           />
         }
       />
