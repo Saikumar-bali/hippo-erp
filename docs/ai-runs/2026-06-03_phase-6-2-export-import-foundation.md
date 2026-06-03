@@ -51,15 +51,14 @@ Added migration `0044_export_import_permissions.sql` that:
 
 ## Verification
 
-Browser verification was performed against local Vite dev server (requires authenticated Supabase session for live CRM data):
+Browser verification not yet performed — requires an authenticated owner/admin Supabase session to access CRM pages. The export/import buttons and dialogs should be verified manually:
 
-- CRM Lead export button visible with export permission
-- CRM Lead template download produces correct header CSV
-- CRM Lead import preview catches missing `lead_name` (required field)
-- CRM Lead import preview rejects bad Select values
-- CRM Opportunity export works
-- CRM Opportunity template download works
-- Opportunity import preview validates numeric/date fields
+- CRM Lead list shows Export CSV, Template, Import CSV buttons (gated by `export_crm_lead` / `import_crm_lead`)
+- Export CSV downloads a file with list-view columns
+- Template download produces a CSV with required-field markers
+- Import preview catches missing `lead_name` and invalid Select values
+- Import creates one valid row on confirmation
+- Same for CRM Opportunity (with numeric/date validation)
 
 ## Command Results
 

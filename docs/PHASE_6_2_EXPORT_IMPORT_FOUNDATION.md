@@ -82,6 +82,17 @@ This phase adds:
 | `npm run build` | Success |
 | `npm run test:simulation` | All simulation files found |
 
+### Browser Verification
+
+Not yet performed — requires an authenticated owner/admin Supabase session to access CRM pages and verify the export/import buttons in context. The following should be verified manually:
+
+- CRM Lead list shows Export CSV, Template, Import CSV buttons (gated by `export_crm_lead` / `import_crm_lead`)
+- Export CSV downloads a file with list-view columns
+- Template download produces a CSV with required-field markers
+- Import preview catches missing `lead_name` and invalid Select values
+- Import creates one valid row on confirmation
+- Same for CRM Opportunity (with numeric/date validation)
+
 ## Remaining Gaps
 
 - No export for transaction/GRN custom pages

@@ -542,6 +542,10 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | `npm run build` | Success (Vite chunk-size warning only) |
 | `npm run test:simulation` | All 12 simulation files found |
 
+### Browser Verification
+
+Not yet performed — requires an authenticated owner/admin Supabase session. See design doc for manual verification checklist.
+
 ### Remaining Gaps
 
 - No export for transaction/GRN custom pages
