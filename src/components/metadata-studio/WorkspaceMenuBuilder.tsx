@@ -29,6 +29,7 @@ const KNOWN_PAGE_TARGETS = [
   { value: "grn", label: "GRN" },
   { value: "current_inventory", label: "Current Inventory" },
   { value: "movements", label: "Inventory Movements" },
+  { value: "crm_dashboard", label: "CRM Dashboard" },
   { value: "metadata_studio", label: "Metadata Studio Home" },
   { value: "metadata_studio_doctype_builder", label: "DocType Builder" },
   { value: "metadata_studio_field_builder", label: "Field Builder" },
