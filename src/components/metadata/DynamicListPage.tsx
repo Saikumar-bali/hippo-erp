@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
@@ -9,14 +9,19 @@ import { StatusField } from "./StatusField";
 import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
 import type { DocTypeApi } from "./doctype-api-map";
 import { DynamicFormPage } from "./DynamicFormPage";
+import { ImportPreviewDialog } from "../import/ImportPreviewDialog";
 import type { DocFieldMeta, ListViewColumn } from "../../lib/metadata/types";
 import { buildAccessErrorMessage } from "../../lib/access-control";
+import { recordsToCsv, downloadCsv, exportFilename } from "../../lib/export-import/csv-export";
+import { generateTemplateHeader, downloadTemplate } from "../../lib/export-import/csv-template";
 
 type Props = {
   doctypeKey: string;
   tenantId: string;
   canUpdate: boolean;
   canDelete: boolean;
+  canExport: boolean;
+  canImport: boolean;
   permissionChecker: (key: string) => boolean;
 };
 
@@ -61,6 +66,8 @@ export function DynamicListPage({
   tenantId,
   canUpdate,
   canDelete,
+  canExport,
+  canImport,
   permissionChecker,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
@@ -268,6 +275,18 @@ export function DynamicListPage({
     return <DynamicFieldRenderer field={field} value={value} />;
   };
 
+  const [importing, setImporting] = useState(false);
+
+  const handleExport = useCallback(() => {
+    const csv = recordsToCsv(filtered, columns);
+    downloadCsv(csv, exportFilename(doctypeKey));
+  }, [filtered, columns, config?.fields, doctypeKey]);
+
+  const handleDownloadTemplate = useCallback(() => {
+    const header = generateTemplateHeader(config?.fields ?? []);
+    downloadTemplate(header, doctypeKey);
+  }, [config?.fields, doctypeKey]);
+
   const handleAction = (actionKey: string) => {
     if (actionKey === "create") setCreating(true);
     if (actionKey === "deactivate" && selectedId) {
@@ -373,11 +392,28 @@ export function DynamicListPage({
       <div className="card">
         <div className="card-head">
           <h3>{config.doctype.label}</h3>
-          <DynamicActionBar
-            actions={actions}
-            permissionChecker={permissionChecker}
-            onAction={handleAction}
-          />
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            {canExport && (
+              <button className="logout" onClick={handleExport} title="Export current list to CSV">
+                Export CSV
+              </button>
+            )}
+            {canExport && (
+              <button className="logout" onClick={handleDownloadTemplate} title="Download CSV template">
+                Template
+              </button>
+            )}
+            {canImport && (
+              <button className="logout" onClick={() => setImporting(true)} title="Import from CSV">
+                Import CSV
+              </button>
+            )}
+            <DynamicActionBar
+              actions={actions}
+              permissionChecker={permissionChecker}
+              onAction={handleAction}
+            />
+          </div>
         </div>
 
         {usedFallbackColumns && (
@@ -486,6 +522,17 @@ export function DynamicListPage({
           </div>
         )}
       </div>
+      {importing && config && api && api.create && (
+        <ImportPreviewDialog
+          doctypeKey={doctypeKey}
+          doctypeLabel={config.doctype.label}
+          fields={config.fields}
+          api={api}
+          tenantId={tenantId}
+          onClose={() => setImporting(false)}
+          onImported={() => { setImporting(false); void loadAll(); }}
+        />
+      )}
     </div>
   );
 }

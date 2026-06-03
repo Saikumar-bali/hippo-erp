@@ -75,12 +75,24 @@ function DocTypeListPage({
     );
   }, [config, permissions]);
 
+  const canExport = useMemo(() => {
+    if (!config) return false;
+    return permissions.can(`export_${doctypeKey}`);
+  }, [config, permissions, doctypeKey]);
+
+  const canImport = useMemo(() => {
+    if (!config) return false;
+    return permissions.can(`import_${doctypeKey}`);
+  }, [config, permissions, doctypeKey]);
+
   return (
     <DynamicListPage
       doctypeKey={doctypeKey}
       tenantId={tenantId}
       canUpdate={canUpdate}
       canDelete={canDelete}
+      canExport={canExport}
+      canImport={canImport}
       permissionChecker={(key: string) => permissions.can(key)}
     />
   );

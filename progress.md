@@ -519,9 +519,36 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 - `npm run build` passed with Vite chunk-size warning.
 - `npm run test:simulation` passed; SQL simulations are ready for manual Supabase execution.
 
-### Environment Notes
+## Phase 6.2 — Export/Import Foundation (2026-06-03)
 
-- Browser verification/screenshots require an authenticated owner/admin Supabase session and were not captured in this container.
+### Completed
+
+- Created permission model with `export_crm_lead`, `import_crm_lead`, `export_crm_opportunity`, `import_crm_opportunity` keys (migration 0044, granted to owner/admin).
+- Implemented CSV export from list-view columns with RFC 4180 escaping.
+- Implemented CSV template download with required-field markers.
+- Implemented CSV import with safe parser, field validation (required, type, Select options), preview dialog, and create-only execution via generic document API.
+- Added Export CSV, Template, and Import CSV buttons to DynamicListPage (gated by permissions, metadata-driven DocTypes only).
+- Wired `canExport`/`canImport` through DynamicRouteRenderer.
+- Created `docs/PHASE_6_2_EXPORT_IMPORT_FOUNDATION.md` and `docs/ai-runs/2026-06-03_phase-6-2-export-import-foundation.md`.
+- Wrote 6 tests for CSV export escape, parse, template generation, and validation.
+
+### Verification
+
+| Command | Result |
+|---------|--------|
+| `npm run typecheck` | 0 errors |
+| `npm run lint` | 0 errors, warnings only |
+| `npm run test` | 56 pass, 0 fail |
+| `npm run build` | Success (Vite chunk-size warning only) |
+| `npm run test:simulation` | All 12 simulation files found |
+
+### Remaining Gaps
+
+- No export for transaction/GRN custom pages
+- Import is create-only (no update/upsert)
+- No batch-size limits on import
+- No duplicate detection during import
+- No import rollback if some rows fail
 
 ## Phase 6.1.1 — Local Visual QA + Theme Test Cleanup (2026-06-03)
 

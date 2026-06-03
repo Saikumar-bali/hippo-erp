@@ -49,6 +49,8 @@ export function MetadataPrototype({ tenantId, permissions }: Props) {
         tenantId={tenantId}
         canUpdate={permissions.can("update_product")}
         canDelete={permissions.can("delete_product")}
+        canExport={permissions.can(`export_${activeTab}`)}
+        canImport={permissions.can(`import_${activeTab}`)}
         permissionChecker={(key: string) => permissions.can(key)}
       />
     </div>
