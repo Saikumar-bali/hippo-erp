@@ -1,207 +1,192 @@
-# Phase 6.1 Tasks: Professional UX Foundation + Company Branding
+# Phase 6.2 Tasks: Export / Import Foundation
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: make Hippo ERP feel professional, simple, and easier to use than Frappe for daily users and developers. This phase focuses on UX consistency, company branding, and safe theme customization. Do not start Purchase Orders, Print Format Builder, Client Scripts, or arbitrary dynamic JavaScript yet.
+Goal: add safe, permission-controlled CSV export/import for metadata-driven DocTypes. Start with CRM Lead and Opportunity as the proof. Do not start Purchase Orders, Print Format Builder, Client Scripts, Report Builder, or Workflow yet.
 
 ## Current status
 
-Phase 6.0 and 6.0.1 are now verified:
+Phase 6.1 and 6.1.1 are accepted:
 
-- Access Control Manager foundation exists
-- Supabase Cloud RPC smoke tests passed
-- authenticated browser verification passed with documented multi-role limitation
-- full local tests are green
-- User Role Assignment page is reachable
+- Theme Studio foundation exists
+- company branding settings save/load path is implemented
+- app shell applies company theme safely
+- local visual QA passed
+- theme test stderr was cleaned up
+- `npm run test` is clean with 50/50 passing
 
 ## Why this phase exists
 
-A framework does not win only because it is flexible. It wins because it is easy and pleasant to use.
+ERP users need to move data in and out of the system:
 
-Current risk:
+- export lists for Excel review
+- export filtered records
+- download import templates
+- validate CSV before import
+- see row-level import errors
 
-- too many technical screens
-- too many raw internal names
-- inconsistent density and spacing
-- no company-specific branding
-- no simple theme control
-- no clear first-run UX
-- developer/admin flows still feel heavier than they should
-
-This phase should improve the experience before adding more business modules.
+This must be permission-controlled. Users should not export/import data unless their role allows it.
 
 ---
 
 ## A. Docs
 
-- [x] Add GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-0-1-access-control-verification.md`
-- [ ] Create `docs/PHASE_6_1_PROFESSIONAL_UX_BRANDING.md`
-- [ ] Create `docs/ai-runs/2026-06-03_phase-6-1-professional-ux-branding.md`
+- [x] GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-1-1-theme-qa.md`
+- [ ] Create `docs/PHASE_6_2_EXPORT_IMPORT_FOUNDATION.md`
+- [ ] Create `docs/ai-runs/2026-06-03_phase-6-2-export-import-foundation.md`
 - [ ] Update `progress.md`
 
 ---
 
-## B. UX audit first
+## B. Permission model
 
-Before coding, audit current app screens:
+Add/verify permission actions:
 
-- [ ] App shell/sidebar/topbar
-- [ ] Metadata Studio home
-- [ ] DocType Builder
-- [ ] Field Builder
-- [ ] List View Builder
-- [ ] Form Layout Builder
-- [ ] Access Control Manager
-- [ ] CRM Dashboard
-- [ ] CRM lists/forms
-- [ ] GRN pages
+- [ ] export
+- [ ] import
 
-Create a short UX audit section in the AI run report with:
+For generic metadata DocTypes, permission keys should follow:
 
-- biggest friction points
-- inconsistent spacing/density
-- confusing labels
-- places where raw technical details leak into normal flow
-- recommended fixes completed in this phase
+- [ ] `export_<doctype_key>`
+- [ ] `import_<doctype_key>`
 
----
+Seed or repair for CRM proof DocTypes:
 
-## C. Design tokens and density system
+- [ ] `export_crm_lead`
+- [ ] `import_crm_lead`
+- [ ] `export_crm_opportunity`
+- [ ] `import_crm_opportunity`
 
-Create or improve global design tokens in CSS.
+Grant to owner/admin by default.
 
-Required:
-
-- [ ] compact enterprise spacing scale
-- [ ] typography scale
-- [ ] card/table/form density variables
-- [ ] button/input heights
-- [ ] sidebar width variables
-- [ ] topbar height variable
-- [ ] status badge styles
-- [ ] empty-state pattern
-- [ ] page-header pattern
-
-Goal:
-
-- screens should not feel zoomed at 150%
-- tables should be compact but readable
-- forms should be easier to scan
-- builder screens should feel professional
+Update Access Control Manager if needed so export/import rights appear in the matrix.
 
 ---
 
-## D. Company Branding / Theme Studio foundation
+## C. Export foundation
 
-Create a company-scoped branding settings foundation.
+Create frontend utility:
 
-Migration if needed:
+- [ ] `src/lib/export-import/csv-export.ts`
 
-- [ ] `supabase/migrations/0043_company_branding_theme.sql`
+Required behavior:
 
-Support settings:
+- [ ] export current list records to CSV
+- [ ] use visible/list-view columns by default
+- [ ] preserve column labels
+- [ ] escape commas, quotes, and newlines correctly
+- [ ] include filtered/current result set, not hidden stale records
+- [ ] filename format: `<doctype_key>_<YYYY-MM-DD>.csv`
 
-- [ ] company logo URL
-- [ ] company favicon URL if practical
-- [ ] primary color
-- [ ] accent color
-- [ ] sidebar color
-- [ ] topbar color
-- [ ] compact/comfortable density mode
-- [ ] optional safe custom CSS variables only
+Add UI:
 
-Do not allow arbitrary JavaScript.
-
-For custom CSS, only allow safe company-scoped CSS variables or a strict allowlist. Do not add unrestricted script execution.
+- [ ] Export CSV button in `DynamicListPage` for metadata-driven DocTypes
+- [ ] button visible only when user has `export_<doctype_key>` permission
+- [ ] friendly disabled/hidden behavior when permission is missing
+- [ ] no export button for transaction pages unless explicitly implemented later
 
 ---
 
-## E. Theme Studio UI
+## D. Import template foundation
+
+Create frontend utility:
+
+- [ ] `src/lib/export-import/csv-template.ts`
+
+Required behavior:
+
+- [ ] generate CSV template from DocFields
+- [ ] include visible/editable fields
+- [ ] include required columns
+- [ ] optional second row with field hints if practical
+- [ ] filename format: `<doctype_key>_template.csv`
+
+Add UI:
+
+- [ ] Download Template button in DynamicListPage or import dialog
+- [ ] visible only with `import_<doctype_key>` permission
+
+---
+
+## E. Import preview foundation
 
 Create:
 
-- [ ] `src/components/theme/ThemeStudioPage.tsx`
-- [ ] `src/lib/theme-api.ts`
-- [ ] `src/lib/theme-types.ts`
+- [ ] `src/components/import/ImportPreviewDialog.tsx`
+- [ ] `src/lib/export-import/csv-parse.ts`
+- [ ] `src/lib/export-import/import-validate.ts`
 
-Required UX:
+Required behavior:
 
-- [ ] select company
-- [ ] upload/paste logo URL
-- [ ] choose primary color
-- [ ] choose accent color
-- [ ] choose sidebar/topbar colors
-- [ ] choose density: Compact / Comfortable
-- [ ] preview theme live
-- [ ] save theme settings
-- [ ] reset to default
-- [ ] show warning that JavaScript is not allowed
+- [ ] upload/paste CSV file
+- [ ] parse CSV safely
+- [ ] map headers to DocFields
+- [ ] validate required fields
+- [ ] validate field types for Data/Text/Int/Float/Check/Select/Date/Datetime
+- [ ] validate Select values against options
+- [ ] show preview rows
+- [ ] show row-level errors
+- [ ] do not write records until user confirms
 
----
+Implementation scope:
 
-## F. Apply company theme safely
-
-Update app shell/theme provider:
-
-- [ ] load selected company branding settings
-- [ ] apply CSS variables to app root
-- [ ] apply logo in sidebar/header if configured
-- [ ] apply density class
-- [ ] fallback safely if branding missing
-- [ ] do not break login/auth pages
+- [ ] preview/validation first
+- [ ] actual insert/update can be limited to create-only generic_json records if safe
+- [ ] if write is deferred, document clearly
 
 ---
 
-## G. Metadata Studio and Access Control UX cleanup
+## F. Import execution for generic_json DocTypes
 
-Improve professional usability:
+If safe within this phase, implement create-only import:
 
-- [ ] clearer section titles
-- [ ] fewer raw keys in primary labels
-- [ ] helper text uses business language first, technical detail second
-- [ ] next-step actions are visually obvious
-- [ ] Access Control Manager explains effective rights and multi-role aggregation simply
-- [ ] Check / Repair explains when to use it
+- [ ] use existing generic document API
+- [ ] create one record per valid row
+- [ ] stop or skip invalid rows with clear result
+- [ ] show success/failure summary
 
----
+Rules:
 
-## H. CRM and GRN UI polish pass
-
-Small but visible polish only:
-
-- [ ] CRM Dashboard spacing/cards consistent with design tokens
-- [ ] CRM list empty states improved
-- [ ] GRN pages use consistent page header/card/table styles
-- [ ] buttons and badges consistent
-
-Do not add new CRM features.
-Do not add new inventory features.
+- [ ] enforce `import_<doctype_key>` permission before import UI/write
+- [ ] do not import into GRN or physical transaction pages
+- [ ] do not bypass generic document validation
 
 ---
 
-## I. Browser verification
+## G. CRM verification
 
-Verify in browser:
+Browser verify with CRM Lead:
 
-- [ ] Theme Studio opens
-- [ ] changing primary/accent/sidebar colors updates preview
-- [ ] saving theme persists
-- [ ] app shell uses saved branding
-- [ ] density Compact makes screens visibly tighter
-- [ ] reset to default works
-- [ ] Metadata Studio still works
-- [ ] Access Control Manager still works
-- [ ] CRM Dashboard still works
-- [ ] no permission errors for owner/admin
+- [ ] export Lead list to CSV
+- [ ] CSV includes visible columns and labels
+- [ ] download Lead template
+- [ ] import preview catches missing required `lead_name`
+- [ ] import preview validates Select values for `source` and `status`
+- [ ] if create import is implemented, import one valid Lead row
 
-Screenshots:
+Browser verify with CRM Opportunity:
 
-- [ ] commit screenshots if practical under `docs/ai-runs/screenshots/phase-6-1-ux-branding/`
-- [ ] if local-only, document exact local paths
+- [ ] export Opportunity list to CSV
+- [ ] CSV includes visible columns and labels
+- [ ] download Opportunity template
+- [ ] import preview validates numeric/date fields
 
 ---
 
-## J. Commands
+## H. Tests
+
+Add/update tests:
+
+- [ ] CSV export escaping
+- [ ] CSV parse with quotes/newlines
+- [ ] template generation from DocFields
+- [ ] import validation required field
+- [ ] import validation Select field
+- [ ] permission visibility for export/import buttons if practical
+
+---
+
+## I. Commands
 
 Run and document:
 
@@ -215,20 +200,20 @@ npm run test:simulation
 
 ---
 
-## K. Acceptance
+## J. Acceptance
 
-Phase 6.1 is complete only when:
+Phase 6.2 is complete only when:
 
-- [ ] UX audit is documented
-- [ ] global design tokens/density are improved
-- [ ] Theme Studio foundation exists
-- [ ] company branding settings save and load
-- [ ] app shell applies company theme safely
-- [ ] compact/comfortable density works
-- [ ] Metadata Studio, Access Control, CRM, and GRN still work
+- [ ] export/import permission keys are supported
+- [ ] export CSV works for CRM Lead and Opportunity
+- [ ] template download works
+- [ ] import preview validates rows and shows clear errors
+- [ ] create-only import works or is explicitly deferred with reason
+- [ ] export/import buttons respect permissions
 - [ ] browser verification is documented
+- [ ] tests cover CSV utilities and validation
 - [ ] AI run report exists
 
-After Phase 6.1, recommended next phase:
+After Phase 6.2, recommended next phase:
 
-- Phase 6.2: Export / Import Foundation
+- Phase 6.3: Print Format Foundation
