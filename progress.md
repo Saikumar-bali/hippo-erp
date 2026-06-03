@@ -544,7 +544,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 
 ### Browser Verification
 
-Not yet performed — requires an authenticated owner/admin Supabase session. See design doc for manual verification checklist.
+Migration 0044 applied to Supabase Cloud. Playwright verification against `hippoclouds-com` tenant passed all 8 checks: CRM Lead and Opportunity export/template/import buttons visible, import validation catches missing required fields and bad Select values.
 
 ### Remaining Gaps
 

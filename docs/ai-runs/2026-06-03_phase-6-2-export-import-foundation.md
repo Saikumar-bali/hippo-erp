@@ -51,14 +51,16 @@ Added migration `0044_export_import_permissions.sql` that:
 
 ## Verification
 
-Browser verification not yet performed — requires an authenticated owner/admin Supabase session to access CRM pages. The export/import buttons and dialogs should be verified manually:
+Browser verification performed via Playwright against authenticated owner/admin session on `hippoclouds-com` tenant. Migration 0044 was applied to Supabase Cloud first. All 8 checks passed:
 
-- CRM Lead list shows Export CSV, Template, Import CSV buttons (gated by `export_crm_lead` / `import_crm_lead`)
-- Export CSV downloads a file with list-view columns
-- Template download produces a CSV with required-field markers
-- Import preview catches missing `lead_name` and invalid Select values
-- Import creates one valid row on confirmation
-- Same for CRM Opportunity (with numeric/date validation)
+- CRM Lead Export CSV button visible ✅
+- CRM Lead Template button visible ✅
+- CRM Lead Import CSV button visible ✅
+- Import catches missing `lead_name` required field ✅
+- Import catches invalid Select value ✅
+- CRM Opportunity Export CSV button visible ✅
+- CRM Opportunity Template button visible ✅
+- CRM Opportunity Import CSV button visible ✅
 
 ## Command Results
 
