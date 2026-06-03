@@ -1,118 +1,144 @@
-# Phase 6.0 Tasks: Access Control Manager Foundation
+# Phase 6.0.1 Tasks: Access Control Verification + Stabilization
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: build the company-level access control foundation before adding more ERP transaction modules.
+Goal: correct and verify Phase 6 access control before moving to any new platform feature.
 
-## Why this phase
+## Current decision
 
-Phase 5.1 polished CRM. The next gap is platform security and administration. A company can have many roles and many users, and each role needs clear rights for each DocType, page, report, print, import, and export action.
+Phase 6.0 implementation is mostly done, but verification is incomplete.
 
-Do not start Purchase Orders yet.
+Do not start:
+
+- Company Branding / Theme Studio
+- Purchase Orders
+- Print Format Builder
+- Client Scripts
+- Report Builder
+
+## Why this phase exists
+
+The last commits added useful Access Control Manager code, but there are still problems:
+
+- Phase 6 was marked complete while authenticated browser verification was blocked.
+- The report says login did not leave `/login` during Playwright verification.
+- `npm run test` still has 5 failures in auth/dashboard/permission-gate/app areas.
+- `UserRoleAssignmentPage` exists but is not yet wired as a normal user-facing route.
+- Migration 0042 had at least one compatibility issue fixed later, so the full migration needs a clean smoke test.
+- User terminal showed `HEAD -> main, origin/phase-2.5-metadata-engine`, so branch state must be verified before more pushes.
 
 ---
 
-## A. Docs
+## A. Review docs
 
-- [x] Create `docs/REMAINING_FRAPPE_GAP_ROADMAP.md`
-- [ ] Create `docs/PHASE_6_0_ACCESS_CONTROL_MANAGER.md`
-- [ ] Create `docs/ai-runs/2026-06-02_phase-6-0-access-control-manager.md`
+- [x] Add GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-access-control-last-commits.md`
+- [ ] Create `docs/PHASE_6_0_1_ACCESS_CONTROL_VERIFICATION.md`
+- [ ] Create `docs/ai-runs/2026-06-03_phase-6-0-1-access-control-verification.md`
 - [ ] Update `progress.md`
 
 ---
 
-## B. Inspect existing schema
+## B. Branch safety check
 
-Before coding, inspect current tables and migrations for:
+CLI-AI must first verify branch state:
 
-- [ ] users
-- [ ] roles
-- [ ] permission catalog
-- [ ] company membership
-- [ ] role grants
-- [ ] company or tenant id usage
-
-Document actual table names in the AI run report. Do not create duplicate tables if existing tables can be extended safely.
-
----
-
-## C. Data model
-
-Create migration if needed:
-
-- [ ] `supabase/migrations/0042_access_control_manager.sql`
-
-Support:
-
-- [ ] company roles
-- [ ] user role assignment per company
-- [ ] DocType rights matrix
-- [ ] page/menu/report rights
-- [ ] rights for read, create, update, delete, submit, cancel, print, export, import, report
-- [ ] owner/admin default setup
-
-Keep compatibility with current permission checks.
-
----
-
-## D. UI
-
-Create:
-
-- [ ] `src/components/permissions/AccessControlManagerPage.tsx`
-- [ ] `src/components/permissions/UserRoleAssignmentPage.tsx`
-- [ ] `src/components/permissions/PermissionMatrix.tsx`
-
-Required UX:
-
-- [ ] select company
-- [ ] select or create role
-- [ ] select module or DocType
-- [ ] edit matrix of rights
-- [ ] save role changes
-- [ ] assign users to roles
-- [ ] show effective rights for selected user
-- [ ] show clear diagnostics for missing access
-
----
-
-## E. Metadata Studio integration
-
-Update:
-
-- [ ] Access Builder links to Access Control Manager
-- [ ] Check / Repair explains where to fix missing grants
-- [ ] Metadata Studio home exposes access management clearly
-
----
-
-## F. Better error messages
-
-Improve UI errors so missing access tells the user what is missing and where to fix it.
-
-Example:
-
-```text
-Access required: view_crm_lead
-Open Access Control Manager and grant this right to the user role.
+```bash
+git branch --show-current
+git status
+git log -1 --oneline
+git remote -v
 ```
 
+Required:
+
+- [ ] Work must be committed and pushed to `phase-2.5-metadata-engine`.
+- [ ] If local branch is `main` while tracking `origin/phase-2.5-metadata-engine`, document this clearly and avoid accidental pushes to wrong branch.
+
 ---
 
-## G. Verification
+## C. Supabase Cloud migration smoke test
 
-Browser verify:
+Verify migration 0042 on Supabase Cloud.
 
-- [ ] create a test role
+Smoke test these RPCs manually or with a script:
+
+- [ ] `public.normalize_access_action_key`
+- [ ] `public.default_access_permission_key`
+- [ ] `public.get_access_control_targets`
+- [ ] `public.get_access_control_matrix`
+- [ ] `public.get_company_user_role_assignments`
+- [ ] `public.set_company_user_roles`
+- [ ] `public.save_access_control_matrix`
+- [ ] `public.get_company_users`
+- [ ] `public.current_user_has_doctype_permission`
+
+Document exact PASS/FAIL results.
+
+---
+
+## D. Fix authenticated browser verification
+
+Fix or clearly diagnose why Playwright login does not leave `/login`.
+
+Tasks:
+
+- [ ] Verify test credentials / seeded auth user exist.
+- [ ] Verify login form selectors are correct.
+- [ ] Verify Supabase env values are loaded in local Vite.
+- [ ] Capture login error text if login fails.
+- [ ] Update `scripts/verify_phase6_access_control.mjs` to fail with useful diagnostics.
+
+Then run browser flow:
+
+- [ ] open Access Control Manager
+- [ ] select company
+- [ ] create or select test role
 - [ ] grant CRM Lead read/create/update
-- [ ] assign role to a user or simulate effective rights
+- [ ] assign role to test user or document why user switch is not practical
 - [ ] show effective rights
-- [ ] remove one right and confirm diagnostics explain the missing right
-- [ ] restore the right
+- [ ] remove one right and verify missing-access diagnostic
+- [ ] restore right
 
 ---
 
-## H. Commands
+## E. Wire user role assignment page
+
+Make the multi-role assignment page reachable in normal app flow.
+
+Tasks:
+
+- [ ] Add route if missing
+- [ ] Add sidebar/menu item or Access Control Manager tab/link
+- [ ] Ensure legacy Users/Roles flow still works
+- [ ] Document final navigation path
+
+---
+
+## F. Test failure triage
+
+Run:
+
+```bash
+npm run test
+```
+
+Triage the 5 failing tests:
+
+- [ ] dashboard-kpi
+- [ ] auth-routes
+- [ ] auth-state
+- [ ] permission-gates
+- [ ] app
+
+For each:
+
+- [ ] classify as caused by Phase 6 or pre-existing
+- [ ] fix if Phase 6 caused it
+- [ ] document exact reason if left failing
+
+---
+
+## G. Commands
 
 Run and document:
 
@@ -126,18 +152,15 @@ npm run test:simulation
 
 ---
 
-## I. Acceptance
+## H. Acceptance
 
-Phase 6.0 is complete only when:
+Phase 6.0.1 is complete only when:
 
-- [ ] access control architecture doc exists
-- [ ] current schema is documented
-- [ ] manager UI exists
-- [ ] user-role assignment UI exists or limitation documented
-- [ ] matrix supports core right types
-- [ ] Metadata Studio links are updated
-- [ ] error messages are actionable
-- [ ] browser verification is documented
+- [ ] Branch state is clear and safe
+- [ ] Migration 0042 RPC smoke test passes
+- [ ] Browser verification either passes or exact blocking issue is fixed/documented with evidence
+- [ ] User role assignment page is reachable
+- [ ] Test failures are triaged and Phase-6-caused failures are fixed
 - [ ] AI run report exists
 
-Next recommended phase after this: Phase 6.1 Company Branding / Theme Studio.
+After this, choose Phase 6.1 Company Branding / Theme Studio only if access control verification is clean.
