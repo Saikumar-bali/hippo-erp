@@ -55,7 +55,7 @@ import { PermissionGate } from "../../src/components/PermissionGate";
 import { AccessDenied } from "../../src/components/AccessDenied";
 
 describe("permission gates", () => {
-  it("shows access denied and disables restricted modules", () => {
+  it("hides restricted modules and falls back to the home state", () => {
     render(
       <MemoryRouter>
         <AuthProvider>
@@ -64,9 +64,8 @@ describe("permission gates", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Access denied/i)).toBeTruthy();
-    const companyProfileButton = screen.getByRole("button", { name: "Company profile" }) as HTMLButtonElement;
-    expect(companyProfileButton.disabled).toBe(true);
+    expect(screen.getByText(/Select a workspace item from the sidebar to get started/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Company profile" })).toBeNull();
   });
 
   it("renders children when allowed", () => {
@@ -116,4 +115,3 @@ describe("AccessDenied", () => {
     expect(screen.getByText("Custom denied message.")).toBeTruthy();
   });
 });
-

@@ -504,7 +504,7 @@ begin
   loop
     insert into app.company_role_assignments (role_id, user_id, is_active)
     values (v_role_id, p_user_id, true)
-    on conflict (role_id, user_id) do update
+    on conflict on constraint company_role_assignments_pkey do update
     set is_active = true,
         updated_at = now();
   end loop;
@@ -692,7 +692,7 @@ begin
         v_sort_order,
         true
       )
-      on conflict (permission_key) do update
+      on conflict on constraint permissions_pkey do update
       set
         module_key = excluded.module_key,
         module_label = excluded.module_label,
@@ -758,7 +758,7 @@ begin
         v_sort_order,
         true
       )
-      on conflict (permission_key) do update
+      on conflict on constraint permissions_pkey do update
       set
         module_key = excluded.module_key,
         module_label = excluded.module_label,
@@ -784,7 +784,7 @@ begin
     loop
       insert into app.company_role_permissions (role_id, permission_key, is_granted)
       values (v_owner_admin_role_id, v_permission_key, true)
-      on conflict (role_id, permission_key) do update
+      on conflict on constraint company_role_permissions_pkey do update
       set is_granted = true,
           updated_at = now();
     end loop;
@@ -792,7 +792,7 @@ begin
     if v_is_granted then
       insert into app.company_role_permissions (role_id, permission_key, is_granted)
       values (p_role_id, v_permission_key, true)
-      on conflict (role_id, permission_key) do update
+      on conflict on constraint company_role_permissions_pkey do update
       set is_granted = true,
           updated_at = now();
     else

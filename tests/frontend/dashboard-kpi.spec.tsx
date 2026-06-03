@@ -17,8 +17,8 @@ vi.mock("../../src/lib/inventory-api", () => ({
 import { ModuleView } from "../../src/components/ModuleView";
 
 describe("dashboard data modules", () => {
-  it("renders valuation data block", async () => {
+  it("renders the planned-module placeholder for inventory valuation", async () => {
     render(<ModuleView tenantId="t1" module="Inventory valuation" />);
-    expect(await screen.findByText(/Inventory valuation Data/i)).toBeTruthy();
+    expect(await screen.findByText(/planned for a later phase/i)).toBeTruthy();
   });
 });

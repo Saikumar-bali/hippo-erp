@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ShieldUser, Users } from "lucide-react";
+import { ShieldCheck, ShieldUser, Users } from "lucide-react";
 import { AccessDenied } from "./AccessDenied";
 import { RolesPermissionsView } from "./RolesPermissionsView";
 import { UserRoleAssignment } from "./UserRoleAssignment";
+import { UserRoleAssignmentPage } from "./permissions/UserRoleAssignmentPage";
 
-type TabKey = "roles" | "users";
+type TabKey = "roles" | "users" | "access_assignments";
 
 type Props = {
   canViewUsers?: boolean;
@@ -15,6 +16,7 @@ type Props = {
   canCreateRole?: boolean;
   canUpdateRole?: boolean;
   canDeleteRole?: boolean;
+  initialTab?: TabKey;
 };
 
 export function UsersRolesView({
@@ -25,11 +27,13 @@ export function UsersRolesView({
   canDeactivateUser = true,
   canCreateRole = true,
   canUpdateRole = true,
-  canDeleteRole = true
+  canDeleteRole = true,
+  initialTab = canViewRoles ? "roles" : "users"
 }: Props) {
-  const [tab, setTab] = useState<TabKey>(canViewRoles ? "roles" : "users");
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const hasRolesTab = canViewRoles;
   const hasUsersTab = canViewUsers;
+  const hasAccessAssignmentsTab = canViewUsers;
 
   useEffect(() => {
     if (tab === "roles" && !hasRolesTab && hasUsersTab) {
@@ -38,7 +42,10 @@ export function UsersRolesView({
     if (tab === "users" && !hasUsersTab && hasRolesTab) {
       setTab("roles");
     }
-  }, [hasRolesTab, hasUsersTab, tab]);
+    if (tab === "access_assignments" && !hasAccessAssignmentsTab) {
+      setTab(hasRolesTab ? "roles" : "users");
+    }
+  }, [hasAccessAssignmentsTab, hasRolesTab, hasUsersTab, tab]);
 
   if (!hasRolesTab && !hasUsersTab) {
     return <AccessDenied title="Users and roles" requiredPermissions={["view_users", "view_roles"]} />;
@@ -57,12 +64,19 @@ export function UsersRolesView({
             <Users size={14} /> Users
           </button>
         )}
+        {hasAccessAssignmentsTab && (
+          <button type="button" className={`users-roles-tab ${tab === "access_assignments" ? "active" : ""}`} onClick={() => setTab("access_assignments")} role="tab" aria-selected={tab === "access_assignments"}>
+            <ShieldCheck size={14} /> Access Assignments
+          </button>
+        )}
       </div>
       <div className="users-roles-content">
         {tab === "roles" ? (
           <RolesPermissionsView canViewRoles={canViewRoles} canCreateRole={canCreateRole} canUpdateRole={canUpdateRole} canDeleteRole={canDeleteRole} />
-        ) : (
+        ) : tab === "users" ? (
           <UserRoleAssignment canViewUsers={canViewUsers} canAssignRole={canAssignRole} canInviteUser={canInviteUser} canDeactivateUser={canDeactivateUser} />
+        ) : (
+          <UserRoleAssignmentPage canViewUsers={canViewUsers} canAssignRole={canAssignRole} canInviteUser={canInviteUser} canDeactivateUser={canDeactivateUser} />
         )}
       </div>
     </div>

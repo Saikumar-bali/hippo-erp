@@ -10,6 +10,7 @@ import {
 import { moveItem } from "./builder-utils";
 
 type LayoutSection = {
+  id: string; // Stable ID for React keys
   section: string;
   columns: 1 | 2;
   fields: string[];
@@ -23,6 +24,7 @@ type FieldOption = {
 
 function makeSection(index: number): LayoutSection {
   return {
+    id: crypto.randomUUID(),
     section: index === 0 ? "Basic Info" : `Section ${index + 1}`,
     columns: 1,
     fields: [],
@@ -39,6 +41,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
   const [selectedDocType, setSelectedDocType] = useState("");
   const [availableFields, setAvailableFields] = useState<FieldOption[]>([]);
   const [sections, setSections] = useState<LayoutSection[]>([makeSection(0)]);
+  const [fieldSearch, setFieldSearch] = useState("");
   const [existingId, setExistingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,6 +69,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
 
     const nextSections = Array.isArray(layout?.sections_json) && layout.sections_json.length > 0
       ? (layout.sections_json as Array<Record<string, unknown>>).map((section, index) => ({
+          id: String(section.id || crypto.randomUUID()),
           section: String(section.section ?? `Section ${index + 1}`),
           columns: Number(section.columns ?? 1) === 2 ? 2 : 1,
           fields: Array.isArray(section.fields) ? section.fields.map((field) => String(field)) : [],
@@ -109,7 +113,10 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
   }
 
   function unassignedFieldsFor(index: number) {
-    return availableFields.filter((field) => !assignedFieldnames.has(field.fieldname) || sections[index]?.fields.includes(field.fieldname));
+    const query = fieldSearch.toLowerCase().trim();
+    return availableFields
+      .filter((field) => !assignedFieldnames.has(field.fieldname) || sections[index]?.fields.includes(field.fieldname))
+      .filter((field) => !query || field.label.toLowerCase().includes(query) || field.fieldname.toLowerCase().includes(query));
   }
 
   async function handleSave() {
@@ -189,7 +196,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
         <>
           <div className="studio-stack">
             {sections.map((section, index) => (
-              <div key={`${section.section}-${index}`} className="studio-panel">
+              <div key={section.id} className="studio-panel">
                 <div className="studio-header">
                   <div className="studio-grid" style={{ gridTemplateColumns: "minmax(180px, 1.5fr) 140px", flex: 1 }}>
                     <label className="studio-field">
@@ -215,10 +222,19 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
 
                 <div className="studio-grid studio-grid--two">
                   <div className="studio-panel studio-panel--muted">
-                    <strong>Assign Fields</strong>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <strong>Assign Fields</strong>
+                      <input 
+                        className="studio-control"
+                        style={{ fontSize: "11px", padding: "2px 6px", height: "24px", width: "140px" }}
+                        placeholder="Search fields..."
+                        value={fieldSearch}
+                        onChange={(e) => setFieldSearch(e.target.value)}
+                      />
+                    </div>
                     <div className="studio-item-list">
                       {unassignedFieldsFor(index).map((field) => (
-                        <label key={`${section.section}-${field.fieldname}`} className="studio-check">
+                        <label key={`${section.id}-${field.fieldname}`} className="studio-check">
                           <input
                             type="checkbox"
                             checked={section.fields.includes(field.fieldname)}
@@ -232,6 +248,11 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
                           <code style={{ marginLeft: "auto" }}>{field.fieldtype}</code>
                         </label>
                       ))}
+                      {unassignedFieldsFor(index).length === 0 && (
+                        <div className="studio-hint" style={{ textAlign: "center", padding: "10px" }}>
+                          {fieldSearch ? "No fields match your search." : "All fields assigned."}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -244,7 +265,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
                         section.fields.map((fieldname, fieldIndex) => {
                           const meta = availableFields.find((field) => field.fieldname === fieldname);
                           return (
-                            <div key={`${fieldname}-${fieldIndex}`} className="studio-item">
+                            <div key={`${section.id}-assigned-${fieldname}`} className="studio-item">
                               <div>
                                 <div>{meta?.label ?? fieldname}</div>
                                 <code>{fieldname}</code>
@@ -269,13 +290,13 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
             <div className="studio-preview-head">Preview Form</div>
             <div className="studio-stack" style={{ padding: "12px" }}>
               {sections.map((section) => (
-                <div key={`preview-${section.section}`} className="studio-panel studio-panel--muted">
+                <div key={`preview-${section.id}`} className="studio-panel studio-panel--muted">
                   <div style={{ marginBottom: "10px", fontWeight: 700 }}>{section.section}</div>
                   <div style={{ display: "grid", gridTemplateColumns: section.columns === 2 ? "repeat(2, minmax(0, 1fr))" : "1fr", gap: "10px" }}>
                     {section.fields.map((fieldname) => {
                       const meta = availableFields.find((field) => field.fieldname === fieldname);
                       return (
-                        <label key={`preview-${fieldname}`} className="studio-field">
+                        <label key={`preview-${section.id}-${fieldname}`} className="studio-field">
                           <span>{meta?.label ?? fieldname}</span>
                           <input value="" readOnly placeholder={fieldname} />
                         </label>

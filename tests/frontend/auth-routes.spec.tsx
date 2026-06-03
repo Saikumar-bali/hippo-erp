@@ -54,6 +54,6 @@ describe("auth routes redirect wiring", () => {
   it("callback waits for session fetch then redirects", async () => {
     render(<MemoryRouter><AuthCallbackRoute /></MemoryRouter>);
     await waitFor(() => expect(getSession).toHaveBeenCalled());
-    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/", { replace: true }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith({ pathname: "/", search: "" }, { replace: true }));
   });
 });

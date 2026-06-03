@@ -9,6 +9,7 @@ export function LoginRoute() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,9 +21,12 @@ export function LoginRoute() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return setError(error.message);
-    navigate("/");
+    if (error) {
+      setSubmitting(false);
+      return setError(error.message);
+    }
   };
 
   return (
@@ -90,8 +94,8 @@ export function LoginRoute() {
 
           {error && <p className="form-alert" role="alert">{error}</p>}
 
-          <button className="primary-action" type="submit">
-            Login <ArrowRight size={18} />
+          <button className="primary-action" type="submit" disabled={submitting}>
+            {submitting ? "Signing in..." : "Login"} <ArrowRight size={18} />
           </button>
         </form>
 

@@ -12,12 +12,27 @@ const roleName = `Phase6 CRM Access ${Date.now()}`;
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
+const pageErrors = [];
+const consoleMessages = [];
+
+page.on("pageerror", (error) => {
+  pageErrors.push(String(error));
+});
+
+page.on("console", (message) => {
+  consoleMessages.push(`[${message.type()}] ${message.text()}`);
+});
 
 async function snap(name) {
   await page.screenshot({ path: path.join(outDir, name), fullPage: true });
 }
 
 async function waitForAppReady() {
+  await page.goto(`${base}/login`, { waitUntil: "networkidle", timeout: 10_000 }).catch(() => null);
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  if (/Missing Supabase environment variables/i.test(bodyText)) {
+    throw new Error(`Vite app loaded without Supabase env values.\nBODY:\n${bodyText}`);
+  }
   let lastError = null;
   for (let attempt = 1; attempt <= 20; attempt += 1) {
     try {
@@ -36,10 +51,13 @@ async function waitForAppReady() {
     await page.getByLabel(/email/i).first().fill(email);
     await page.getByLabel(/password/i).first().fill(password);
     await page.getByRole("button", { name: /login|sign in/i }).first().click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState("networkidle").catch(() => null);
+    const loginAlert = await page.locator('[role="alert"]').first().textContent().catch(() => null);
     if (/\/login$/i.test(page.url())) {
       const body = await page.locator("body").innerText().catch(() => "");
-      throw new Error(`Login did not leave the login page.\nURL: ${page.url()}\nBODY:\n${body}`);
+      await snap("login-failed.png");
+      throw new Error(`Login did not leave the login page.\nURL: ${page.url()}\nALERT: ${loginAlert ?? "none"}\nPAGE_ERRORS:\n${pageErrors.join("\n") || "none"}\nCONSOLE:\n${consoleMessages.slice(-20).join("\n") || "none"}\nBODY:\n${body}`);
     }
   }
   await page.waitForLoadState("networkidle");
@@ -118,9 +136,8 @@ async function saveRoleChanges(screenshotName) {
 }
 
 async function assignRoleToUser() {
-  await page.goto(`${base}/users_roles`, { waitUntil: "networkidle" });
-  await page.getByRole("tab", { name: /Users/i }).click();
-  await page.getByText(/Company users/i).waitFor({ timeout: 30_000 });
+  await page.goto(`${base}/users_and_roles_access_assignments`, { waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: /User Role Assignment/i }).waitFor({ timeout: 30_000 });
 
   const userButtons = page.locator(".users-items .user-item");
   const userCount = await userButtons.count();
@@ -132,9 +149,11 @@ async function assignRoleToUser() {
   const userLabel = ((await userButton.innerText()).split("\n").find(Boolean) ?? "").trim();
   await userButton.click();
 
-  const roleSelect = page.getByLabel(/^Company role$/i);
-  await roleSelect.selectOption({ label: roleName });
-  await page.getByRole("button", { name: /Save Assignment/i }).click();
+  const roleToggle = page.getByText(roleName, { exact: false }).locator("..").locator('input[type="checkbox"]').first();
+  if (!await roleToggle.isChecked()) {
+    await roleToggle.check();
+  }
+  await page.getByRole("button", { name: /Save Assignments/i }).click();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1000);
   await snap("03-users-role-assigned.png");

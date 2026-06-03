@@ -10,6 +10,10 @@ vi.mock("../../src/lib/supabase", () => ({
   supabase: { auth: { signInWithPassword } }
 }));
 
+vi.mock("../../src/context/AuthContext", () => ({
+  useAuth: () => ({ session: null })
+}));
+
 import { LoginRoute } from "../../src/routes/LoginRoute";
 
 describe("auth state", () => {

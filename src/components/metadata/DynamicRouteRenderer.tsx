@@ -231,6 +231,22 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
       );
     }
 
+    if (itemKey === "users_and_roles_access_assignments") {
+      return (
+        <UsersRolesView
+          canViewUsers={permissions.can("view_users")}
+          canViewRoles={permissions.can("view_roles")}
+          canAssignRole={permissions.can("assign_role")}
+          canInviteUser={permissions.can("invite_user")}
+          canDeactivateUser={permissions.can("deactivate_user")}
+          canCreateRole={permissions.can("create_role")}
+          canUpdateRole={permissions.can("update_role")}
+          canDeleteRole={permissions.can("delete_role")}
+          initialTab="access_assignments"
+        />
+      );
+    }
+
     if (itemKey.startsWith("metadata_studio") || target.startsWith("metadata_studio")) {
       return (
         <MetadataStudioRouter

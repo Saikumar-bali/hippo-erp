@@ -36,20 +36,24 @@ export default function App() {
       if (found) {
         console.log("[app] found matching item in tree:", found.item_key);
         setSelectedItem(found);
-      } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard") {
+      } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard" || pageKey === "users_and_roles_access_assignments") {
         console.log("[app] creating virtual item for:", pageKey);
         // 2. Virtual item for metadata studio diagnostic sub-pages or CRM dashboard
         setSelectedItem({
           id: `virtual-${pageKey}`,
-          workspace_key: pageKey === "crm_dashboard" ? "crm" : "metadata_studio",
+          workspace_key: pageKey === "crm_dashboard" ? "crm" : pageKey === "users_and_roles_access_assignments" ? "company_admin" : "metadata_studio",
           item_key: pageKey,
-          label: pageKey === "crm_dashboard" ? "CRM Dashboard" : pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+          label: pageKey === "crm_dashboard"
+            ? "CRM Dashboard"
+            : pageKey === "users_and_roles_access_assignments"
+              ? "Users and Roles Access Assignments"
+              : pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
           item_type: "page",
           target: pageKey,
-          icon: pageKey === "crm_dashboard" ? "LayoutDashboard" : "Activity",
+          icon: pageKey === "crm_dashboard" ? "LayoutDashboard" : pageKey === "users_and_roles_access_assignments" ? "ShieldCheck" : "Activity",
           sort_order: 0,
           is_active: true,
-          required_permission_key: pageKey === "crm_dashboard" ? "view_crm_lead" : "manage_metadata",
+          required_permission_key: pageKey === "crm_dashboard" ? "view_crm_lead" : pageKey === "users_and_roles_access_assignments" ? "view_users" : "manage_metadata",
         });
       } else {
         console.log("[app] pageKey did not match any item or virtual pattern:", pageKey);

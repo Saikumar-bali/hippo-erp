@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, RotateCcw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { AccessDenied } from "../AccessDenied";
 import { PermissionMatrix } from "./PermissionMatrix";
@@ -26,6 +27,7 @@ export function AccessControlManagerPage({
   canUpdateRole = true,
   initialTargetKey = "",
 }: Props) {
+  const navigate = useNavigate();
   const { tenants, selectedTenantId, setSelectedTenantId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -236,6 +238,9 @@ export function AccessControlManagerPage({
           </label>
           <button className="studio-button studio-button--ghost" type="button" onClick={() => void load()} disabled={loading || saving}>
             <RotateCcw size={16} /> Refresh
+          </button>
+          <button className="studio-button studio-button--ghost" type="button" onClick={() => navigate("/users_and_roles_access_assignments")}>
+            Manage User Assignments
           </button>
         </div>
       </div>
