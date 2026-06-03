@@ -796,9 +796,9 @@ begin
       set is_granted = true,
           updated_at = now();
     else
-      delete from app.company_role_permissions
-      where role_id = p_role_id
-        and permission_key = v_permission_key;
+      delete from app.company_role_permissions crp
+      where crp.role_id = p_role_id
+        and crp.permission_key = v_permission_key;
     end if;
 
     permission_key := v_permission_key;
