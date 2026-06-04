@@ -253,9 +253,9 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
               <div className="studio-header" style={{ alignItems: "center" }}>
                 <strong>Field {index + 1}</strong>
                 <div className="studio-toolbar">
-                  <button className="studio-button studio-button--ghost" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, -1)))}>Up</button>
-                  <button className="studio-button studio-button--ghost" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, 1)))}>Down</button>
-                  <button className="studio-button studio-button--danger" type="button" onClick={() => removeField(index)}>Remove</button>
+                  <button className="studio-button" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, -1)))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Up</button>
+                  <button className="studio-button studio-button--ghost" type="button" onClick={() => setFields((prev) => normalizeSortOrder(moveItem(prev, index, 1)))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Down</button>
+                  <button className="studio-button studio-button--danger" type="button" onClick={() => removeField(index)} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#e03131", border: "1px solid #ffc9c9", borderRadius: "6px", cursor: "pointer" }}>Remove</button>
                 </div>
               </div>
 
@@ -348,9 +348,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
         </span>
         <div className="studio-toolbar">
           {selectedDocType && (
-            <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_list_view_builder:${selectedDocType}`)}>
-              Next: List View
-            </button>
+            <button className="studio-button" type="button" onClick={() => onNavigate?.(`metadata_studio_list_view_builder:${selectedDocType}`)} style={{ padding: "8px 16px", fontSize: "14px", fontWeight: "600", backgroundColor: "#006666", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer" }}>Next: List View</button>
           )}
           <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
             {saving ? "Saving..." : "Save Fields"}

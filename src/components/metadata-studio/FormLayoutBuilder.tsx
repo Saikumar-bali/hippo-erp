@@ -69,11 +69,11 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
 
     const nextSections = Array.isArray(layout?.sections_json) && layout.sections_json.length > 0
       ? (layout.sections_json as Array<Record<string, unknown>>).map((section, index) => ({
-          id: String(section.id || crypto.randomUUID()),
-          section: String(section.section ?? `Section ${index + 1}`),
-          columns: Number(section.columns ?? 1) === 2 ? 2 : 1,
-          fields: Array.isArray(section.fields) ? section.fields.map((field) => String(field)) : [],
-        }) as LayoutSection)
+        id: String(section.id || crypto.randomUUID()),
+        section: String(section.section ?? `Section ${index + 1}`),
+        columns: Number(section.columns ?? 1) === 2 ? 2 : 1,
+        fields: Array.isArray(section.fields) ? section.fields.map((field) => String(field)) : [],
+      }) as LayoutSection)
       : [makeSection(0)];
 
     setSections(nextSections);
@@ -211,20 +211,17 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
                       </select>
                     </label>
                   </div>
-                  <div className="studio-toolbar" style={{ alignItems: "end" }}>
-                    <button className="studio-button studio-button--ghost" type="button" onClick={() => setSections((prev) => moveItem(prev, index, -1))}>Up</button>
-                    <button className="studio-button studio-button--ghost" type="button" onClick={() => setSections((prev) => moveItem(prev, index, 1))}>Down</button>
-                    <button className="studio-button studio-button--danger" type="button" onClick={() => setSections((prev) => prev.length === 1 ? prev : prev.filter((_, itemIndex) => itemIndex !== index))}>
-                      Remove
-                    </button>
-                  </div>
+                  <div className="studio-toolbar" style={{ display: "flex", gap: "6px", alignItems: "end" }}>
+                    <button className="studio-button" type="button" onClick={() => setSections((prev) => moveItem(prev, index, -1))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Up</button>
+                    <button className="studio-button" type="button" onClick={() => setSections((prev) => moveItem(prev, index, 1))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Down</button>
+                    <button className="studio-button" type="button" onClick={() => setSections((prev) => prev.length === 1 ? prev : prev.filter((_, itemIndex) => itemIndex !== index))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#fff5f5", color: "#e03131", border: "1px solid #ffc9c9", borderRadius: "6px", cursor: "pointer" }}>Remove</button></div>
                 </div>
 
                 <div className="studio-grid studio-grid--two">
                   <div className="studio-panel studio-panel--muted">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <strong>Assign Fields</strong>
-                      <input 
+                      <input
                         className="studio-control"
                         style={{ fontSize: "11px", padding: "2px 6px", height: "24px", width: "140px" }}
                         placeholder="Search fields..."
@@ -262,7 +259,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
                       {section.fields.length === 0 ? (
                         <div className="studio-hint">No fields assigned yet. Use “Assign Fields” to place the first identifier and the most important business fields into this section.</div>
                       ) : (
-                        section.fields.map((fieldname, fieldIndex) => {
+                        section.fields.map((fieldname) => {
                           const meta = availableFields.find((field) => field.fieldname === fieldname);
                           return (
                             <div key={`${section.id}-assigned-${fieldname}`} className="studio-item">
@@ -270,10 +267,75 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
                                 <div>{meta?.label ?? fieldname}</div>
                                 <code>{fieldname}</code>
                               </div>
-                              <div className="studio-toolbar">
-                                <button className="studio-button studio-button--ghost" type="button" onClick={() => updateSection(index, { fields: moveItem(section.fields, fieldIndex, -1) })}>Up</button>
-                                <button className="studio-button studio-button--ghost" type="button" onClick={() => updateSection(index, { fields: moveItem(section.fields, fieldIndex, 1) })}>Down</button>
-                                <button className="studio-button studio-button--danger" type="button" onClick={() => updateSection(index, { fields: section.fields.filter((value) => value !== fieldname) })}>Remove</button>
+                              <div className="studio-toolbar" style={{ display: "flex", gap: "8px", alignItems: "end" }}>
+                                <button
+                                  className="studio-button"
+                                  type="button"
+                                  onClick={() => setSections((prev) => moveItem(prev, index, -1))}
+                                  style={{
+                                    padding: "6px 12px",
+                                    fontSize: "14px",
+                                    fontWeight: "500",
+                                    backgroundColor: "#f1f5f9", // Soft slate gray background
+                                    color: "#334155",           // Deep slate text
+                                    border: "1px solid #cbd5e1",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                  }}
+                                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e2e8f0"; }}
+                                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#f1f5f9"; }}
+                                >
+                                  Up
+                                </button>
+
+                                <button
+                                  className="studio-button"
+                                  type="button"
+                                  onClick={() => setSections((prev) => moveItem(prev, index, 1))}
+                                  style={{
+                                    padding: "6px 12px",
+                                    fontSize: "14px",
+                                    fontWeight: "500",
+                                    backgroundColor: "#f1f5f9",
+                                    color: "#334155",
+                                    border: "1px solid #cbd5e1",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                  }}
+                                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e2e8f0"; }}
+                                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#f1f5f9"; }}
+                                >
+                                  Down
+                                </button>
+
+                                <button
+                                  className="studio-button"
+                                  type="button"
+                                  onClick={() => setSections((prev) => prev.length === 1 ? prev : prev.filter((_, itemIndex) => itemIndex !== index))}
+                                  style={{
+                                    padding: "6px 12px",
+                                    fontSize: "14px",
+                                    fontWeight: "500",
+                                    backgroundColor: "#fef2f2", // Very soft red tint
+                                    color: "#dc2626",           // Elegant dark red text
+                                    border: "1px solid #fca5a5",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#dc2626";
+                                    e.currentTarget.style.color = "#ffffff";
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#fef2f2";
+                                    e.currentTarget.style.color = "#dc2626";
+                                  }}
+                                >
+                                  Remove
+                                </button>
                               </div>
                             </div>
                           );
@@ -311,9 +373,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
           <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
             <div className="studio-toolbar">
               {selectedDocType && (
-                <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.("metadata_studio_workspace_menu_builder")}>
-                  Next: Menu
-                </button>
+                <button className="studio-button" type="button" onClick={() => onNavigate?.("metadata_studio_workspace_menu_builder")} style={{ padding: "8px 16px", fontSize: "14px", fontWeight: "600", backgroundColor: "#006666", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer" }}>Next: Menu</button>
               )}
               <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
                 {saving ? "Saving..." : "Save Form Layout"}

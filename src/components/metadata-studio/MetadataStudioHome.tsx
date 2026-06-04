@@ -37,15 +37,12 @@ export function MetadataStudioHome({ onNavigate }: Props) {
           </p>
         </div>
         <div className="studio-toolbar">
-          <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate("metadata_studio_doc_check")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <ListChecks size={16} />
-            Check or repair a screen
-          </button>
-          <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate("metadata_studio_access_control_manager")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doc_check")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#e03131", border: "1px solid #ffc9c9", borderRadius: "6px", cursor: "pointer" }}><ListChecks size={16} />Check or repair a screen</button>
+          <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_access_control_manager")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#006666", border: "1px solid #006666", borderRadius: "6px", cursor: "pointer" }}>
             <ShieldCheck size={16} />
             Review role access
           </button>
-          <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button className="studio-button" type="button" onClick={() => onNavigate("metadata_studio_doctype_builder")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#006666", border: "1px solid #006666", borderRadius: "6px", cursor: "pointer" }}>
             <PlusCircle size={16} />
             Start With DocType Builder
           </button>

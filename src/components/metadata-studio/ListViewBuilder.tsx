@@ -122,10 +122,10 @@ export function ListViewBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
     const rawColumns = Array.isArray(listView?.columns_json) ? listView.columns_json as Array<Record<string, unknown>> : [];
     const nextColumns = rawColumns.length > 0
       ? rawColumns.map((column) => ({
-          fieldname: String(column.fieldname),
-          label: String(column.label ?? column.fieldname),
-          width: Number(column.width ?? 160),
-        }))
+        fieldname: String(column.fieldname),
+        label: String(column.label ?? column.fieldname),
+        width: Number(column.width ?? 160),
+      }))
       : nextFields.filter((field) => field.in_list_view).slice(0, 6).map(defaultColumn);
 
     setColumns(nextColumns);
@@ -267,9 +267,9 @@ export function ListViewBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
                         onChange={(event) => setColumns((prev) => prev.map((item, itemIndex) => itemIndex === index ? { ...item, width: Number(event.target.value) || 160 } : item))}
                       />
                       <div className="studio-toolbar" style={{ justifyContent: "flex-end" }}>
-                        <button className="studio-button studio-button--ghost" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, -1))}>Up</button>
-                        <button className="studio-button studio-button--ghost" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, 1))}>Down</button>
-                        <button className="studio-button studio-button--danger" type="button" onClick={() => setColumns((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>
+                        <button className="studio-button" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, -1))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Up</button>
+                        <button className="studio-button studio-button--ghost" type="button" onClick={() => setColumns((prev) => moveItem(prev, index, 1))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Down</button>
+                        <button className="studio-button studio-button--danger" type="button" onClick={() => setColumns((prev) => prev.filter((_, itemIndex) => itemIndex !== index))} style={{ padding: "5px 12px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#e03131", border: "1px solid #ffc9c9", borderRadius: "6px", cursor: "pointer" }}>Remove</button>
                       </div>
                     </div>
                   ))
@@ -343,9 +343,7 @@ export function ListViewBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
           <div className="studio-actions" style={{ justifyContent: "flex-end" }}>
             <div className="studio-toolbar">
               {selectedDocType && (
-                <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_form_layout_builder:${selectedDocType}`)}>
-                  Next: Form Layout
-                </button>
+                <button className="studio-button" type="button" onClick={() => onNavigate?.(`metadata_studio_form_layout_builder:${selectedDocType}`)} style={{ padding: "8px 16px", fontSize: "14px", fontWeight: "600", backgroundColor: "#006666", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer" }}>Next: Form Layout</button>
               )}
               <button className="studio-button" type="button" onClick={handleSave} disabled={saving || !selectedDocType}>
                 {saving ? "Saving..." : "Save List View"}

@@ -34,6 +34,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 4.9 | Builder Hardening + Generic Document Cleanup | Complete | Generic document `row_to_jsonb(record)` banner fixed via migration 0039, builder next-step guidance improved, and Purchase Invoice + Check/Repair browser verification passed. |
 | 6.0 | Access Control Manager Foundation | Verified via 6.0.1 | Added migration 0042, Access Control Manager UI, rights-matrix APIs, user effective-right diagnostics, Access Builder/Metadata Studio integration, and improved permission guidance without duplicating role tables. Live verification is now documented in Phase 6.0.1. |
 | 6.0.1 | Access Control Verification | Complete with documented limitation | Supabase Cloud RPC smoke test passed, authenticated browser verification passed end-to-end, User Role Assignment page is now reachable in normal flow, and local typecheck/lint/test/build/simulation checks passed. Multi-role effective-right diagnostics limitation is documented for high-privilege test users. |
+| 6.2.1 | Secure Browser Verification | Complete | Hardening browser verification workflow, enforcing env vars for credentials, and re-verifying Export/Import foundation securely. Verified with Playwright. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.

@@ -270,12 +270,8 @@ export function AccessBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
             <button className="studio-button" type="button" onClick={saveActions} disabled={saving || !selectedDocType}>
               Save Action Mappings
             </button>
-            <button className="studio-button studio-button--ghost" type="button" onClick={createMissingAccessKeys} disabled={saving || !selectedDocType}>
-              Create Missing Access Keys
-            </button>
-            <button className="studio-button studio-button--ghost" type="button" onClick={enableOwnerAdminAccess} disabled={saving || !selectedDocType}>
-              Enable Owner/Admin Access
-            </button>
+            <button className="studio-button" type="button" onClick={createMissingAccessKeys} disabled={saving || !selectedDocType} style={{ padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#006666", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer", opacity: saving || !selectedDocType ? "0.6" : "1" }}>Create Missing Access Keys</button>
+            <button className="studio-button" type="button" onClick={enableOwnerAdminAccess} disabled={saving || !selectedDocType} style={{ padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#006666", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer", opacity: saving || !selectedDocType ? "0.6" : "1" }}>Enable Owner/Admin Access</button>
           </div>
 
           {message && (
@@ -290,12 +286,8 @@ export function AccessBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
 
           {selectedDocType && (
             <div className="studio-toolbar" style={{ justifyContent: "flex-end" }}>
-              <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_access_control_manager:${selectedDocType}`)}>
-                Open Access Control Manager
-              </button>
-              <button className="studio-button studio-button--ghost" type="button" onClick={() => onNavigate?.(`metadata_studio_doc_check:${selectedDocType}`)}>
-                Open Check / Repair DocType
-              </button>
+              <button className="studio-button" type="button" onClick={() => onNavigate?.(`metadata_studio_access_control_manager:${selectedDocType}`)} style={{ padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#006666", border: "1px solid #006666", borderRadius: "6px", cursor: "pointer" }}>Open Access Control Manager</button>
+              <button className="studio-button" type="button" onClick={() => onNavigate?.(`metadata_studio_doc_check:${selectedDocType}`)} style={{ padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#e03131", border: "1px solid #ffc9c9", borderRadius: "6px", cursor: "pointer" }}>Open Check / Repair DocType</button>
             </div>
           )}
         </>

@@ -234,17 +234,7 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved, onNavig
               </option>
             ))}
           </select>
-          <button
-            className="studio-button studio-button--ghost"
-            onClick={() => {
-              setSelectedDocTypeKey("");
-              setState(emptyState);
-              setManualKey(false);
-            }}
-            type="button"
-          >
-            New
-          </button>
+          <button className="studio-button" type="button" onClick={() => { setSelectedDocTypeKey(""); setState(emptyState); setManualKey(false); }} style={{ padding: "6px 14px", fontSize: "14px", fontWeight: "500", backgroundColor: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>New</button>
         </div>
       </div>
 

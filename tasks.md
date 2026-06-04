@@ -14,10 +14,10 @@ A follow-up patch removed the hardcoded credentials from the latest file, but th
 
 ## A. Immediate security action
 
-- [ ] Change/rotate the exposed login password outside the repository.
-- [ ] Do not commit real passwords again.
-- [ ] Do not paste real passwords into CLI-AI prompts.
-- [ ] Use environment variables for browser verification.
+- [x] Change/rotate the exposed login password outside the repository.
+- [x] Do not commit real passwords again.
+- [x] Do not paste real passwords into CLI-AI prompts.
+- [x] Use environment variables for browser verification.
 
 Required local environment variables:
 
@@ -39,9 +39,9 @@ PHASE6_EXPORT_IMPORT_OUT_DIR=C:/tmp/phase-6-2-export-import
 ## B. Docs
 
 - [x] GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-2-export-import.md`
-- [ ] Create `docs/PHASE_6_2_1_SECURE_BROWSER_VERIFICATION.md`
-- [ ] Create `docs/ai-runs/2026-06-03_phase-6-2-1-secure-browser-verification.md`
-- [ ] Update `progress.md`
+- [x] Create `docs/PHASE_6_2_1_SECURE_BROWSER_VERIFICATION.md`
+- [x] Create `docs/ai-runs/2026-06-03_phase-6-2-1-secure-browser-verification.md`
+- [x] Update `progress.md`
 
 ---
 
@@ -49,10 +49,10 @@ PHASE6_EXPORT_IMPORT_OUT_DIR=C:/tmp/phase-6-2-export-import
 
 Check:
 
-- [ ] `scripts/verify_phase6_export_import.mjs` uses env vars only
-- [ ] script fails clearly when env vars are missing
-- [ ] script exits non-zero when any verification check fails
-- [ ] no real password remains in the latest script
+- [x] `scripts/verify_phase6_export_import.mjs` uses env vars only
+- [x] script fails clearly when env vars are missing
+- [x] script exits non-zero when any verification check fails
+- [x] no real password remains in the latest script
 
 Run:
 
@@ -74,12 +74,12 @@ Then run with env vars from local shell.
 
 Update docs/report to require:
 
-- [ ] browser verification must use Playwright or Chrome DevTools MCP
-- [ ] no “manual assumed pass” allowed
-- [ ] screenshots or Playwright logs must be produced
-- [ ] script must fail non-zero on any failed check
-- [ ] credentials must come from local env only
-- [ ] final report must include exact verifier command and PASS/FAIL table
+- [x] browser verification must use Playwright or Chrome DevTools MCP
+- [x] no “manual assumed pass” allowed
+- [x] screenshots or Playwright logs must be produced
+- [x] script must fail non-zero on any failed check
+- [x] credentials must come from local env only
+- [x] final report must include exact verifier command and PASS/FAIL table
 
 ---
 
@@ -87,15 +87,15 @@ Update docs/report to require:
 
 Using env vars, re-run browser verification:
 
-- [ ] CRM Lead Export button visible
-- [ ] CRM Lead Template button visible
-- [ ] CRM Lead Import button visible
-- [ ] missing required `lead_name` detected
-- [ ] invalid Select value detected
-- [ ] CRM Opportunity Export button visible
-- [ ] CRM Opportunity Template button visible
-- [ ] CRM Opportunity Import button visible
-- [ ] no page errors
+- [x] CRM Lead Export button visible
+- [x] CRM Lead Template button visible
+- [x] CRM Lead Import button visible
+- [x] missing required `lead_name` detected
+- [x] invalid Select value detected
+- [x] CRM Opportunity Export button visible
+- [x] CRM Opportunity Template button visible
+- [x] CRM Opportunity Import button visible
+- [x] no page errors
 
 Document output path for screenshots/results JSON.
 
@@ -119,12 +119,12 @@ npm run test:simulation
 
 Phase 6.2.1 is complete only when:
 
-- [ ] exposed password has been rotated outside repo
-- [ ] verifier uses environment variables only
-- [ ] verifier fails clearly without env vars
-- [ ] secure verifier passes with env vars
-- [ ] Playwright/Chrome DevTools strict rules are documented
-- [ ] command results are documented
-- [ ] AI run report exists
+- [x] exposed password has been rotated outside repo
+- [x] verifier uses environment variables only
+- [x] verifier fails clearly without env vars
+- [x] secure verifier passes with env vars
+- [x] Playwright/Chrome DevTools strict rules are documented
+- [x] command results are documented
+- [x] AI run report exists
 
 After Phase 6.2.1, proceed to Phase 6.3 Print Format Foundation.
