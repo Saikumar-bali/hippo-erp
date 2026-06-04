@@ -1,0 +1,17 @@
+{
+  "crmLead": {
+    "export": true,
+    "template": true,
+    "import": true,
+    "importValidation": {
+      "hasRequiredError": true,
+      "hasSelectError": true
+    }
+  },
+  "crmOpportunity": {
+    "export": true,
+    "template": true,
+    "import": true
+  },
+  "pageErrors": []
+}
