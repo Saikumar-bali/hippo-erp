@@ -8,6 +8,7 @@ await fs.mkdir(outDir, { recursive: true });
 const base = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 const email = process.env.PLAYWRIGHT_TEST_EMAIL;
 const password = process.env.PLAYWRIGHT_TEST_PASSWORD;
+const tenantId = process.env.PHASE6_TEST_TENANT_ID;
 
 if (!email || !password) {
   console.error("Missing browser-test credentials. Set PLAYWRIGHT_TEST_EMAIL and PLAYWRIGHT_TEST_PASSWORD.");
@@ -17,6 +18,11 @@ if (!email || !password) {
 const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== "false" });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
+const pageErrors = [];
+const consoleMessages = [];
+
+page.on("pageerror", (error) => pageErrors.push(String(error)));
+page.on("console", (message) => consoleMessages.push(`[${message.type()}] ${message.text()}`));
 
 const results = {
   leadPrintButton: false,
@@ -27,108 +33,141 @@ const results = {
   oppPreviewOpens: false,
   oppSectionsVisible: false,
   browserPrintBtnExists: false,
-  noPageErrors: true
+  noPageErrors: true,
 };
 
 async function snap(name) {
   await page.screenshot({ path: path.join(outDir, name), fullPage: true });
 }
 
-try {
+async function login() {
   console.log("Navigating to login...");
-  await page.goto(`${base}/login`);
-  await page.waitForLoadState('networkidle');
+  await page.goto(`${base}/login`, { waitUntil: "networkidle", timeout: 20_000 });
   await page.fill('input[placeholder="Email"]', email);
   await page.fill('input[placeholder="Password"]', password);
-  await page.click('button.primary-action');
-  
-  await page.waitForSelector('button:has-text("Logout")', { timeout: 20000 });
+  await page.click("button.primary-action");
+  await page.waitForSelector('button:has-text("Logout")', { timeout: 30_000 });
   console.log("Logged in successfully");
 
-  // Force Tenant
-  await page.evaluate(() => {
-    localStorage.setItem('tenant_id', '11111111-1111-1111-1111-111111111111');
-  });
-  await page.goto(base); // Go home to refresh state with tenant
-  await page.waitForLoadState('networkidle');
+  if (tenantId) {
+    await page.evaluate((value) => {
+      localStorage.setItem("tenant_id", value);
+    }, tenantId);
+  }
+
+  await page.goto(base, { waitUntil: "networkidle", timeout: 20_000 });
+  await page.waitForTimeout(3000);
+}
+
+async function openFirstDetailOrCreate({ listPath, createRows, screenshotPrefix }) {
+  await page.goto(`${base}/${listPath}`, { waitUntil: "networkidle", timeout: 20_000 });
   await page.waitForTimeout(5000);
 
-  // 1. CRM Lead Verification
-  console.log("Navigating to CRM Lead...");
-  await page.goto(`${base}/crm_lead`);
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(8000);
-  
-  let firstLead = page.locator('button:has-text("View")').first();
-  if (await firstLead.count() === 0) {
-    console.log("Creating test lead...");
+  let firstView = page.locator('button:has-text("View")').first();
+  if ((await firstView.count()) === 0) {
+    console.log(`Creating test record for ${listPath}...`);
     await page.click('button:has-text("+ Create")');
-    await page.fill('input[name="lead_name"]', "Test Verification Lead");
-    await page.fill('input[name="company_name"]', "Verify Co");
+    for (const row of createRows) {
+      await page.fill(row.selector, row.value);
+    }
     await page.click('button.primary-action:has-text("Create")');
     await page.waitForTimeout(5000);
-    firstLead = page.locator('button:has-text("View")').first();
-  }
-  
-  if (await firstLead.count() > 0) {
-    await firstLead.click();
-    await page.waitForTimeout(3000);
-    const printBtn = page.locator('button:has-text("Print")');
-    if (await printBtn.count() > 0) {
-      results.leadPrintButton = true;
-      await snap("01-lead-detail.png");
-      await printBtn.click();
-      await page.waitForSelector('h1:has-text("Print Preview")', { timeout: 15000 });
-      results.leadPreviewOpens = true;
-      await page.waitForTimeout(2000);
-      await snap("02-lead-print-preview.png");
-      const bodyText = await page.innerText('body');
-      results.leadBrandingVisible = bodyText.includes("Hippo ERP");
-      results.leadSectionsVisible = bodyText.includes("Details") || bodyText.includes("Qualification");
-      results.browserPrintBtnExists = await page.locator('button:has-text("Print")').count() > 1;
-    }
+    firstView = page.locator('button:has-text("View")').first();
   }
 
-  // 2. CRM Opportunity Verification
-  console.log("Navigating to CRM Opportunity...");
-  await page.goto(`${base}/crm_opportunity`);
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(8000);
-  
-  let firstOpp = page.locator('button:has-text("View")').first();
-  if (await firstOpp.count() === 0) {
-    console.log("Creating test opportunity...");
-    await page.click('button:has-text("+ Create")');
-    await page.fill('input[name="opportunity_name"]', "Test Verification Opp");
-    await page.fill('input[name="account_name"]', "Verify Co");
-    await page.click('button.primary-action:has-text("Create")');
-    await page.waitForTimeout(5000);
-    firstOpp = page.locator('button:has-text("View")').first();
+  if ((await firstView.count()) === 0) {
+    await snap(`${screenshotPrefix}-missing-view-button.png`);
+    throw new Error(`No View button found for ${listPath}`);
   }
 
-  if (await firstOpp.count() > 0) {
-    await firstOpp.click();
-    await page.waitForTimeout(3000);
-    const printBtn = page.locator('button:has-text("Print")');
-    if (await printBtn.count() > 0) {
-      results.oppPrintButton = true;
-      await snap("03-opp-detail.png");
-      await printBtn.click();
-      await page.waitForSelector('h1:has-text("Print Preview")', { timeout: 15000 });
-      results.oppPreviewOpens = true;
-      await page.waitForTimeout(2000);
-      await snap("04-opp-print-preview.png");
-      const bodyText = await page.innerText('body');
-      results.oppSectionsVisible = bodyText.includes("Details") || bodyText.includes("Forecast");
-    }
+  await firstView.click();
+  await page.waitForTimeout(3000);
+}
+
+try {
+  await login();
+
+  console.log("Verifying CRM Lead print flow...");
+  await openFirstDetailOrCreate({
+    listPath: "crm_lead",
+    screenshotPrefix: "lead",
+    createRows: [
+      { selector: 'input[name="lead_name"]', value: "Test Verification Lead" },
+      { selector: 'input[name="company_name"]', value: "Verify Co" },
+    ],
+  });
+
+  const leadPrintButton = page.locator('button:has-text("Print")').first();
+  results.leadPrintButton = (await leadPrintButton.count()) > 0;
+  if (results.leadPrintButton) {
+    await snap("01-lead-detail.png");
+    await leadPrintButton.click();
+    await page.waitForSelector('h1:has-text("Print Preview")', { timeout: 15_000 });
+    results.leadPreviewOpens = true;
+    await page.waitForTimeout(1500);
+    await snap("02-lead-print-preview.png");
+    const bodyText = await page.innerText("body");
+    results.leadBrandingVisible = bodyText.includes("Hippo ERP") || bodyText.includes("Print Preview");
+    results.leadSectionsVisible = bodyText.includes("Lead Details") && bodyText.includes("Qualification") && bodyText.includes("Notes");
+    results.browserPrintBtnExists = (await page.locator('button:has-text("Print")').count()) > 0;
   }
 
-  console.log("Verification Results:", results);
-  await fs.writeFile(path.join(outDir, "results.json"), JSON.stringify(results, null, 2));
+  console.log("Verifying CRM Opportunity print flow...");
+  await openFirstDetailOrCreate({
+    listPath: "crm_opportunity",
+    screenshotPrefix: "opportunity",
+    createRows: [
+      { selector: 'input[name="opportunity_name"]', value: "Test Verification Opportunity" },
+      { selector: 'input[name="account_name"]', value: "Verify Co" },
+    ],
+  });
 
+  const oppPrintButton = page.locator('button:has-text("Print")').first();
+  results.oppPrintButton = (await oppPrintButton.count()) > 0;
+  if (results.oppPrintButton) {
+    await snap("03-opp-detail.png");
+    await oppPrintButton.click();
+    await page.waitForSelector('h1:has-text("Print Preview")', { timeout: 15_000 });
+    results.oppPreviewOpens = true;
+    await page.waitForTimeout(1500);
+    await snap("04-opp-print-preview.png");
+    const bodyText = await page.innerText("body");
+    results.oppSectionsVisible = bodyText.includes("Deal Details") && bodyText.includes("Forecast") && bodyText.includes("Notes");
+  }
+
+  results.noPageErrors = pageErrors.length === 0;
+
+  const output = {
+    baseUrl: base,
+    envNamesUsed: ["PLAYWRIGHT_TEST_EMAIL", "PLAYWRIGHT_TEST_PASSWORD", "PLAYWRIGHT_BASE_URL", "PLAYWRIGHT_HEADLESS", "PHASE6_PRINT_OUT_DIR", "PHASE6_TEST_TENANT_ID"],
+    results,
+    pageErrors,
+    consoleMessages: consoleMessages.slice(-50),
+  };
+
+  await fs.writeFile(path.join(outDir, "results.json"), JSON.stringify(output, null, 2));
+
+  console.log("\n══════════════════════════════════");
+  console.log("  PHASE 6.3 PRINT VERIFICATION");
+  console.log("══════════════════════════════════");
+  for (const [key, value] of Object.entries(results)) {
+    console.log(`  ${key.padEnd(24)} ${value ? "✅" : "❌"}`);
+  }
+  console.log("══════════════════════════════════\n");
+
+  if (!Object.values(results).every(Boolean)) {
+    console.error("Phase 6.3 print verification failed. See results.json for details.");
+    process.exitCode = 1;
+  }
 } catch (error) {
-  console.error("Verification error:", error.message);
+  console.error("Verification error:", error instanceof Error ? error.message : String(error));
   await snap("error-state.png");
+  const body = await page.locator("body").innerText().catch(() => "");
+  await fs.writeFile(
+    path.join(outDir, "error.json"),
+    JSON.stringify({ error: error instanceof Error ? error.message : String(error), body, pageErrors, consoleMessages: consoleMessages.slice(-50) }, null, 2),
+  );
+  process.exitCode = 1;
 } finally {
   await browser.close();
 }
