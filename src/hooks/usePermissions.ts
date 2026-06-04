@@ -55,6 +55,12 @@ export function usePermissions(): PermissionsState {
           hasUser: Boolean(user),
           permissionCount: user?.effective_permission_count ?? 0
         });
+
+        // Expose to window for debugging/Playwright
+        if (typeof window !== "undefined") {
+          (window as any).hippo_permissions = user?.effective_permission_keys ?? [];
+          (window as any).hippo_user_role = user?.assigned_role_name ?? "";
+        }
       } catch (err: any) {
         if (cancelled) return;
         setCurrentUser(null);

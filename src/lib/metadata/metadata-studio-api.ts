@@ -284,9 +284,14 @@ export async function listAllFrom(tableKey: string) {
   return mapRows<Record<string, unknown>>(data);
 }
 
-export async function listAllDoctypes() {
+export async function listAllDoctypes(): Promise<Record<string, unknown>[]> {
   return listAllFrom("doctypes");
 }
+
+export async function getDocTypes(): Promise<any[]> {
+  return listAllDoctypes();
+}
+
 
 export async function listAllDocfields() {
   return listAllFrom("docfields");

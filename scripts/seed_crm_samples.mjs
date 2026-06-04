@@ -1,4 +1,16 @@
-import { supabase } from "./src/lib/supabase.ts";
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in .env");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const tenantId = "8d3d9f3a-7d4a-4b6a-9e1a-5c3d9f3a7d4a"; // Default test tenant
 
@@ -9,7 +21,7 @@ async function seedCrmSamples() {
     // Leads
     {
       doctype_key: "crm_lead",
-      tenant_id: tenantId,
+      company_id: tenantId,
       data: {
         lead_name: "John Doe",
         company_name: "Tech Corp",
@@ -23,7 +35,7 @@ async function seedCrmSamples() {
     },
     {
       doctype_key: "crm_lead",
-      tenant_id: tenantId,
+      company_id: tenantId,
       data: {
         lead_name: "Jane Smith",
         company_name: "Design Studio",
@@ -38,7 +50,7 @@ async function seedCrmSamples() {
     // Accounts
     {
       doctype_key: "crm_account",
-      tenant_id: tenantId,
+      company_id: tenantId,
       data: {
         account_name: "Global Industries",
         industry: "Manufacturing",
@@ -50,7 +62,7 @@ async function seedCrmSamples() {
     // Opportunities
     {
       doctype_key: "crm_opportunity",
-      tenant_id: tenantId,
+      company_id: tenantId,
       data: {
         opportunity_name: "Enterprise ERP License",
         account_name: "Global Industries",
@@ -63,7 +75,7 @@ async function seedCrmSamples() {
     },
     {
       doctype_key: "crm_opportunity",
-      tenant_id: tenantId,
+      company_id: tenantId,
       data: {
         opportunity_name: "Quick Startup Pack",
         account_name: "Design Studio",
@@ -77,7 +89,7 @@ async function seedCrmSamples() {
     // Follow-up Tasks
     {
       doctype_key: "crm_followup_task",
-      tenant_id: tenantId,
+      company_id: tenantId,
       data: {
         subject: "Send demo link to Jane",
         related_to: "Jane Smith",
@@ -100,8 +112,8 @@ async function seedCrmSamples() {
       .from("erp_documents")
       .select("id")
       .eq("doctype_key", sample.doctype_key)
-      .eq("tenant_id", sample.tenant_id)
-      .contains("data", { [nameField]: (sample.data as any)[nameField] })
+      .eq("company_id", sample.company_id)
+      .contains("data", { [nameField]: sample.data[nameField] })
       .maybeSingle();
 
     if (!existing) {
@@ -112,15 +124,14 @@ async function seedCrmSamples() {
       if (error) {
         console.error(`Error inserting ${sample.doctype_key}:`, error.message);
       } else {
-        console.log(`Inserted ${sample.doctype_key}: ${(sample.data as any)[nameField]}`);
-      }
-    } else {
-      console.log(`Skipped existing ${sample.doctype_key}: ${(sample.data as any)[nameField]}`);
+        console.log(`Inserted ${sample.doctype_key}: ${sample.data[nameField]}`);
     }
+  } else {
+    console.log(`Skipped existing ${sample.doctype_key}: ${sample.data[nameField]}`);
   }
+}
 
   console.log("CRM seeding complete.");
 }
 
-// We don't run it here, just providing the code.
-// In a real env, we'd run this via node.
+seedCrmSamples().catch(console.error);

@@ -39,12 +39,28 @@ export default function App() {
       if (found) {
         console.log("[app] found matching item in tree:", found.item_key);
         setSelectedItem(found);
-      } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard" || pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio") {
+      } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard" || pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio" || pageKey.startsWith("print:")) {
         console.log("[app] creating virtual item for:", pageKey);
+        
+        let workspaceKey = "metadata_studio";
+        let requiredPermission = "manage_metadata";
+        
+        if (pageKey === "crm_dashboard") {
+          workspaceKey = "crm";
+          requiredPermission = "view_crm_lead";
+        } else if (pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio") {
+          workspaceKey = "company_admin";
+          requiredPermission = pageKey === "theme_studio" ? "update_company" : "view_users";
+        } else if (pageKey.startsWith("print:")) {
+          const parts = pageKey.split(":");
+          workspaceKey = "crm"; // Default or detect from doctype
+          requiredPermission = `print_${parts[1]}`;
+        }
+
         // 2. Virtual item for metadata studio diagnostic sub-pages or CRM dashboard
         setSelectedItem({
           id: `virtual-${pageKey}`,
-          workspace_key: pageKey === "crm_dashboard" ? "crm" : pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio" ? "company_admin" : "metadata_studio",
+          workspace_key: workspaceKey,
           item_key: pageKey,
           label: pageKey === "crm_dashboard"
             ? "CRM Dashboard"
@@ -52,13 +68,15 @@ export default function App() {
               ? "Users and Roles Access Assignments"
               : pageKey === "theme_studio"
                 ? "Theme Studio"
-                : pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                : pageKey.startsWith("print:") 
+                  ? "Print Preview"
+                  : pageKey.split(":")[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
           item_type: "page",
           target: pageKey,
-          icon: pageKey === "crm_dashboard" ? "LayoutDashboard" : pageKey === "users_and_roles_access_assignments" ? "ShieldCheck" : pageKey === "theme_studio" ? "Palette" : "Activity",
+          icon: pageKey === "crm_dashboard" ? "LayoutDashboard" : pageKey === "users_and_roles_access_assignments" ? "ShieldCheck" : pageKey === "theme_studio" ? "Palette" : pageKey.startsWith("print:") ? "Printer" : "Activity",
           sort_order: 0,
           is_active: true,
-          required_permission_key: pageKey === "crm_dashboard" ? "view_crm_lead" : pageKey === "users_and_roles_access_assignments" ? "view_users" : pageKey === "theme_studio" ? "update_company" : "manage_metadata",
+          required_permission_key: requiredPermission,
         });
       } else {
         console.log("[app] pageKey did not match any item or virtual pattern:", pageKey);

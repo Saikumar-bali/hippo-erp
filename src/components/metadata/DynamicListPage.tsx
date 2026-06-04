@@ -22,6 +22,7 @@ type Props = {
   canDelete: boolean;
   canExport: boolean;
   canImport: boolean;
+  canPrint?: boolean;
   permissionChecker: (key: string) => boolean;
 };
 
@@ -68,6 +69,7 @@ export function DynamicListPage({
   canDelete,
   canExport,
   canImport,
+  canPrint,
   permissionChecker,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
@@ -216,7 +218,7 @@ export function DynamicListPage({
   const hasStatusColumn = columns.some((c) => c.fieldname === "is_active");
 
   const clickableColumns = (() => {
-    const priority = ["sku", "code", "name", "title", "label", "product_name", "warehouse_name"];
+    const priority = ["sku", "code", "name", "title", "label", "product_name", "warehouse_name", "lead_name", "opportunity_name", "account_name", "contact_name"];
     for (const p of priority) {
       if (columns.some((c) => c.fieldname === p)) return new Set([p]);
     }
@@ -372,6 +374,7 @@ export function DynamicListPage({
         tenantId={tenantId}
         canUpdate={canUpdate}
         canDelete={canDelete}
+        canPrint={canPrint}
         initialRecord={selectedRecord}
         onEdit={() => setEditingId(selectedId)}
         onClose={() => setSelectedId(null)}

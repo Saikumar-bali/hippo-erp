@@ -128,3 +128,47 @@ Phase 6.2.1 is complete only when:
 - [x] AI run report exists
 
 After Phase 6.2.1, proceed to Phase 6.3 Print Format Foundation.
+
+# Phase 6.3 Tasks: Print Format Foundation
+
+Active branch: `phase-2.5-metadata-engine`
+
+Goal: Add a safe, metadata-driven Print Format foundation for normal DocTypes. Use CRM Lead and CRM Opportunity as proof.
+
+## A. Docs & Setup
+- [x] Create `docs/PHASE_6_3_PRINT_FORMAT_FOUNDATION.md`
+- [x] Create `docs/ai-runs/2026-06-04_phase-6-3-print-format-foundation.md`
+- [x] Update `progress.md`
+
+## B. Database & Permissions
+- [x] Create migration `0045_print_format_foundation.sql`
+- [x] Support `print_<doctype_key>` permissions
+- [x] Seed permissions for `crm_lead`, `crm_opportunity`
+- [x] Grant to Owner/Admin roles
+- [x] Seed default print formats for Leads and Opportunities
+
+## C. Frontend Core
+- [x] Create `src/lib/print/print-types.ts`
+- [x] Create `src/lib/print/print-format-api.ts`
+- [x] Create `src/components/print/PrintRenderer.tsx`
+- [x] Create `src/components/print/PrintPreviewPage.tsx`
+- [x] Integrate Print button in `DynamicDetailPage`
+- [x] Register routes and virtual items
+
+## D. Optional Builder
+- [x] Create `src/components/print/PrintFormatBuilderPage.tsx`
+- [x] Add link to Metadata Studio home
+
+## E. Verification & Quality
+- [x] Browser verify: CRM Lead Print button visible
+- [x] Browser verify: CRM Lead Print preview opens
+- [x] Browser verify: CRM Lead Branding and sections visible
+- [x] Browser verify: CRM Opportunity Print button visible
+- [x] Browser verify: CRM Opportunity Print preview opens
+- [x] Browser verify: Browser Print button exists
+- [x] Unit tests: Print format helpers and renderer
+- [x] `npm run typecheck`
+- [x] `npm run lint`
+- [x] `npm run test`
+- [x] `npm run build`
+- [x] `npm run test:simulation`

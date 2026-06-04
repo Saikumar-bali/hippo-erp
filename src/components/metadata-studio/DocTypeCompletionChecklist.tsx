@@ -104,7 +104,13 @@ async function createDefaultActions(doctypeKey: string): Promise<string> {
 }
 
 async function createMissingPermissions(doctypeKey: string, existing: string[], moduleKey: string, moduleLabel: string): Promise<string> {
-  const needed = [`view_${doctypeKey}`, `create_${doctypeKey}`, `update_${doctypeKey}`, `delete_${doctypeKey}`];
+  const needed = [
+    `view_${doctypeKey}`, 
+    `create_${doctypeKey}`, 
+    `update_${doctypeKey}`, 
+    `delete_${doctypeKey}`,
+    `print_${doctypeKey}`
+  ];
   let created = 0;
   for (const key of needed) {
     if (existing.includes(key)) continue;
@@ -126,7 +132,13 @@ async function createMissingPermissions(doctypeKey: string, existing: string[], 
 }
 
 async function grantOwnerAdmin(doctypeKey: string): Promise<string> {
-  const needed = [`view_${doctypeKey}`, `create_${doctypeKey}`, `update_${doctypeKey}`, `delete_${doctypeKey}`];
+  const needed = [
+    `view_${doctypeKey}`, 
+    `create_${doctypeKey}`, 
+    `update_${doctypeKey}`, 
+    `delete_${doctypeKey}`,
+    `print_${doctypeKey}`
+  ];
   const roles = ["owner", "admin"];
   let granted = 0;
   for (const role of roles) {

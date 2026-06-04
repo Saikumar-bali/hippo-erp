@@ -23,6 +23,8 @@ import { CurrentInventoryPage } from "../grn/CurrentInventoryPage";
 import { InventoryMovementsPage } from "../grn/InventoryMovementsPage";
 import { CrmDashboardPage } from "../crm/CrmDashboardPage";
 import { ThemeStudioPage } from "../theme/ThemeStudioPage";
+import { PrintPreviewPage } from "../print/PrintPreviewPage";
+import { PrintFormatBuilderPage } from "../print/PrintFormatBuilderPage";
 import type { CompanyThemeSettings } from "../../lib/theme-types";
 
 import { DocFieldList } from "../metadata-studio/DocFieldList";
@@ -85,6 +87,11 @@ function DocTypeListPage({
     return permissions.can(`import_${doctypeKey}`);
   }, [config, permissions, doctypeKey]);
 
+  const canPrint = useMemo(() => {
+    if (!config) return false;
+    return permissions.can(`print_${doctypeKey}`);
+  }, [config, permissions, doctypeKey]);
+
   return (
     <DynamicListPage
       doctypeKey={doctypeKey}
@@ -93,6 +100,7 @@ function DocTypeListPage({
       canDelete={canDelete}
       canExport={canExport}
       canImport={canImport}
+      canPrint={canPrint}
       permissionChecker={(key: string) => permissions.can(key)}
     />
   );
@@ -165,6 +173,8 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
       return <WorkflowList />;
     case "metadata_studio_doc_check":
       return <DocTypeCompletionChecklist doctypeKey={subPageValue ?? ""} />;
+    case "metadata_studio_print_formats":
+      return <PrintFormatBuilderPage />;
     default:
       return <DocTypeList />;
   }
@@ -264,6 +274,10 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
           initialTab="access_assignments"
         />
       );
+    }
+
+    if (itemKey.startsWith("print:")) {
+      return <PrintPreviewPage />;
     }
 
     if (itemKey.startsWith("metadata_studio") || target.startsWith("metadata_studio")) {

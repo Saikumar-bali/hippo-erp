@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
 import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
 import { StatusField } from "./StatusField";
+import { Printer } from "lucide-react";
 
 type Props = {
   doctypeKey: string;
   recordId: string;
   canUpdate: boolean;
   canDelete: boolean;
+  canPrint?: boolean;
   onEdit?: () => void;
   onClose?: () => void;
   onDeactivate?: () => void;
@@ -25,6 +28,7 @@ export function DynamicDetailPage({
   recordId,
   canUpdate,
   canDelete,
+  canPrint,
   onEdit,
   onClose,
   onDeactivate,
@@ -33,6 +37,7 @@ export function DynamicDetailPage({
   tenantId,
   initialRecord,
 }: Props) {
+  const navigate = useNavigate();
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
   const [record, setRecord] = useState<Record<string, unknown> | null>(initialRecord ?? null);
   const [dataLoading, setDataLoading] = useState(!initialRecord);
@@ -145,6 +150,15 @@ export function DynamicDetailPage({
       ))}
 
       <div className="form-actions">
+        {canPrint && isActive && (
+          <button 
+            className="logout" 
+            onClick={() => navigate(`/print:${doctypeKey}:${recordId}`)}
+            title="Open Print Preview"
+          >
+            <Printer size={16} style={{ marginRight: "6px" }} /> Print
+          </button>
+        )}
         {canUpdate && isActive && onEdit && (
           <button className="primary-action" onClick={onEdit}>Edit {config.doctype.label}</button>
         )}

@@ -1,4 +1,4 @@
-import { Blocks, Columns3, FileJson, LayoutDashboard, LayoutTemplate, ListChecks, ListTree, PlusCircle, ShieldCheck, Table, WandSparkles } from "lucide-react";
+import { Blocks, Columns3, FileJson, LayoutDashboard, LayoutTemplate, ListChecks, ListTree, PlusCircle, Printer, ShieldCheck, Table, WandSparkles } from "lucide-react";
 
 const builderSections = [
   { key: "metadata_studio_doctype_builder", label: "DocType Builder", icon: FileJson, desc: "Create a business document type, then choose storage details only when needed" },
@@ -8,6 +8,7 @@ const builderSections = [
   { key: "metadata_studio_workspace_menu_builder", label: "Workspace Menu Designer", icon: ListTree, desc: "Put pages and records where users expect to find them" },
   { key: "metadata_studio_access_builder", label: "Access Setup", icon: ShieldCheck, desc: "Create the standard actions and permission mapping for a document" },
   { key: "metadata_studio_access_control_manager", label: "Access Control Manager", icon: ShieldCheck, desc: "See effective rights, assign users, and fix missing access in plain language" },
+  { key: "metadata_studio_print_formats", label: "Print Format Builder", icon: Printer, desc: "Create and manage document print layouts with sections and fields" },
   { key: "metadata_studio_doc_check", label: "Check / Repair Document Type", icon: ListChecks, desc: "Use when a screen is missing fields, list columns, actions, or menu links" },
 ];
 
