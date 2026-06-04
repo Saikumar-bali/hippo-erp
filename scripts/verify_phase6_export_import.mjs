@@ -83,7 +83,7 @@ async function navigateTo(pageKey) {
   for (let attempt = 0; attempt < 20; attempt++) {
     if (await sidebarBtn.count()) {
       await sidebarBtn.click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(5000);
       break;
     }
     await page.waitForTimeout(1500);
