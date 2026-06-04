@@ -2,7 +2,7 @@
 
 ## Verification Steps Performed
 
-1.  **Login**: Successfully logged in as `saikumarbali555@gmail.com`.
+1.  **Login**: Successfully logged in with the configured browser-test account.
 2.  **Navigation**: Navigated to "Supplier UI Tests" section in Metadata Studio.
 3.  **Create Record**:
     *   Created record `SUP-001` (Test Supplier A).

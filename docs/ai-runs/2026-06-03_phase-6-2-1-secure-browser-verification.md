@@ -31,8 +31,8 @@
 
 ## Command Log
 ```bash
-# Secure verification run (credentials redacted)
-$env:PLAYWRIGHT_TEST_EMAIL="saikumarbali555@gmail.com"; $env:PLAYWRIGHT_TEST_PASSWORD="***"; $env:PLAYWRIGHT_BASE_URL="http://localhost:5173"; $env:PHASE6_EXPORT_IMPORT_OUT_DIR="C:/tmp/phase-6-2-export-import"; node scripts/verify_phase6_export_import.mjs
+# Secure verification run (set local values outside the repo)
+$env:PLAYWRIGHT_TEST_EMAIL="<set-locally>"; $env:PLAYWRIGHT_TEST_PASSWORD="<set-locally>"; $env:PLAYWRIGHT_BASE_URL="<set-locally>"; $env:PHASE6_EXPORT_IMPORT_OUT_DIR="C:/tmp/phase-6-2-export-import"; node scripts/verify_phase6_export_import.mjs
 ```
 
 ## Remaining Gaps

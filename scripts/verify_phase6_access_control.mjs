@@ -5,12 +5,17 @@ import path from "node:path";
 const outDir = "C:/tmp/phase-6-0-access-control";
 await fs.mkdir(outDir, { recursive: true });
 
-const base = "http://127.0.0.1:4173";
-const email = "saikumarbali555@gmail.com";
-const password = "Hippo@123";
+const base = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:4173";
+const email = process.env.PLAYWRIGHT_TEST_EMAIL;
+const password = process.env.PLAYWRIGHT_TEST_PASSWORD;
 const roleName = `Phase6 CRM Access ${Date.now()}`;
 
-const browser = await chromium.launch({ headless: true });
+if (!email || !password) {
+  console.error("Missing browser-test credentials. Set PLAYWRIGHT_TEST_EMAIL and PLAYWRIGHT_TEST_PASSWORD.");
+  process.exit(1);
+}
+
+const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== "false" });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
 const pageErrors = [];
 const consoleMessages = [];

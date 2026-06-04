@@ -35,7 +35,9 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 6.0 | Access Control Manager Foundation | Verified via 6.0.1 | Added migration 0042, Access Control Manager UI, rights-matrix APIs, user effective-right diagnostics, Access Builder/Metadata Studio integration, and improved permission guidance without duplicating role tables. Live verification is now documented in Phase 6.0.1. |
 | 6.0.1 | Access Control Verification | Complete with documented limitation | Supabase Cloud RPC smoke test passed, authenticated browser verification passed end-to-end, User Role Assignment page is now reachable in normal flow, and local typecheck/lint/test/build/simulation checks passed. Multi-role effective-right diagnostics limitation is documented for high-privilege test users. |
 | 6.2.1 | Secure Browser Verification | Complete | Hardening browser verification workflow, enforcing env vars for credentials, and re-verifying Export/Import foundation securely. Verified with Playwright. |
-| 6.3 | Print Format Foundation | Complete | Metadata-driven Print Format foundation implemented. Seeding CRM Lead/Opportunity formats complete. Support for sections, fields, and company branding included. |
+| 6.3 | Print Format Foundation | Complete | CRM Lead and Opportunity print detail/preview checks now pass locally with Playwright, including required sections and browser print control. |
+| 6.3.1 | Print Security Verification Cleanup | Complete | Deleted the leaked debug script, removed committed browser credentials, standardized browser verifiers to env-only auth, and re-verified the full CRM print flow with Playwright. |
+| X | Module Builder Foundation | In progress | Module Builder implementation files are in the workspace and remain separate from the completed Phase 6.3.1 cleanup. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.

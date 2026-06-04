@@ -30,7 +30,7 @@
 
 ## Command Log
 ```bash
-$env:PLAYWRIGHT_TEST_EMAIL="saikumarbali555@gmail.com"; $env:PLAYWRIGHT_TEST_PASSWORD="***"; $env:PLAYWRIGHT_BASE_URL="http://localhost:5173"; $env:PHASE6_PRINT_OUT_DIR="C:/tmp/phase-6-3-print-format"; node scripts/verify_phase6_3_print.mjs
+$env:PLAYWRIGHT_TEST_EMAIL="<set-locally>"; $env:PLAYWRIGHT_TEST_PASSWORD="<set-locally>"; $env:PLAYWRIGHT_BASE_URL="<set-locally>"; $env:PHASE6_PRINT_OUT_DIR="C:/tmp/phase-6-3-print-format"; node scripts/verify_phase6_3_print.mjs
 ```
 
 ## Remaining Gaps

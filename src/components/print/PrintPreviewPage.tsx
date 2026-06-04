@@ -4,16 +4,17 @@ import { Printer, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { detectAndRegisterGenericDocTypeApi } from "../metadata/doctype-api-map";
-import { getPrintFormats } from "../../lib/print/print-format-api";
+import { getBuiltInPrintFormat, getPrintFormats } from "../../lib/print/print-format-api";
 import { PrintFormat } from "../../lib/print/print-types";
 import { PrintRenderer } from "./PrintRenderer";
 import { getCompanyTheme } from "../../lib/theme-api";
 import { CompanyThemeSettings } from "../../lib/theme-types";
 
 export function PrintPreviewPage() {
-  const { doctypeKey, documentId } = useParams<{ doctypeKey: string; documentId: string }>();
+  const { pageKey } = useParams<{ pageKey: string }>();
   const { selectedTenantId } = useAuth();
   const navigate = useNavigate();
+  const [, doctypeKey, documentId] = (pageKey ?? "").split(":");
 
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey || "");
   const [document, setDocument] = useState<Record<string, any> | null>(null);
@@ -40,17 +41,26 @@ export function PrintPreviewPage() {
 
         // 2. Load Print Formats
         const availableFormats = await getPrintFormats(doctypeKey!, selectedTenantId!);
-        setFormats(availableFormats);
         if (availableFormats.length > 0) {
+          setFormats(availableFormats);
           setSelectedFormat(availableFormats[0]);
         } else {
-          // Fallback if no format seeded (should not happen with migration)
-          throw new Error("No active print format found for this DocType");
+          const builtInFormat = getBuiltInPrintFormat(doctypeKey!, selectedTenantId!);
+          if (!builtInFormat) {
+            throw new Error("No active print format found for this DocType");
+          }
+          setFormats([builtInFormat]);
+          setSelectedFormat(builtInFormat);
         }
 
         // 3. Load Theme
-        const companyTheme = await getCompanyTheme(selectedTenantId!);
-        setTheme(companyTheme);
+        try {
+          const companyTheme = await getCompanyTheme(selectedTenantId!);
+          setTheme(companyTheme);
+        } catch (themeError) {
+          console.warn("[PrintPreview] theme load failed", themeError);
+          setTheme(null);
+        }
 
       } catch (err: any) {
         console.error("[PrintPreview] load error:", err);

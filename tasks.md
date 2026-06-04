@@ -13,6 +13,20 @@ Phase 6.2 and 6.2.1 are accepted:
 - browser verification now uses environment variables only
 - screenshot/result proof exists
 
+Phase 6.3.1 security cleanup is complete:
+
+- [x] Deleted `scripts/debug_ui.mjs`
+- [x] Removed committed hardcoded browser-test credentials from scripts/docs
+- [x] Standardized browser verification auth to env vars only
+- [x] Updated `scripts/verify_phase6_3_print.mjs` to exit non-zero on failed checks
+- [x] `npm run typecheck`
+- [x] `npm run lint`
+- [x] `npm run test`
+- [x] `npm run build`
+- [x] `npm run test:simulation`
+- [x] `node scripts/verify_phase6_3_print.mjs` local rerun pass
+- [x] Restore passing CRM Lead/Opportunity print verification locally
+
 ## Why this phase exists
 
 ERP systems need printable documents and clean page output:
@@ -88,6 +102,46 @@ Phase 6.3 is complete only when:
 - [x] tests and command results are documented
 - [x] AI run report exists
 
-After Phase 6.3, recommended next phase:
+After Phase 6.3.1, recommended next phase:
 
-- Phase 6.3.1: Print Format Builder polish and PDF strategy
+- Print Format Builder polish and PDF strategy
+
+# Phase X Tasks: Module Builder Foundation
+
+Active branch: `phase-2.5-metadata-engine`
+
+Goal: A developer should be able to create a new business area like Fleet Management fully from the browser without SQL.
+
+## A. Docs & Setup
+- [x] Create `docs/PHASE_X_MODULE_BUILDER_FOUNDATION.md`
+- [x] Create `docs/ai-runs/2026-06-04_module-builder-foundation.md`
+
+## B. App / Module Builder
+- [x] Create `src/components/metadata-studio/ModuleBuilder.tsx`
+- [x] Add Metadata Studio card: "App / Module Builder"
+- [x] Add route: `metadata_studio_module_builder`
+- [x] Implement Module creation (label, key, desc, icon, etc.)
+- [x] Implement matching Workspace creation option
+
+## C. Builder Integration
+- [x] Update DocType Builder with "+ Create new module" dropdown option
+- [x] Implement inline quick-create modal for modules in DocType Builder
+- [x] Update Workspace Menu Builder to show "Create workspace" if missing for module
+- [x] Add Module selection filter to Workspace Menu Builder
+
+## D. Verification & Quality
+- [ ] Browser verify with Fleet Management:
+    - [ ] Create Fleet Management module from browser
+    - [ ] Create Fleet Management workspace from browser
+    - [ ] Create Vehicle DocType
+    - [ ] Add Vehicle fields (license_plate, model, type, status)
+    - [ ] Create list view and form layout
+    - [ ] Create permissions/access
+    - [ ] Add Vehicles menu item
+    - [ ] Verify Vehicle record CRUD
+    - [ ] Verify Check / Repair passes
+- [ ] `npm run typecheck`
+- [ ] `npm run lint`
+- [ ] `npm run test`
+- [ ] `npm run build`
+- [ ] `npm run test:simulation`
