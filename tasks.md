@@ -1,153 +1,51 @@
-# Phase 6.2.1 Tasks: Secure Browser Verification Cleanup
-
-Active branch: `phase-2.5-metadata-engine`
-
-Goal: clean up Phase 6.2 browser verification so it is strict, repeatable, and does not commit credentials. Do not start Print Format Builder yet.
-
-## Why this phase exists
-
-Phase 6.2 added export/import foundation and browser verification, but the verifier committed a real email/password in `scripts/verify_phase6_export_import.mjs`.
-
-A follow-up patch removed the hardcoded credentials from the latest file, but the password was still exposed in git history. The account password must be rotated outside the repo.
-
----
-
-## A. Immediate security action
-
-- [x] Change/rotate the exposed login password outside the repository.
-- [x] Do not commit real passwords again.
-- [x] Do not paste real passwords into CLI-AI prompts.
-- [x] Use environment variables for browser verification.
-
-Required local environment variables:
-
-```bash
-PLAYWRIGHT_TEST_EMAIL=your-test-email
-PLAYWRIGHT_TEST_PASSWORD=your-rotated-password
-PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173
-```
-
-Optional:
-
-```bash
-PLAYWRIGHT_HEADLESS=false
-PHASE6_EXPORT_IMPORT_OUT_DIR=C:/tmp/phase-6-2-export-import
-```
-
----
-
-## B. Docs
-
-- [x] GPT review: `docs/ai-runs/2026-06-03_gpt-review-phase-6-2-export-import.md`
-- [x] Create `docs/PHASE_6_2_1_SECURE_BROWSER_VERIFICATION.md`
-- [x] Create `docs/ai-runs/2026-06-03_phase-6-2-1-secure-browser-verification.md`
-- [x] Update `progress.md`
-
----
-
-## C. Verify script cleanup
-
-Check:
-
-- [x] `scripts/verify_phase6_export_import.mjs` uses env vars only
-- [x] script fails clearly when env vars are missing
-- [x] script exits non-zero when any verification check fails
-- [x] no real password remains in the latest script
-
-Run:
-
-```bash
-node scripts/verify_phase6_export_import.mjs
-```
-
-Expected without env vars:
-
-```text
-Missing browser-test credentials...
-```
-
-Then run with env vars from local shell.
-
----
-
-## D. Strengthen Playwright/Chrome DevTools verification rules
-
-Update docs/report to require:
-
-- [x] browser verification must use Playwright or Chrome DevTools MCP
-- [x] no “manual assumed pass” allowed
-- [x] screenshots or Playwright logs must be produced
-- [x] script must fail non-zero on any failed check
-- [x] credentials must come from local env only
-- [x] final report must include exact verifier command and PASS/FAIL table
-
----
-
-## E. Re-run Phase 6.2 verification securely
-
-Using env vars, re-run browser verification:
-
-- [x] CRM Lead Export button visible
-- [x] CRM Lead Template button visible
-- [x] CRM Lead Import button visible
-- [x] missing required `lead_name` detected
-- [x] invalid Select value detected
-- [x] CRM Opportunity Export button visible
-- [x] CRM Opportunity Template button visible
-- [x] CRM Opportunity Import button visible
-- [x] no page errors
-
-Document output path for screenshots/results JSON.
-
----
-
-## F. Commands
-
-Run and document:
-
-```bash
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-npm run test:simulation
-```
-
----
-
-## G. Acceptance
-
-Phase 6.2.1 is complete only when:
-
-- [x] exposed password has been rotated outside repo
-- [x] verifier uses environment variables only
-- [x] verifier fails clearly without env vars
-- [x] secure verifier passes with env vars
-- [x] Playwright/Chrome DevTools strict rules are documented
-- [x] command results are documented
-- [x] AI run report exists
-
-After Phase 6.2.1, proceed to Phase 6.3 Print Format Foundation.
-
 # Phase 6.3 Tasks: Print Format Foundation
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: Add a safe, metadata-driven Print Format foundation for normal DocTypes. Use CRM Lead and CRM Opportunity as proof.
+Goal: add a safe, metadata-driven print foundation for normal DocTypes. Start with CRM Lead and CRM Opportunity. Do not start Purchase Orders, Client Scripts, Report Builder, Workflow, or PDF generation yet.
+
+## Current status
+
+Phase 6.2 and 6.2.1 are accepted:
+
+- Export/import foundation exists for metadata-driven DocTypes
+- CRM Lead and Opportunity export/import browser verification passed
+- browser verification now uses environment variables only
+- screenshot/result proof exists
+
+## Why this phase exists
+
+ERP systems need printable documents and clean page output:
+
+- print a CRM Lead summary
+- print an Opportunity summary
+- later print GRNs, Purchase Orders, Invoices, and reports
+- apply company logo and branding
+- control who can print
+
+This phase should create the foundation only. Avoid complex HTML scripting and avoid PDF generation for now.
+
+---
 
 ## A. Docs & Setup
 - [x] Create `docs/PHASE_6_3_PRINT_FORMAT_FOUNDATION.md`
 - [x] Create `docs/ai-runs/2026-06-04_phase-6-3-print-format-foundation.md`
 - [x] Update `progress.md`
 
-## B. Database & Permissions
+## B. Permission model
+- [x] Support `print_<doctype_key>` permissions
+- [x] Seed permissions for `crm_lead`, `crm_opportunity`
+- [x] Grant to Owner/Admin roles
+- [x] Seed default print formats for Leads and Opportunities
+
+## C. Database & Model
 - [x] Create migration `0045_print_format_foundation.sql`
 - [x] Support `print_<doctype_key>` permissions
 - [x] Seed permissions for `crm_lead`, `crm_opportunity`
 - [x] Grant to Owner/Admin roles
 - [x] Seed default print formats for Leads and Opportunities
 
-## C. Frontend Core
+## D. Frontend Core
 - [x] Create `src/lib/print/print-types.ts`
 - [x] Create `src/lib/print/print-format-api.ts`
 - [x] Create `src/components/print/PrintRenderer.tsx`
@@ -155,11 +53,11 @@ Goal: Add a safe, metadata-driven Print Format foundation for normal DocTypes. U
 - [x] Integrate Print button in `DynamicDetailPage`
 - [x] Register routes and virtual items
 
-## D. Optional Builder
+## E. Optional Builder
 - [x] Create `src/components/print/PrintFormatBuilderPage.tsx`
 - [x] Add link to Metadata Studio home
 
-## E. Verification & Quality
+## F. Verification & Quality
 - [x] Browser verify: CRM Lead Print button visible
 - [x] Browser verify: CRM Lead Print preview opens
 - [x] Browser verify: CRM Lead Branding and sections visible
@@ -172,3 +70,24 @@ Goal: Add a safe, metadata-driven Print Format foundation for normal DocTypes. U
 - [x] `npm run test`
 - [x] `npm run build`
 - [x] `npm run test:simulation`
+
+---
+
+## G. Acceptance
+
+Phase 6.3 is complete only when:
+
+- [x] print permission keys exist and owner/admin grants exist
+- [x] print format metadata table exists
+- [x] default CRM Lead and Opportunity print formats exist
+- [x] Print button appears on permitted metadata-driven detail pages
+- [x] Print Preview renders CRM Lead and Opportunity cleanly
+- [x] browser print action is available
+- [x] no unsafe scripts or arbitrary HTML execution
+- [x] strict browser verification is documented
+- [x] tests and command results are documented
+- [x] AI run report exists
+
+After Phase 6.3, recommended next phase:
+
+- Phase 6.3.1: Print Format Builder polish and PDF strategy
