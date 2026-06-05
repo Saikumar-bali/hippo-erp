@@ -127,12 +127,32 @@ describe("Metadata Studio UX Polish", () => {
     expect(screen.getByText(/Supported types:/)).toBeTruthy();
   });
 
+  it("DocFieldBuilder keeps focus while typing into a newly added field", async () => {
+    render(<DocFieldBuilder />);
+    await screen.findByRole("heading", { name: "Field Builder" });
+    fireEvent.click(screen.getByRole("button", { name: "Add Field" }));
+
+    const labelInputs = screen.getAllByLabelText("Label");
+    const fieldnameInputs = screen.getAllByLabelText("Fieldname");
+    const labelInput = labelInputs[labelInputs.length - 1] as HTMLInputElement;
+    const fieldnameInput = fieldnameInputs[fieldnameInputs.length - 1] as HTMLInputElement;
+
+    labelInput.focus();
+    fireEvent.change(labelInput, { target: { value: "S" } });
+    expect(document.activeElement).toBe(labelInput);
+    fireEvent.change(labelInput, { target: { value: "Store Name" } });
+
+    expect(document.activeElement).toBe(labelInput);
+    expect(labelInput.value).toBe("Store Name");
+    expect(fieldnameInput.value).toBe("store_name");
+  });
+
   it("DocFieldBuilder keeps generating fieldname until it is manually customized", async () => {
     render(<DocFieldBuilder />);
     await screen.findByRole("heading", { name: "Field Builder" });
 
-    const labelInput = screen.getByLabelText("Label");
-    const fieldnameInput = screen.getByLabelText("Fieldname");
+    const labelInput = await screen.findByLabelText("Label");
+    const fieldnameInput = await screen.findByLabelText("Fieldname");
 
     fireEvent.change(labelInput, { target: { value: "Store Name" } });
     expect((fieldnameInput as HTMLInputElement).value).toBe("store_name");

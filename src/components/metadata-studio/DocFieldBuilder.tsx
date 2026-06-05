@@ -11,6 +11,7 @@ import {
 import { moveItem, normalizeSortOrder, toSnakeCase } from "./builder-utils";
 
 type BuilderField = {
+  renderKey: string;
   id?: string;
   doctype_key: string;
   label: string;
@@ -26,8 +27,12 @@ type BuilderField = {
   sort_order: number;
 };
 
+let nextUnsavedFieldKey = 0;
+
 function makeEmptyField(doctypeKey: string, sortOrder: number): BuilderField {
+  nextUnsavedFieldKey += 1;
   return {
+    renderKey: `new-field-${nextUnsavedFieldKey}`,
     doctype_key: doctypeKey,
     label: "",
     fieldname: "",
@@ -72,6 +77,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
     }
     const rows = await listDocFieldsForDoctype(doctypeKey);
     setFields(rows.map((row, index) => ({
+      renderKey: `saved-field-${String(row.id)}`,
       id: String(row.id),
       doctype_key: String(row.doctype_key),
       label: String(row.label ?? ""),
@@ -247,7 +253,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
       ) : (
         <div className="studio-stack">
           {fields.map((field, index) => (
-            <div key={field.id ?? `${field.fieldname}-${index}`} className="studio-panel">
+            <div key={field.renderKey} className="studio-panel">
               <div className="studio-header" style={{ alignItems: "center" }}>
                 <strong>Field {index + 1}</strong>
                 <div className="studio-toolbar">
