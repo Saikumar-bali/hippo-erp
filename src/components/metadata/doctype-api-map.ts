@@ -12,6 +12,9 @@ export interface DocTypeApi {
   update?: (id: string, payload: Record<string, unknown>, tenantId?: string) => Promise<unknown>;
   deactivate?: (id: string, tenantId?: string) => Promise<void>;
   reactivate?: (id: string, tenantId?: string) => Promise<void>;
+  listAuditEvents?: (id: string, tenantId?: string) => Promise<Record<string, unknown>[]>;
+  listVersions?: (id: string, tenantId?: string) => Promise<Record<string, unknown>[]>;
+  getVersionDiff?: (id: string, versionFrom: number, versionTo: number, tenantId?: string) => Promise<{ diff: Record<string, unknown>; dataFrom: Record<string, unknown>; dataTo: Record<string, unknown> }>;
 }
 
 const doctypeApiRegistry = new Map<string, DocTypeApi>();

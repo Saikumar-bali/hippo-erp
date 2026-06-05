@@ -6,8 +6,26 @@ import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
 import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
 import { StatusField } from "./StatusField";
-import { Printer } from "lucide-react";
+import { Printer, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
+
+type AuditEvent = {
+  id: string;
+  action: string;
+  entity_id: string;
+  changes: Record<string, unknown> | null;
+  user_id: string;
+  created_at: string;
+};
+
+type DocVersion = {
+  id: string;
+  version_number: number;
+  changed_by: string;
+  changed_at: string;
+  change_reason: string | null;
+  data: Record<string, unknown>;
+};
 
 type Props = {
   doctypeKey: string;
@@ -40,10 +58,15 @@ export function DynamicDetailPage({
 }: Props) {
   const navigate = useNavigate();
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
-  const { readableFieldnames, loading: accessLoading, error: accessError } = useDocTypeFieldAccess(doctypeKey, tenantId ?? null);
+  const { readableFieldnames, permlevelByFieldname, loading: accessLoading, error: accessError } = useDocTypeFieldAccess(doctypeKey, tenantId ?? null);
   const [record, setRecord] = useState<Record<string, unknown> | null>(initialRecord ?? null);
   const [dataLoading, setDataLoading] = useState(!initialRecord);
   const [linkLabels, setLinkLabels] = useState<Record<string, string>>({});
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [versions, setVersions] = useState<DocVersion[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditExpanded, setAuditExpanded] = useState(false);
+  const [selectedVersionDiff, setSelectedVersionDiff] = useState<{ from: number; to: number; diff: Record<string, unknown> } | null>(null);
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
   const [apiReady, setApiReady] = useState(false);
@@ -96,6 +119,32 @@ export function DynamicDetailPage({
     };
     void loadLabels();
   }, [api, record, config]);
+
+  // Load audit events and versions for generic_json documents
+  useEffect(() => {
+    if (!api?.listAuditEvents || !recordId || !tenantId) return;
+    let cancelled = false;
+    setAuditLoading(true);
+
+    Promise.all([
+      api.listAuditEvents(recordId, tenantId),
+      api.listVersions?.(recordId, tenantId) ?? Promise.resolve([]),
+    ])
+      .then(([events, vers]) => {
+        if (!cancelled) {
+          setAuditEvents(events as AuditEvent[]);
+          setVersions(vers as DocVersion[]);
+        }
+      })
+      .catch(() => {
+        // Silently fail — audit is non-critical
+      })
+      .finally(() => {
+        if (!cancelled) setAuditLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [api, recordId, tenantId]);
 
   if (metaLoading || dataLoading || accessLoading) {
     return <div className="card state-info">Loading {doctypeKey} details…</div>;
@@ -151,6 +200,145 @@ export function DynamicDetailPage({
           </div>
         </div>
       ))}
+
+      {/* Audit & Version Timeline */}
+      {api?.listAuditEvents && tenantId && (auditEvents.length > 0 || versions.length > 0 || auditLoading) && (
+        <div className="detail-section">
+          <button
+            className="detail-section-title"
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", padding: 0, width: "100%", textAlign: "left" }}
+            onClick={() => setAuditExpanded(!auditExpanded)}
+          >
+            <Clock size={14} />
+            <span>Audit &amp; Version Timeline</span>
+            <span style={{ marginLeft: "auto", fontSize: "11px", color: "var(--text-muted)" }}>
+              {auditEvents.length} event{auditEvents.length !== 1 ? "s" : ""}
+            </span>
+            {auditExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {auditExpanded && (
+            <div style={{ marginTop: "8px" }}>
+              {auditLoading && <div className="state-info">Loading audit history…</div>}
+              {!auditLoading && auditEvents.length === 0 && versions.length === 0 && (
+                <div className="state-info">No audit events recorded yet.</div>
+              )}
+              {versions.length > 1 && (
+                <div style={{ marginBottom: "12px" }}>
+                  <h5 style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "var(--text-secondary)" }}>Version History</h5>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {versions.map((v, idx) => {
+                      const prev = versions[idx + 1];
+                      const isCurrent = idx === 0;
+                      return (
+                        <div
+                          key={v.id}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "8px",
+                            padding: "4px 8px", borderRadius: "4px",
+                            background: isCurrent ? "var(--primary-bg, #e8f4fd)" : "transparent",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <span style={{ fontWeight: 600, minWidth: "60px" }}>v{v.version_number}</span>
+                          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
+                            {new Date(v.changed_at).toLocaleString()}
+                          </span>
+                          {prev && api?.getVersionDiff && (
+                            <button
+                              style={{
+                                marginLeft: "auto", background: "none", border: "1px solid var(--border, #ddd)",
+                                borderRadius: "3px", padding: "1px 6px", fontSize: "10px", cursor: "pointer",
+                              }}
+                              onClick={async () => {
+                                try {
+                                  const result = await api.getVersionDiff!(recordId, prev.version_number, v.version_number, tenantId);
+                                  setSelectedVersionDiff({ from: prev.version_number, to: v.version_number, diff: result.diff });
+                                } catch {
+                                  toast.error("Failed to load version diff");
+                                }
+                              }}
+                            >
+                              Diff v{prev.version_number}→v{v.version_number}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {selectedVersionDiff && (
+                <div style={{ marginBottom: "12px", padding: "8px", background: "var(--bg-secondary, #f5f5f5)", borderRadius: "4px", fontSize: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <strong>Changes: v{selectedVersionDiff.from} → v{selectedVersionDiff.to}</strong>
+                    <button
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: "11px", color: "var(--text-muted)" }}
+                      onClick={() => setSelectedVersionDiff(null)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {Object.entries(selectedVersionDiff.diff).map(([field, vals]) => {
+                      const v = vals as { old: string | null; new: string | null };
+                      const pl = permlevelByFieldname.get(field) ?? 0;
+                      const masked = pl > 0;
+                      return (
+                        <div key={field} style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
+                          <span style={{ fontWeight: 600, minWidth: "120px" }}>{field}</span>
+                          <span style={{ color: "#b91c1c", textDecoration: "line-through", flex: 1 }}>
+                            {masked ? "•••" : (v.old ?? "—")}
+                          </span>
+                          <span style={{ color: "#15803d", flex: 1 }}>
+                            {masked ? "•••" : (v.new ?? "—")}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {auditEvents.length > 0 && (
+                <div>
+                  <h5 style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "var(--text-secondary)" }}>Activity Log</h5>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {auditEvents.map((ev) => {
+                      const actionLabel = ev.action === "create" ? "Created" : ev.action === "update" ? "Updated" : ev.action === "deactivate" ? "Deactivated" : ev.action === "reactivate" ? "Reactivated" : ev.action;
+                      const changes = ev.changes as Record<string, unknown> | null;
+                      const diff = changes?.diff as Record<string, Record<string, string>> | undefined;
+                      return (
+                        <div
+                          key={ev.id}
+                          style={{
+                            display: "flex", alignItems: "baseline", gap: "8px",
+                            padding: "4px 8px", borderRadius: "4px", fontSize: "12px",
+                          }}
+                        >
+                          <span style={{
+                            display: "inline-block", padding: "1px 6px", borderRadius: "3px",
+                            background: ev.action === "create" ? "#dcfce7" : ev.action === "update" ? "#dbeafe" : ev.action === "deactivate" ? "#fee2e2" : "#f3f4f6",
+                            fontWeight: 600, fontSize: "11px",
+                          }}>
+                            {actionLabel}
+                          </span>
+                          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
+                            {new Date(ev.created_at).toLocaleString()}
+                          </span>
+                          {diff && (
+                            <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
+                              Changed: {Object.keys(diff).join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="form-actions">
         {canPrint && isActive && (
