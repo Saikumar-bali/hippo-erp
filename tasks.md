@@ -6,10 +6,4 @@ Status: active. Do not mark complete until cloud, browser, and command verificat
 
 Phase 6.5 is accepted from commit `9932af891d21e2a3f5182ea974db618909a480a1`, which reported cloud verification 20/20 PASS, browser verification 18/18 PASS, typecheck 0 errors, tests 72/72, and build success.
 
-Goal: add a company-scoped audit trail and version timeline foundation for metadata-driven `generic_json` DocTypes. Use CRM Lead as proof.
-
-Do not start Workflow, Report Builder, Client Scripts, Module Builder, Purchase Orders, Fleet, PDF generation, or new business modules.
-
-## A. Docs and progress
-
-- [ ] Create `docs
+Goal: add a company-scoped audit trail and version timeline
