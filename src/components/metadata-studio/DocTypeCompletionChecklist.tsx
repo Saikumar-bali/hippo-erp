@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { getDocTypeMeta, getDocFields, getDocTypeActions, getDefaultListView, getDefaultFormLayout } from "../../lib/metadata/metadata-api";
 import { loadExistingPermissionKeys } from "../../lib/metadata/metadata-studio-api";
 import { clearMetadataCache } from "../../lib/metadata/doctype-registry";
+import { buildOwnerAdminPermissionGrants } from "./builder-utils";
 import type { DocTypeMeta, DocFieldMeta, DocTypeActionMeta, ListViewMeta, FormLayoutMeta } from "../../lib/metadata/types";
 
 type ChecklistItem = {
@@ -131,25 +132,16 @@ async function createMissingPermissions(doctypeKey: string, existing: string[], 
   return `Created ${created} missing permission(s) in catalog`;
 }
 
-async function grantOwnerAdmin(doctypeKey: string): Promise<string> {
-  const needed = [
-    `view_${doctypeKey}`, 
-    `create_${doctypeKey}`, 
-    `update_${doctypeKey}`, 
-    `delete_${doctypeKey}`,
-    `print_${doctypeKey}`
-  ];
-  const roles = ["owner", "admin"];
+async function grantOwnerAdmin(permissionKeys: string[]): Promise<string> {
+  const grants = buildOwnerAdminPermissionGrants(permissionKeys);
   let granted = 0;
-  for (const role of roles) {
-    for (const key of needed) {
-      const { error } = await supabase.schema("app")
-        .from("role_permission_grants")
-        .upsert({ role, permission_key: key, is_granted: true }, { onConflict: "role,permission_key" })
-        .maybeSingle();
-      if (error) throw error;
-      granted++;
-    }
+  for (const grant of grants) {
+    const { error } = await supabase.schema("app")
+      .from("role_permission_grants")
+      .upsert(grant, { onConflict: "role,permission_key" })
+      .maybeSingle();
+    if (error) throw error;
+    granted++;
   }
   return `Granted ${granted} permission(s) to owner/admin`;
 }
@@ -342,12 +334,12 @@ export function DocTypeCompletionChecklist({ doctypeKey: initialKey }: Props) {
       const missingOwner = permKeys.filter((p) => !ownerPerms.includes(p));
       const missingAdmin = permKeys.filter((p) => !adminPerms.includes(p));
       if (missingOwner.length === 0 && missingAdmin.length === 0) {
-        results.push({ key: "perm_grants", label: "Permission grants exist for owner/admin", status: "pass", message: "All permissions granted to owner and admin" });
+        results.push({ key: "perm_grants", label: "Legacy owner/admin defaults", status: "pass", message: "All global default grants exist. Company-role access is managed separately." });
       } else {
         const details: string[] = [];
         if (missingOwner.length > 0) details.push(`owner lacks: ${missingOwner.join(", ")}`);
         if (missingAdmin.length > 0) details.push(`admin lacks: ${missingAdmin.join(", ")}`);
-        results.push({ key: "perm_grants", label: "Permission grants exist for owner/admin", status: "error", message: details.join("; "), repair: () => grantOwnerAdmin(key) });
+        results.push({ key: "perm_grants", label: "Legacy owner/admin defaults", status: "warning", message: `${details.join("; ")}. This does not reflect company-role grants or the selected user's effective access.`, repair: () => grantOwnerAdmin(permKeys) });
       }
 
       // 9. Workspace Item exists
