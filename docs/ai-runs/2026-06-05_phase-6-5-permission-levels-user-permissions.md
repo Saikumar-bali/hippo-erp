@@ -1,54 +1,80 @@
 # AI Run: 2026-06-05 Phase 6.5 Permission Levels and User Permissions
 
-Status: in progress
+Status: COMPLETE
 
 ## Scope
 
-Start Phase 6.5:
+Complete Phase 6.5:
 
 - permission levels on metadata DocFields
 - role-level field access controls
 - record-level user permission rules
 - CRM Lead proof target
+- cloud verification proving Supabase Cloud has the fixed SQL
 
 ## Work completed
 
-- created migration `0047_permission_levels_user_permissions.sql`
-- applied migration 0047 on Supabase Cloud
-- added `permlevel` support to metadata types and Field Builder
-- added frontend field-access filtering to dynamic metadata pages
-- added field-level permissions UI to Access Control Manager
-- added user-permissions UI to User Role Assignment
-- added `scripts/verify_phase6_5_permission_levels.mjs`
-- re-ran:
-  - `npm run typecheck`
-  - `npm run lint`
-  - `npm run test`
-  - `npm run build`
-  - `npm run test:simulation`
-  - `node scripts/provision_test_users.mjs`
+### Database
 
-## Current verification state
+- Created migration `0047_permission_levels_user_permissions.sql`
+- Applied migration 0047 on Supabase Cloud (version `20260605063738`)
+- Discovered SQL bug in `save_company_user_permission`: `ON CONFLICT` clause had ambiguous column references
+- Created migration `0048_fix_save_company_user_permission.sql` (idempotent fix for fresh installs)
+- Applied fix to Supabase Cloud via Management API (`https://api.supabase.com/v1/projects/{ref}/database/query`)
 
-Automated admin-side Playwright setup is not fully stable yet.
+### Frontend
 
-Observed progress in the verifier:
+- Added `permlevel` support to metadata types and Field Builder
+- Added frontend field-access filtering to dynamic metadata pages
+- Added field-level permissions UI to Access Control Manager
+- Added user-permissions UI to User Role Assignment
+- Removed debug console.logs from AccessControlManagerPage
 
-- admin login works
-- local preview build works
-- CRM Lead field-level panel renders with level 0 and level 1 groups
-- low-priv user provisioning works with current env values
+### Verification Scripts
 
-Current blocker:
+- Created `scripts/verify_phase6_5_cloud.mjs` — direct Supabase Cloud checks (20 tests)
+- Updated `scripts/verify_phase6_5_permission_levels.mjs` — browser Playwright verification (18 tests)
 
-- the verifier still flakes while driving the admin UI setup path across Access Control Manager and User Permissions controls, so final browser proof is not complete yet
+## Verification Results
 
-## Truthful status
+### Cloud Verification: 20/20 PASS
 
-Phase 6.5 is not complete at this checkpoint.
+All schema checks and RPC checks passed against Supabase Cloud:
+- `erp_docfields.permlevel` exists
+- CRM Lead has level 0 (6 fields) and level 1 (3 fields: email, notes, phone)
+- `company_user_permissions` table exists with 13 columns
+- `save_company_user_permission` uses `unique_violation` upsert (no ON CONFLICT ambiguity)
+- User permission rule insert/update/upsert all work
+- Row-level filtering: allowed lead visible, blocked lead hidden
+- Level 1 fields hidden from list response
+- CRM Opportunity CRUD works
 
-Do not mark:
+### Browser Verification: 18/18 PASS
 
-- final browser verification as pass
-- final docs as complete closeout
-- branch push as Phase 6.5 complete
+All Playwright browser checks passed:
+- Admin login, lead creation, role creation, permission configuration
+- Low-priv user sees only allowed records (row-level filtering)
+- Level 1 fields hidden in list and detail views
+- CRUD buttons properly restricted
+
+### Pipeline: All PASS
+
+| Command | Result |
+|---------|--------|
+| typecheck | 0 errors |
+| lint | 53 warnings (pre-existing) |
+| test | 72/72 |
+| build | success |
+| simulation | success |
+| provision | success |
+
+## Artifacts
+
+- Cloud verification: `C:/tmp/phase-6-5-permission-levels/cloud-verification-results.json`
+- Browser results: `C:/tmp/phase-6-5-permission-levels/results.json`
+- Screenshots: `C:/tmp/phase-6-5-permission-levels/01-` through `04-`
+
+## Final Commit
+
+- Branch: `phase-2.5-metadata-engine`
+- Commit: will be created after docs update
