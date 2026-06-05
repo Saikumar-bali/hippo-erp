@@ -11,6 +11,7 @@ import {
 import { moveItem, normalizeSortOrder, toSnakeCase } from "./builder-utils";
 
 type BuilderField = {
+  renderKey: string;
   id?: string;
   doctype_key: string;
   label: string;
@@ -26,8 +27,12 @@ type BuilderField = {
   sort_order: number;
 };
 
+let nextUnsavedFieldKey = 0;
+
 function makeEmptyField(doctypeKey: string, sortOrder: number): BuilderField {
+  nextUnsavedFieldKey += 1;
   return {
+    renderKey: `new-field-${nextUnsavedFieldKey}`,
     doctype_key: doctypeKey,
     label: "",
     fieldname: "",
@@ -72,6 +77,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
     }
     const rows = await listDocFieldsForDoctype(doctypeKey);
     setFields(rows.map((row, index) => ({
+      renderKey: `saved-field-${String(row.id)}`,
       id: String(row.id),
       doctype_key: String(row.doctype_key),
       label: String(row.label ?? ""),
@@ -168,25 +174,19 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
             ? { options: field.selectOptionsText.split("\n").map((value) => value.trim()).filter(Boolean) }
             : field.fieldtype === "Link"
               ? { link_to: field.linkTo, display_field: "name" }
-              : null;
+              : {};
 
         const payload = {
           doctype_key: selectedDocType,
           fieldname: field.fieldname,
           label: field.label.trim(),
           fieldtype: field.fieldtype,
-          db_column: null,
           options,
           is_required: field.is_required,
-          is_unique: false,
-          is_readonly: false,
           is_hidden: field.is_hidden,
           in_list_view: field.in_list_view,
           in_standard_filter: field.in_standard_filter,
           permlevel: field.permlevel,
-          default_value: null,
-          validation_rules: null,
-          depends_on: null,
           sort_order: field.sort_order,
         };
 
@@ -253,7 +253,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
       ) : (
         <div className="studio-stack">
           {fields.map((field, index) => (
-            <div key={field.id ?? `${field.fieldname}-${index}`} className="studio-panel">
+            <div key={field.renderKey} className="studio-panel">
               <div className="studio-header" style={{ alignItems: "center" }}>
                 <strong>Field {index + 1}</strong>
                 <div className="studio-toolbar">
@@ -270,9 +270,10 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
                     value={field.label}
                     onChange={(event) => {
                       const label = event.target.value;
+                      const shouldGenerateFieldname = !field.fieldname || field.fieldname === toSnakeCase(field.label);
                       updateField(index, {
                         label,
-                        fieldname: field.fieldname ? field.fieldname : toSnakeCase(label),
+                        fieldname: shouldGenerateFieldname ? toSnakeCase(label) : field.fieldname,
                       });
                     }}
                   />
