@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MetadataDataTable } from "../../src/components/metadata-studio/MetadataDataTable";
 import { WorkspaceItemsManager } from "../../src/components/metadata-studio/WorkspaceItemsManager";
 import { MetadataStudioHome } from "../../src/components/metadata-studio/MetadataStudioHome";
 import { DocTypeBuilder } from "../../src/components/metadata-studio/DocTypeBuilder";
 import { DocFieldBuilder } from "../../src/components/metadata-studio/DocFieldBuilder";
+import { updateRecord } from "../../src/lib/metadata/metadata-studio-api";
 
 afterEach(() => {
   cleanup();
@@ -124,5 +125,24 @@ describe("Metadata Studio UX Polish", () => {
     fireEvent.click(screen.getByText("Add Field"));
     expect((await screen.findAllByText("Field Type")).length).toBeGreaterThan(0);
     expect(screen.getByText(/Supported types:/)).toBeTruthy();
+  });
+
+  it("DocFieldBuilder saves valid options without clearing unmanaged field metadata", async () => {
+    const updateRecordMock = vi.mocked(updateRecord);
+    updateRecordMock.mockClear();
+
+    render(<DocFieldBuilder />);
+    await screen.findByRole("heading", { name: "Field Builder" });
+    fireEvent.click(screen.getByRole("button", { name: "Save Fields" }));
+
+    await waitFor(() => expect(updateRecordMock).toHaveBeenCalledTimes(1));
+    const payload = updateRecordMock.mock.calls[0][2];
+    expect(payload).toEqual(expect.objectContaining({ options: {} }));
+    expect(payload).not.toHaveProperty("validation_rules");
+    expect(payload).not.toHaveProperty("depends_on");
+    expect(payload).not.toHaveProperty("db_column");
+    expect(payload).not.toHaveProperty("default_value");
+    expect(payload).not.toHaveProperty("is_unique");
+    expect(payload).not.toHaveProperty("is_readonly");
   });
 });

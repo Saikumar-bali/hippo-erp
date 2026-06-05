@@ -168,25 +168,19 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
             ? { options: field.selectOptionsText.split("\n").map((value) => value.trim()).filter(Boolean) }
             : field.fieldtype === "Link"
               ? { link_to: field.linkTo, display_field: "name" }
-              : null;
+              : {};
 
         const payload = {
           doctype_key: selectedDocType,
           fieldname: field.fieldname,
           label: field.label.trim(),
           fieldtype: field.fieldtype,
-          db_column: null,
           options,
           is_required: field.is_required,
-          is_unique: false,
-          is_readonly: false,
           is_hidden: field.is_hidden,
           in_list_view: field.in_list_view,
           in_standard_filter: field.in_standard_filter,
           permlevel: field.permlevel,
-          default_value: null,
-          validation_rules: null,
-          depends_on: null,
           sort_order: field.sort_order,
         };
 
