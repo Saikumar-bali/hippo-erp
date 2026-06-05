@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
-import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
+import { getDocTypeApi, detectAndRegisterGenericDocTypeApi, type DocTypeApi } from "./doctype-api-map";
 import { StatusField } from "./StatusField";
 import { Printer, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
@@ -68,17 +68,23 @@ export function DynamicDetailPage({
   const [auditExpanded, setAuditExpanded] = useState(false);
   const [selectedVersionDiff, setSelectedVersionDiff] = useState<{ from: number; to: number; diff: Record<string, unknown> } | null>(null);
 
-  const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
+  const [registeredApi, setRegisteredApi] = useState<DocTypeApi | null>(() => getDocTypeApi(doctypeKey));
   const [apiReady, setApiReady] = useState(false);
 
   useEffect(() => {
-    if (api) { setApiReady(true); return; }
+    const existing = getDocTypeApi(doctypeKey);
+    if (existing) { setRegisteredApi(existing); setApiReady(true); return; }
     let cancelled = false;
     detectAndRegisterGenericDocTypeApi(doctypeKey).then((detected) => {
-      if (!cancelled) setApiReady(!!detected);
+      if (!cancelled) {
+        if (detected) setRegisteredApi(detected);
+        setApiReady(!!detected);
+      }
     });
     return () => { cancelled = true; };
-  }, [doctypeKey, api]);
+  }, [doctypeKey]);
+
+  const api = registeredApi;
 
   useEffect(() => {
     if (!apiReady || !api || !recordId) return;
