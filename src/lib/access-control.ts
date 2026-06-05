@@ -66,6 +66,50 @@ export type UserRoleAssignmentRecord = {
   sort_order: number;
 };
 
+export type DocTypeFieldAccessRecord = {
+  fieldname: string;
+  label: string;
+  permlevel: number;
+  can_read: boolean;
+  can_write: boolean;
+};
+
+export type RoleDocTypePermlevelRow = {
+  permlevel: number;
+  field_count: number;
+  field_labels: string[];
+  role_can_read: boolean;
+  role_can_write: boolean;
+  effective_user_can_read: boolean;
+  effective_user_can_write: boolean;
+};
+
+export type CompanyUserPermissionRule = {
+  id: string;
+  doctype_key: string;
+  doctype_label: string;
+  fieldname: string;
+  field_label: string;
+  permlevel: number;
+  allowed_value: string;
+  apply_read: boolean;
+  apply_write: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CompanyUserPermissionPayload = {
+  id?: string | null;
+  user_id: string;
+  doctype_key: string;
+  fieldname: string;
+  allowed_value: string;
+  apply_read: boolean;
+  apply_write: boolean;
+  is_active: boolean;
+};
+
 export function accessTargetIdentity(targetType: AccessTargetType, targetKey: string, workspaceKey?: string | null) {
   return `${targetType}:${workspaceKey ?? ""}:${targetKey}`;
 }

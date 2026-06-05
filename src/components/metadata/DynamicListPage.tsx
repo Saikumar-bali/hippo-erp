@@ -14,6 +14,7 @@ import type { DocFieldMeta, ListViewColumn } from "../../lib/metadata/types";
 import { buildAccessErrorMessage, inferPermissionKeyFromError } from "../../lib/access-control";
 import { recordsToCsv, downloadCsv, exportFilename } from "../../lib/export-import/csv-export";
 import { generateTemplateHeader, downloadTemplate } from "../../lib/export-import/csv-template";
+import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
 
 type Props = {
   doctypeKey: string;
@@ -73,6 +74,7 @@ export function DynamicListPage({
   permissionChecker,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
+  const { readableFieldnames, writableFieldnames, loading: accessLoading, error: accessError } = useDocTypeFieldAccess(doctypeKey, tenantId);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
@@ -204,15 +206,21 @@ export function DynamicListPage({
     () => normalizeListColumns(listView?.columns_json, config?.fields ?? []),
     [listView?.columns_json, config?.fields]
   );
-  const columns = normalizedColumns.columns;
+  const columns = useMemo(
+    () => normalizedColumns.columns.filter((column) => readableFieldnames.has(column.fieldname)),
+    [normalizedColumns.columns, readableFieldnames],
+  );
   const usedFallbackColumns = normalizedColumns.usedFallback;
-  const filterConfig = useMemo(() => Array.isArray(listView?.filters_json) ? listView?.filters_json ?? [] : [], [listView?.filters_json]);
+  const filterConfig = useMemo(
+    () => (Array.isArray(listView?.filters_json) ? listView?.filters_json ?? [] : []).filter((filter) => readableFieldnames.has(filter.fieldname)),
+    [listView?.filters_json, readableFieldnames],
+  );
   const searchFields = useMemo(() => {
     if (Array.isArray(listView?.search_fields_json) && listView?.search_fields_json.length > 0) {
-      return listView.search_fields_json as string[];
+      return (listView.search_fields_json as string[]).filter((fieldname) => readableFieldnames.has(fieldname));
     }
     return columns.map((c) => c.fieldname).slice(0, 4);
-  }, [listView?.search_fields_json, columns]);
+  }, [listView?.search_fields_json, columns, readableFieldnames]);
   const actions = config?.actions ?? [];
 
   const hasStatusColumn = columns.some((c) => c.fieldname === "is_active");
@@ -298,11 +306,12 @@ export function DynamicListPage({
     }
   };
 
-  if (metaLoading || !apiReady || dataLoading) {
+  if (metaLoading || !apiReady || dataLoading || accessLoading) {
     return <div className="card state-info">Loading {doctypeKey} list…</div>;
   }
 
   if (metaError) return <div className="card state-error">{metaError}</div>;
+  if (accessError) return <div className="card state-error">{accessError}</div>;
   if (!config) return <div className="card state-error">Unknown DocType: {doctypeKey}</div>;
   if (!api) {
     return (
@@ -375,7 +384,7 @@ export function DynamicListPage({
         doctypeKey={doctypeKey}
         recordId={selectedId!}
         tenantId={tenantId}
-        canUpdate={canUpdate}
+        canUpdate={canUpdate && writableFieldnames.size > 0}
         canDelete={canDelete}
         canPrint={canPrint}
         initialRecord={selectedRecord}
@@ -399,12 +408,12 @@ export function DynamicListPage({
         <div className="card-head">
           <h3>{config.doctype.label}</h3>
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-            {canExport && (
+            {canExport && columns.length > 0 && (
               <button className="logout" onClick={handleExport} title="Export current list to CSV">
                 Export CSV
               </button>
             )}
-            {canExport && (
+            {canExport && columns.length > 0 && (
               <button className="logout" onClick={handleDownloadTemplate} title="Download CSV template">
                 Template
               </button>
@@ -442,6 +451,10 @@ export function DynamicListPage({
         {filtered.length === 0 ? (
           <div className="empty-state">
             <strong>{records.length === 0 ? `No ${config.doctype.label.toLowerCase()} records yet.` : "No records match the current filters."}</strong>
+          </div>
+        ) : columns.length === 0 ? (
+          <div className="empty-state">
+            <strong>All configured fields on this DocType are hidden by your current field-level access.</strong>
           </div>
         ) : (
           <div className="table-wrap" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>

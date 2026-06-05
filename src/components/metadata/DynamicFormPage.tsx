@@ -4,6 +4,7 @@ import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { getDocTypeApi } from "./doctype-api-map";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
 import { buildAccessErrorMessage, inferPermissionKeyFromError } from "../../lib/access-control";
+import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
 
 type Props = {
   doctypeKey: string;
@@ -25,6 +26,7 @@ export function DynamicFormPage({
   initialRecord,
 }: Props) {
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
+  const { readableFieldnames, writableFieldnames, loading: accessLoading, error: accessError } = useDocTypeFieldAccess(doctypeKey, tenantId);
   const [record, setRecord] = useState<Record<string, unknown> | null>(initialRecord ?? null);
   const [dataLoading, setDataLoading] = useState(action === "update" && recordId && !initialRecord);
   const [saving, setSaving] = useState(false);
@@ -115,7 +117,7 @@ export function DynamicFormPage({
     const validationErrors: Record<string, string> = {};
 
     for (const f of config?.fields ?? []) {
-      if (f.is_hidden || f.is_readonly || f.fieldname === "id") continue;
+      if (f.is_hidden || f.is_readonly || f.fieldname === "id" || !readableFieldnames.has(f.fieldname) || !writableFieldnames.has(f.fieldname)) continue;
       const raw = fd.get(f.fieldname);
       let value: unknown = raw;
 
@@ -169,18 +171,20 @@ export function DynamicFormPage({
     }
   };
 
-  if (metaLoading || dataLoading) {
+  if (metaLoading || dataLoading || accessLoading) {
     return <div className="card state-info">Loading…</div>;
   }
 
   if (metaError) return <div className="card state-error">{metaError}</div>;
+  if (accessError) return <div className="card state-error">{accessError}</div>;
   if (!config) return <div className="card state-error">Unknown DocType: {doctypeKey}</div>;
 
   const renderField = (field: DocFieldMeta) => {
-    if (field.is_hidden) return null;
+    if (field.is_hidden || !readableFieldnames.has(field.fieldname)) return null;
     const currentValue = record?.[field.fieldname];
     const defaultValue = field.default_value ?? "";
-    const isReadonly = field.is_readonly || (action === "update" && (field.fieldname === "created_by" || field.fieldname === "created_at"));
+    const canWriteField = writableFieldnames.has(field.fieldname);
+    const isReadonly = field.is_readonly || !canWriteField || (action === "update" && (field.fieldname === "created_by" || field.fieldname === "created_at"));
 
     if (field.fieldtype === "Check") {
       return (

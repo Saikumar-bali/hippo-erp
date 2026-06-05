@@ -7,6 +7,7 @@ import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
 import { getDocTypeApi, detectAndRegisterGenericDocTypeApi } from "./doctype-api-map";
 import { StatusField } from "./StatusField";
 import { Printer } from "lucide-react";
+import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
 
 type Props = {
   doctypeKey: string;
@@ -39,6 +40,7 @@ export function DynamicDetailPage({
 }: Props) {
   const navigate = useNavigate();
   const { config, loading: metaLoading, error: metaError } = useDocTypeConfig(doctypeKey);
+  const { readableFieldnames, loading: accessLoading, error: accessError } = useDocTypeFieldAccess(doctypeKey, tenantId ?? null);
   const [record, setRecord] = useState<Record<string, unknown> | null>(initialRecord ?? null);
   const [dataLoading, setDataLoading] = useState(!initialRecord);
   const [linkLabels, setLinkLabels] = useState<Record<string, string>>({});
@@ -95,10 +97,11 @@ export function DynamicDetailPage({
     void loadLabels();
   }, [api, record, config]);
 
-  if (metaLoading || dataLoading) {
+  if (metaLoading || dataLoading || accessLoading) {
     return <div className="card state-info">Loading {doctypeKey} details…</div>;
   }
   if (metaError) return <div className="card state-error">{metaError}</div>;
+  if (accessError) return <div className="card state-error">{accessError}</div>;
   if (!config) return <div className="card state-error">Unknown DocType: {doctypeKey}</div>;
   if (!record) return <div className="card state-error">Record not found</div>;
 
@@ -130,7 +133,7 @@ export function DynamicDetailPage({
           <div className={sec.columns === 1 ? "detail-grid detail-grid--single" : "detail-grid"}>
             {sec.fields
               .map((fn) => fieldMap.get(fn))
-              .filter((f): f is DocFieldMeta => f !== undefined && !f.is_hidden)
+              .filter((f): f is DocFieldMeta => f !== undefined && !f.is_hidden && readableFieldnames.has(f.fieldname))
               .map((f) => {
                 const isFullWidth = f.fieldtype === "Text";
                 return (

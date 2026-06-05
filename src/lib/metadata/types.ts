@@ -54,6 +54,7 @@ export interface DocFieldMeta {
   is_hidden: boolean;
   in_list_view: boolean;
   in_standard_filter: boolean;
+  permlevel?: number;
   default_value: string | null;
   validation_rules: Record<string, unknown>;
   depends_on: Record<string, unknown>;

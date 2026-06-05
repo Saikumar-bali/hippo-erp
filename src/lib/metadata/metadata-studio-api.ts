@@ -171,6 +171,7 @@ export const TABLES: Record<string, TableMeta> = {
       { name: "is_hidden", label: "Hidden", type: "boolean" },
       { name: "in_list_view", label: "In List View", type: "boolean" },
       { name: "in_standard_filter", label: "In Standard Filter", type: "boolean" },
+      { name: "permlevel", label: "Permission Level", type: "number", default: 0 },
       { name: "default_value", label: "Default Value", type: "text" },
       { name: "validation_rules", label: "Validation Rules (JSON)", type: "json" },
       { name: "depends_on", label: "Depends On (JSON)", type: "json" },

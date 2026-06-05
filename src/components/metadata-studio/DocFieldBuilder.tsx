@@ -22,6 +22,7 @@ type BuilderField = {
   in_list_view: boolean;
   in_standard_filter: boolean;
   is_hidden: boolean;
+  permlevel: number;
   sort_order: number;
 };
 
@@ -37,6 +38,7 @@ function makeEmptyField(doctypeKey: string, sortOrder: number): BuilderField {
     in_list_view: false,
     in_standard_filter: false,
     is_hidden: false,
+    permlevel: 0,
     sort_order: sortOrder,
   };
 }
@@ -79,6 +81,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
       in_list_view: Boolean(row.in_list_view),
       in_standard_filter: Boolean(row.in_standard_filter),
       is_hidden: Boolean(row.is_hidden),
+      permlevel: Number(row.permlevel ?? 0),
       sort_order: Number(row.sort_order ?? index + 1),
       ...optionsFromRecord(row),
     })));
@@ -180,6 +183,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
           is_hidden: field.is_hidden,
           in_list_view: field.in_list_view,
           in_standard_filter: field.in_standard_filter,
+          permlevel: field.permlevel,
           default_value: null,
           validation_rules: null,
           depends_on: null,
@@ -289,6 +293,18 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
                         {fieldType}
                       </option>
                     ))}
+                  </select>
+                </label>
+                <label className="studio-field">
+                  <span>Permission Level</span>
+                  <select
+                    value={String(field.permlevel)}
+                    onChange={(event) => updateField(index, { permlevel: Number(event.target.value) })}
+                  >
+                    <option value="0">Level 0 - Normal</option>
+                    <option value="1">Level 1 - Sensitive</option>
+                    <option value="2">Level 2</option>
+                    <option value="3">Level 3</option>
                   </select>
                 </label>
               </div>

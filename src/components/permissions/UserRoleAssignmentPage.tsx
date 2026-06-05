@@ -5,10 +5,11 @@ import { useAuth } from "../../context/AuthContext";
 import { AccessDenied } from "../AccessDenied";
 import { InviteUserForm } from "../InviteUserForm";
 import { buildMissingRightsDiagnostics, groupMatrixRows } from "../../lib/access-control";
-import { getAccessControlMatrix, getCompanyUserRoleAssignments, setCompanyUserRoles } from "../../lib/access-control-api";
+import { getAccessControlMatrix, getCompanyUserPermissions, getCompanyUserRoleAssignments, saveCompanyUserPermission, setCompanyUserRoles } from "../../lib/access-control-api";
 import { ensureCompanyDefaultRoles, getPermissionCatalog, listCompanyRoles, type CompanyRole } from "../../lib/roles-api";
 import { cancelCompanyInvite, getCompanyInvites, getCompanyUsers, removeCompanyUser, type CompanyInviteRecord, type CompanyUserRecord } from "../../lib/users-api";
 import type { PermissionCatalogRecord } from "../../lib/permissions";
+import { listDocFieldsForDoctype, loadDocTypeKeys } from "../../lib/metadata/metadata-studio-api";
 
 type Props = {
   canViewUsers?: boolean;
@@ -34,6 +35,17 @@ export function UserRoleAssignmentPage({
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState("");
   const [targetRows, setTargetRows] = useState<ReturnType<typeof groupMatrixRows>>([]);
+  const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
+  const [ruleFields, setRuleFields] = useState<Array<{ fieldname: string; label: string; permlevel: number }>>([]);
+  const [userPermissionRules, setUserPermissionRules] = useState<Awaited<ReturnType<typeof getCompanyUserPermissions>>>([]);
+  const [ruleDraft, setRuleDraft] = useState({
+    doctype_key: "crm_lead",
+    fieldname: "",
+    allowed_value: "",
+    apply_read: true,
+    apply_write: false,
+    is_active: true,
+  });
 
   const permissionLabelMap = useMemo(
     () => new Map(permissions.map((permission) => [permission.permission_key, permission.permission_label])),
@@ -62,10 +74,16 @@ export function UserRoleAssignmentPage({
         getPermissionCatalog(),
         getAccessControlMatrix(selectedTenantId, null),
       ]);
+      const doctypeRows = await loadDocTypeKeys();
       setRoles(roleRows);
       setUsers(userRows);
       setInvites(inviteRows);
       setPermissions(permissionRows);
+      setDocTypes(doctypeRows);
+      setRuleDraft((current) => ({
+        ...current,
+        doctype_key: doctypeRows.some((row) => row.value === current.doctype_key) ? current.doctype_key : (doctypeRows.find((row) => row.value === "crm_lead")?.value ?? doctypeRows[0]?.value ?? ""),
+      }));
       setSelectedUserId((current) => userRows.some((user) => user.user_id === current) ? current : (userRows[0]?.user_id ?? ""));
       const grouped = groupMatrixRows(matrix);
       setTargetRows(grouped);
@@ -99,6 +117,59 @@ export function UserRoleAssignmentPage({
       }
     }
     void loadAssignments();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTenantId, selectedUser?.user_id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRuleFields() {
+      if (!ruleDraft.doctype_key) {
+        setRuleFields([]);
+        return;
+      }
+      try {
+        const rows = await listDocFieldsForDoctype(ruleDraft.doctype_key);
+        if (!cancelled) {
+          const mapped = rows.map((row) => ({
+            fieldname: String(row.fieldname ?? ""),
+            label: String(row.label ?? row.fieldname ?? ""),
+            permlevel: Number(row.permlevel ?? 0),
+          }));
+          setRuleFields(mapped);
+          setRuleDraft((current) => ({
+            ...current,
+            fieldname: mapped.some((field) => field.fieldname === current.fieldname) ? current.fieldname : (mapped.find((field) => field.fieldname === "owner_name")?.fieldname ?? mapped[0]?.fieldname ?? ""),
+          }));
+        }
+      } catch (error) {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Failed to load DocType fields");
+      }
+    }
+    void loadRuleFields();
+    return () => {
+      cancelled = true;
+    };
+  }, [ruleDraft.doctype_key]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadUserPermissionRules() {
+      if (!selectedTenantId || !selectedUser?.user_id) {
+        setUserPermissionRules([]);
+        return;
+      }
+      try {
+        const rows = await getCompanyUserPermissions(selectedTenantId, selectedUser.user_id);
+        if (!cancelled) {
+          setUserPermissionRules(rows);
+        }
+      } catch (error) {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Failed to load user permission rules");
+      }
+    }
+    void loadUserPermissionRules();
     return () => {
       cancelled = true;
     };
@@ -146,6 +217,59 @@ export function UserRoleAssignmentPage({
       await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to cancel invite");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveUserPermission() {
+    if (!selectedTenantId || !selectedUser) return;
+    if (!ruleDraft.doctype_key || !ruleDraft.fieldname || !ruleDraft.allowed_value.trim()) {
+      toast.error("DocType, field, and allowed value are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveCompanyUserPermission(selectedTenantId, {
+        user_id: selectedUser.user_id,
+        doctype_key: ruleDraft.doctype_key,
+        fieldname: ruleDraft.fieldname,
+        allowed_value: ruleDraft.allowed_value.trim(),
+        apply_read: ruleDraft.apply_read,
+        apply_write: ruleDraft.apply_write,
+        is_active: ruleDraft.is_active,
+      });
+      toast.success("Saved user permission rule.");
+      const rows = await getCompanyUserPermissions(selectedTenantId, selectedUser.user_id);
+      setUserPermissionRules(rows);
+      setRuleDraft((current) => ({ ...current, allowed_value: "" }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save user permission rule");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleUserPermission(ruleId: string, nextActive: boolean) {
+    if (!selectedTenantId || !selectedUser) return;
+    const rule = userPermissionRules.find((item) => item.id === ruleId);
+    if (!rule) return;
+    setSaving(true);
+    try {
+      await saveCompanyUserPermission(selectedTenantId, {
+        id: rule.id,
+        user_id: selectedUser.user_id,
+        doctype_key: rule.doctype_key,
+        fieldname: rule.fieldname,
+        allowed_value: rule.allowed_value,
+        apply_read: rule.apply_read,
+        apply_write: rule.apply_write,
+        is_active: nextActive,
+      });
+      const rows = await getCompanyUserPermissions(selectedTenantId, selectedUser.user_id);
+      setUserPermissionRules(rows);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update user permission rule");
     } finally {
       setSaving(false);
     }
@@ -373,6 +497,125 @@ export function UserRoleAssignmentPage({
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  <div className="studio-panel">
+                    <div className="studio-icon-title">
+                      <strong>User Permissions</strong>
+                    </div>
+                    <div className="studio-subtle">
+                      Restrict records by field value. For CRM Lead proof, use <strong>owner_name</strong> and allow only the selected user’s owner value.
+                    </div>
+                    <div className="studio-grid studio-grid--two" style={{ marginTop: "12px" }}>
+                      <label className="studio-field">
+                        <span>DocType</span>
+                        <select
+                          className="studio-control"
+                          value={ruleDraft.doctype_key}
+                          onChange={(event) => setRuleDraft((current) => ({ ...current, doctype_key: event.target.value }))}
+                        >
+                          {docTypes.map((docType) => (
+                            <option key={docType.value} value={docType.value}>{docType.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="studio-field">
+                        <span>Field</span>
+                        <select
+                          className="studio-control"
+                          value={ruleDraft.fieldname}
+                          onChange={(event) => setRuleDraft((current) => ({ ...current, fieldname: event.target.value }))}
+                        >
+                          {ruleFields.map((field) => (
+                            <option key={field.fieldname} value={field.fieldname}>
+                              {field.label} (level {field.permlevel})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="studio-field">
+                        <span>Allowed value</span>
+                        <input
+                          value={ruleDraft.allowed_value}
+                          onChange={(event) => setRuleDraft((current) => ({ ...current, allowed_value: event.target.value }))}
+                          placeholder={selectedUser.email}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>Applies to</span>
+                        <div className="studio-grid studio-grid--two">
+                          <label className="studio-check">
+                            <span>Read</span>
+                            <input
+                              type="checkbox"
+                              checked={ruleDraft.apply_read}
+                              onChange={(event) => setRuleDraft((current) => ({ ...current, apply_read: event.target.checked }))}
+                            />
+                          </label>
+                          <label className="studio-check">
+                            <span>Write</span>
+                            <input
+                              type="checkbox"
+                              checked={ruleDraft.apply_write}
+                              onChange={(event) => setRuleDraft((current) => ({ ...current, apply_write: event.target.checked }))}
+                            />
+                          </label>
+                        </div>
+                      </label>
+                    </div>
+                    <label className="studio-check" style={{ marginTop: "8px" }}>
+                      <span>Rule active</span>
+                      <input
+                        type="checkbox"
+                        checked={ruleDraft.is_active}
+                        onChange={(event) => setRuleDraft((current) => ({ ...current, is_active: event.target.checked }))}
+                      />
+                    </label>
+                    <div className="assignment-actions">
+                      <button className="studio-button" type="button" onClick={() => void handleSaveUserPermission()} disabled={saving}>
+                        Save User Permission
+                      </button>
+                    </div>
+
+                    <div className="table-wrap" style={{ marginTop: "12px" }}>
+                      <table className="erp-table">
+                        <thead>
+                          <tr>
+                            <th>DocType</th>
+                            <th>Field</th>
+                            <th>Allowed Value</th>
+                            <th>Applies</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userPermissionRules.length === 0 ? (
+                            <tr>
+                              <td colSpan={5}>No user permission rules yet.</td>
+                            </tr>
+                          ) : (
+                            userPermissionRules.map((rule) => (
+                              <tr key={rule.id}>
+                                <td>{rule.doctype_label}</td>
+                                <td>{rule.field_label} (level {rule.permlevel})</td>
+                                <td>{rule.allowed_value}</td>
+                                <td>{[rule.apply_read ? "read" : null, rule.apply_write ? "write" : null].filter(Boolean).join(", ")}</td>
+                                <td>
+                                  <button
+                                    className="logout"
+                                    type="button"
+                                    onClick={() => void handleToggleUserPermission(rule.id, !rule.is_active)}
+                                    disabled={saving}
+                                  >
+                                    {rule.is_active ? "Deactivate" : "Activate"}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </>
               )}

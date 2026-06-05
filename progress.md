@@ -38,6 +38,7 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 6.3 | Print Format Foundation | Complete | CRM Lead and Opportunity print detail/preview checks now pass locally with Playwright, including required sections and browser print control. |
 | 6.3.1 | Print Security Verification Cleanup | Complete | Deleted the leaked debug script, removed committed browser credentials, standardized browser verifiers to env-only auth, and re-verified the full CRM print flow with Playwright. |
 | 6.4 | Framework Core Completion Gate | Complete | Fixed the ambiguous access-control role update path, added breadcrumb foundation and safer permission UX, provisioned real test users securely, and completed low-privilege CRM Lead verification with Playwright. |
+| 6.5 | Permission Levels and User Permissions Foundation | In progress | Migration 0047 is applied on Supabase Cloud, metadata permlevels are wired into generic screens, Access Control Manager and User Role Assignment now expose field-level and record-level controls, and the final end-to-end Playwright proof is still being stabilized. |
 | X | Module Builder Foundation | Deferred / separate workspace only | Module Builder work remains outside this branch closeout and is not part of the completed Phase 6.4 gate. |
 
 ## Phase 4.1 Implementation Summary

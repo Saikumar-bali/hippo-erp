@@ -8,17 +8,19 @@ const adminPassword = process.env.PLAYWRIGHT_TEST_PASSWORD;
 const lowPrivEmail = process.env.PLAYWRIGHT_LOW_PRIV_EMAIL;
 const lowPrivPassword = process.env.PLAYWRIGHT_LOW_PRIV_PASSWORD;
 
-if (!supabaseUrl || !publishableKey || !serviceRoleKey) {
-  throw new Error("Missing VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, or SUPABASE_SERVICE_ROLE_KEY.");
+if (!supabaseUrl || !publishableKey) {
+  throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY.");
 }
 
 if (!adminEmail || !adminPassword || !lowPrivEmail || !lowPrivPassword) {
   throw new Error("Missing Playwright user environment variables.");
 }
 
-const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+const serviceClient = serviceRoleKey
+  ? createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  : null;
 
 function createAppClient() {
   return createClient(supabaseUrl, publishableKey, {
@@ -36,6 +38,23 @@ async function ensureLowPrivUserExists() {
   if (!existingLogin.error && existingLogin.data.user) {
     await lowPrivClient.auth.signOut();
     return existingLogin.data.user;
+  }
+
+  if (!serviceClient) {
+    const signedUp = await lowPrivClient.auth.signUp({
+      email: lowPrivEmail,
+      password: lowPrivPassword,
+    });
+    if (signedUp.error) {
+      throw signedUp.error;
+    }
+    if (!signedUp.data.user) {
+      throw new Error("Low-privilege user could not be created through public sign-up.");
+    }
+    if (signedUp.data.session) {
+      await lowPrivClient.auth.signOut();
+    }
+    return signedUp.data.user;
   }
 
   const created = await serviceClient.auth.admin.createUser({

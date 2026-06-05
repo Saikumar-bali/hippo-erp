@@ -1,81 +1,89 @@
-# Phase 6.4 Tasks: Framework Core Completion Gate
+# Phase 6.5 Tasks: Permission Levels and User Permissions Foundation
 
 Active branch: `phase-2.5-metadata-engine`
 
-Goal: stop adding feature layers and harden the framework foundation so access control, navigation, and diagnostics behave closer to Frappe-level quality.
+Goal: strengthen role management toward Frappe-like behavior by adding field-level permission levels and record-level user permissions for metadata-driven DocTypes, using CRM Lead as the proof target.
 
-Do not start Fleet Management, Module Builder, Purchase Orders, Client Scripts, Report Builder, Workflow, or PDF generation from this task file.
+Do not start Module Builder, Fleet Management, Purchase Orders, Client Scripts, Report Builder, Workflow, or PDF generation from this task file. Module Builder remains deferred outside this phase.
 
 ## Current status
 
-Phase 6.4 is complete:
+Phase 6.5 is active and not complete yet.
 
-- [x] Reproduced the `42702` ambiguous `id` error on role permission removal
-- [x] Identified the exact failing RPC path in `save_company_role(jsonb)`
-- [x] Added `supabase/migrations/0046_access_control_ambiguity_fix.sql`
-- [x] Applied the ambiguity fix on Supabase Cloud and re-tested the update path
-- [x] Added breadcrumb foundation in app shell
-- [x] Cleaned permission UX to show actionable access guidance with collapsible technical details
-- [x] Added local provisioning helper `scripts/provision_test_users.mjs` using env vars only
-- [x] Completed real low-privilege Playwright verification for CRM Lead access restrictions
-- [x] Updated `progress.md`
-- [x] Created `docs/PHASE_6_4_FRAMEWORK_CORE_COMPLETION_GATE.md`
-- [x] Created `docs/ai-runs/2026-06-04_phase-6-4-framework-core-completion-gate.md`
+- [x] Created `supabase/migrations/0047_permission_levels_user_permissions.sql`
+- [x] Applied Phase 6.5 migration on Supabase Cloud
+- [x] Added `permlevel` support to metadata field types and builder forms
+- [x] Added generic field-access hook for metadata-driven pages
+- [x] Added frontend field filtering/hiding in dynamic list, detail, and form pages
+- [x] Added Access Control Manager field-level permissions UI section
+- [x] Added User Permissions panel to User Role Assignment
+- [x] Added `scripts/verify_phase6_5_permission_levels.mjs`
+- [ ] Finish stable end-to-end Playwright proof for admin setup + restricted-user CRM Lead behavior
+- [ ] Update final docs with complete PASS/FAIL evidence
+- [ ] Push final Phase 6.5 branch commit after verification is complete
 
-## A. Database + Access Control
+## A. Database + Enforcement
 
-- [x] Reproduce ambiguous-role update failure
-- [x] Fix `save_company_role(jsonb)` with fully qualified aliases
-- [x] Qualify related delete path for consistency
-- [x] Smoke test add permission / remove permission / save / reload without `42702`
+- [x] Add `permlevel integer not null default 0` to `app.erp_docfields`
+- [x] Add permlevel validation check
+- [x] Seed CRM Lead sensitive fields to level 1
+- [x] Add role-level DocType permlevel table
+- [x] Add record-level user permission table
+- [x] Add RPCs for role permlevels and user permission rules
+- [x] Extend generic document RPCs for field masking and record filtering
+- [ ] Re-verify create/update blocking on level-1 fields through automated browser proof
 
-## B. Provisioning + Verification
+## B. Generic UI + Access Surfaces
 
-- [x] Add `scripts/provision_test_users.mjs`
-- [x] Use environment variables only
-- [x] Provision or reuse low-privilege test user
-- [x] Add low-privilege user to selected company through existing invite/accept flow
-- [x] Real Playwright verification:
-  - [x] admin login
-  - [x] create readonly role
-  - [x] grant only `view_crm_lead`
-  - [x] assign role to low-privilege user
-  - [x] verify CRM Lead visible
-  - [x] verify Create hidden
-  - [x] verify Update/Delete/Export/Import/Print hidden
-  - [x] verify forbidden sidebar entries hidden
-  - [x] revoke `view_crm_lead`
-  - [x] verify CRM Lead hidden or access denied
+- [x] Hide unreadable fields in dynamic list/detail/form rendering
+- [x] Block non-writable fields in dynamic form submission path
+- [x] Keep list filters/search scoped to readable fields
+- [x] Preserve CRM Lead and CRM Opportunity CRUD codepaths
+- [ ] Re-check CRM Opportunity against the new generic access filtering path
+- [ ] Add explicit field-level editing support to advanced metadata management flows if needed later
 
-## C. Navigation + UX
+## C. Access Control Manager UI
 
-- [x] Create `src/components/layout/BreadcrumbBar.tsx`
-- [x] Create `src/lib/navigation/breadcrumbs.ts`
-- [x] Show breadcrumb trail in app shell
-- [x] Keep breadcrumb navigation clickable
-- [x] Keep sidebar active state aligned with route
-- [x] Replace raw permission JSON with user-safe access guidance
+- [x] Show field-level permissions section for selected DocType
+- [x] Show CRM Lead level 0 and level 1 grouping in UI
+- [x] Explain level 0 vs level 1 in compact professional copy
+- [ ] Complete stable automated verification that owner/admin can grant/revoke level 1 from the browser
 
-## D. Validation
+## D. User Permissions UI
 
-- [x] `node scripts/provision_test_users.mjs`
-- [x] `node scripts/verify_phase6_access_control.mjs`
+- [x] Add compact user-permissions panel to user-role assignment screen
+- [x] Allow DocType selection
+- [x] Allow field selection
+- [x] Allow allowed-value entry
+- [x] Allow read/write/active toggles
+- [ ] Complete stable automated verification that rules can be created and toggled from the browser
+
+## E. CRM Lead Proof
+
+- [x] Reuse `owner_name` as the record-restriction proof field
+- [x] Seed CRM Lead sensitive fields as level 1
+- [ ] Create/verify two owner-separated CRM Lead records under automated proof
+- [ ] Verify restricted user only sees matching records under automated proof
+- [ ] Verify restricted user cannot read level-1 CRM Lead fields under automated proof
+
+## F. Validation
+
 - [x] `npm run typecheck`
 - [x] `npm run lint`
 - [x] `npm run test`
 - [x] `npm run build`
 - [x] `npm run test:simulation`
+- [x] `node scripts/provision_test_users.mjs`
+- [ ] `node scripts/verify_phase6_5_permission_levels.mjs`
 
 ## Acceptance
 
-Phase 6.4 is complete only when:
+Phase 6.5 is complete only when:
 
-- [x] ambiguous access-control update is fixed
-- [x] role permission add/remove works
-- [x] low-privilege login is tested
-- [x] sidebar and action restrictions are proven in browser
-- [x] breadcrumb navigation works
-- [x] tasks/progress are truthful
-- [x] no credentials are committed
-- [x] Playwright evidence exists
-- [x] command results are documented
+- [x] migration 0047 exists and is applied on Supabase Cloud
+- [x] field-level access surfaces exist in app UI
+- [x] user-permission management UI exists
+- [ ] restricted-user browser proof passes end-to-end
+- [ ] screenshots/results JSON exist for Phase 6.5 verifier
+- [ ] tasks/progress/docs are finalized truthfully
+- [ ] branch is pushed after verification passes

@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { AccessDenied } from "../AccessDenied";
 import { PermissionMatrix } from "./PermissionMatrix";
-import { getAccessControlMatrix, saveAccessControlMatrix } from "../../lib/access-control-api";
-import { groupMatrixRows, type AccessRightKey } from "../../lib/access-control";
+import { getAccessControlMatrix, getRoleDocTypePermlevelMatrix, saveAccessControlMatrix, saveRoleDocTypePermlevels } from "../../lib/access-control-api";
+import { groupMatrixRows, type AccessRightKey, type RoleDocTypePermlevelRow } from "../../lib/access-control";
 import { ensureCompanyDefaultRoles, listCompanyRoles, saveCompanyRole, type CompanyRole } from "../../lib/roles-api";
 import { getCompanyUsers, type CompanyUserRecord } from "../../lib/users-api";
 
@@ -40,6 +40,8 @@ export function AccessControlManagerPage({
   const [matrixRows, setMatrixRows] = useState<ReturnType<typeof groupMatrixRows>>([]);
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   const [newRoleName, setNewRoleName] = useState("");
+  const [permlevelRows, setPermlevelRows] = useState<RoleDocTypePermlevelRow[]>([]);
+  const [permlevelOverrides, setPermlevelOverrides] = useState<Record<number, { can_read: boolean; can_write: boolean }>>({});
 
   const selectedUser = useMemo(
     () => users.find((user) => user.user_id === selectedUserId) ?? users[0] ?? null,
@@ -116,6 +118,8 @@ export function AccessControlManagerPage({
       } else {
         setMatrixRows([]);
       }
+      setPermlevelRows([]);
+      setPermlevelOverrides({});
       setOverrides({});
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load Access Control Manager");
@@ -151,6 +155,35 @@ export function AccessControlManagerPage({
       cancelled = true;
     };
   }, [selectedRoleId, selectedTenantId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPermlevels() {
+      if (!selectedTenantId || !selectedRoleId || selectedTarget?.targetType !== "doctype") {
+        setPermlevelRows([]);
+        setPermlevelOverrides({});
+        return;
+      }
+      try {
+        const rows = await getRoleDocTypePermlevelMatrix(
+          selectedTenantId,
+          selectedRoleId,
+          selectedTarget.targetKey,
+          selectedUser?.user_id ?? null,
+        );
+        if (!cancelled) {
+          setPermlevelRows(rows);
+          setPermlevelOverrides({});
+        }
+      } catch (error) {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Failed to load DocType permission levels");
+      }
+    }
+    void loadPermlevels();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedRoleId, selectedTarget?.targetKey, selectedTarget?.targetType, selectedTenantId, selectedUser?.user_id]);
 
   async function handleCreateRole() {
     if (!selectedTenantId) return;
@@ -196,6 +229,32 @@ export function AccessControlManagerPage({
       await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save role access");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSavePermlevels() {
+    if (!selectedTenantId || !selectedRoleId || selectedTarget?.targetType !== "doctype") return;
+    setSaving(true);
+    try {
+      const payload = permlevelRows.map((row) => ({
+        permlevel: row.permlevel,
+        can_read: permlevelOverrides[row.permlevel]?.can_read ?? row.role_can_read,
+        can_write: permlevelOverrides[row.permlevel]?.can_write ?? row.role_can_write,
+      }));
+      await saveRoleDocTypePermlevels(selectedTenantId, selectedRoleId, selectedTarget.targetKey, payload);
+      toast.success(`Saved permission levels for ${selectedTarget.label}.`);
+      const rows = await getRoleDocTypePermlevelMatrix(
+        selectedTenantId,
+        selectedRoleId,
+        selectedTarget.targetKey,
+        selectedUser?.user_id ?? null,
+      );
+      setPermlevelRows(rows);
+      setPermlevelOverrides({});
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save permission levels");
     } finally {
       setSaving(false);
     }
@@ -365,6 +424,83 @@ export function AccessControlManagerPage({
                 }));
               }}
             />
+
+            {selectedTarget?.targetType === "doctype" && permlevelRows.length > 0 && (
+              <div className="studio-panel">
+                <div className="studio-icon-title">
+                  <strong>Field-level permissions</strong>
+                </div>
+                <div className="studio-subtle">
+                  Level 0 = normal fields. Level 1 = sensitive fields. Grant level 1 read/write only where the selected role should see or edit sensitive CRM Lead fields.
+                </div>
+                <div className="table-wrap" style={{ marginTop: "12px" }}>
+                  <table className="erp-table">
+                    <thead>
+                      <tr>
+                        <th>Level</th>
+                        <th>Fields</th>
+                        <th>Role Read</th>
+                        <th>Role Write</th>
+                        <th>User Read</th>
+                        <th>User Write</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {permlevelRows.map((row) => {
+                        const roleRead = permlevelOverrides[row.permlevel]?.can_read ?? row.role_can_read;
+                        const roleWrite = permlevelOverrides[row.permlevel]?.can_write ?? row.role_can_write;
+                        return (
+                          <tr key={row.permlevel}>
+                            <td>
+                              <strong>Level {row.permlevel}</strong>
+                            </td>
+                            <td>{row.field_labels.join(", ") || "No fields"}</td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={roleRead}
+                                disabled={saving || row.permlevel === 0}
+                                onChange={(event) => setPermlevelOverrides((prev) => ({
+                                  ...prev,
+                                  [row.permlevel]: {
+                                    can_read: event.target.checked,
+                                    can_write: prev[row.permlevel]?.can_write ?? row.role_can_write,
+                                  },
+                                }))}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={roleWrite}
+                                disabled={saving || row.permlevel === 0}
+                                onChange={(event) => setPermlevelOverrides((prev) => ({
+                                  ...prev,
+                                  [row.permlevel]: {
+                                    can_read: prev[row.permlevel]?.can_read ?? row.role_can_read,
+                                    can_write: event.target.checked,
+                                  },
+                                }))}
+                              />
+                            </td>
+                            <td>{row.effective_user_can_read ? "Yes" : "No"}</td>
+                            <td>{row.effective_user_can_write ? "Yes" : "No"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="studio-toolbar" style={{ justifyContent: "space-between" }}>
+                  <div className="studio-subtle">
+                    Level 0 inherits standard DocType read/create/update rights. Higher levels are explicit grants.
+                  </div>
+                  <button className="studio-button" type="button" onClick={() => void handleSavePermlevels()} disabled={saving || !canUpdateRole}>
+                    {saving ? "Saving..." : "Save field-level access"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="studio-toolbar" style={{ justifyContent: "space-between" }}>
               <div className="studio-subtle">
