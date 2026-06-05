@@ -168,7 +168,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
             ? { options: field.selectOptionsText.split("\n").map((value) => value.trim()).filter(Boolean) }
             : field.fieldtype === "Link"
               ? { link_to: field.linkTo, display_field: "name" }
-              : null;
+              : {};
 
         const payload = {
           doctype_key: selectedDocType,
