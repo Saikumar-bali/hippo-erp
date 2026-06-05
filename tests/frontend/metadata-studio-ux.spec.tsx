@@ -151,8 +151,8 @@ describe("Metadata Studio UX Polish", () => {
     render(<DocFieldBuilder />);
     await screen.findByRole("heading", { name: "Field Builder" });
 
-    const labelInput = screen.getByLabelText("Label");
-    const fieldnameInput = screen.getByLabelText("Fieldname");
+    const labelInput = await screen.findByLabelText("Label");
+    const fieldnameInput = await screen.findByLabelText("Fieldname");
 
     fireEvent.change(labelInput, { target: { value: "Store Name" } });
     expect((fieldnameInput as HTMLInputElement).value).toBe("store_name");
