@@ -4,9 +4,10 @@ type Props = {
   title: string;
   requiredPermissions: readonly string[];
   message?: string;
+  technicalDetails?: string;
 };
 
-export function AccessDenied({ title, requiredPermissions, message }: Props) {
+export function AccessDenied({ title, requiredPermissions, message, technicalDetails }: Props) {
   return (
     <section className="card access-denied">
       <div className="access-denied-head">
@@ -28,9 +29,15 @@ export function AccessDenied({ title, requiredPermissions, message }: Props) {
       </div>
       {requiredPermissions.length > 0 && (
         <p style={{ marginTop: "12px", fontSize: "0.82rem", color: "#5b7188" }}>
-          Fix path: open <strong>Access Control Manager</strong> and grant the required right to the user role.
+          Fix path: open <strong>Access Control Manager</strong> and grant the required right to one of the user's active roles.
         </p>
       )}
+      {technicalDetails ? (
+        <details className="technical-details">
+          <summary>Technical details</summary>
+          <pre>{technicalDetails}</pre>
+        </details>
+      ) : null}
     </section>
   );
 }

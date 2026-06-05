@@ -11,7 +11,7 @@ import type { DocTypeApi } from "./doctype-api-map";
 import { DynamicFormPage } from "./DynamicFormPage";
 import { ImportPreviewDialog } from "../import/ImportPreviewDialog";
 import type { DocFieldMeta, ListViewColumn } from "../../lib/metadata/types";
-import { buildAccessErrorMessage } from "../../lib/access-control";
+import { buildAccessErrorMessage, inferPermissionKeyFromError } from "../../lib/access-control";
 import { recordsToCsv, downloadCsv, exportFilename } from "../../lib/export-import/csv-export";
 import { generateTemplateHeader, downloadTemplate } from "../../lib/export-import/csv-template";
 
@@ -323,17 +323,20 @@ export function DynamicListPage({
   if (error) {
     const isPermissionError = error.toLowerCase().includes("permission denied") || error.toLowerCase().includes("permission");
     if (isPermissionError) {
-      const permMatch = error.match(/permission[:\s]+(\S+)/i);
-      const permKey = permMatch ? permMatch[1] : "view_" + doctypeKey;
+      const permKey = inferPermissionKeyFromError(error, `view_${doctypeKey}`);
       return (
         <div className="card state-error">
           <h3>Access Required: {permKey}</h3>
-          <p style={{ whiteSpace: "pre-line" }}>{buildAccessErrorMessage(permKey)}</p>
+          <p>{buildAccessErrorMessage(permKey)}</p>
           <p style={{ fontSize: "var(--font-size-sm, 12px)", marginTop: "12px", padding: "8px 12px", background: "#fffbeb", borderRadius: "4px", borderLeft: "4px solid #d97706" }}>
             <strong>Fix here:</strong> Open <strong>Metadata Studio → Access Control Manager</strong> and grant <strong>{permKey}</strong> to the user role.
             <br />
             If the permission key or action mapping does not exist yet, run <strong>Metadata Studio → Check / Repair DocType → {doctypeKey}</strong> first.
           </p>
+          <details className="technical-details">
+            <summary>Technical details</summary>
+            <pre>{error}</pre>
+          </details>
         </div>
       );
     }

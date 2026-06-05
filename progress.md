@@ -37,7 +37,8 @@ User-facing terminology should say **Company**, not Tenant. Existing `tenant_id`
 | 6.2.1 | Secure Browser Verification | Complete | Hardening browser verification workflow, enforcing env vars for credentials, and re-verifying Export/Import foundation securely. Verified with Playwright. |
 | 6.3 | Print Format Foundation | Complete | CRM Lead and Opportunity print detail/preview checks now pass locally with Playwright, including required sections and browser print control. |
 | 6.3.1 | Print Security Verification Cleanup | Complete | Deleted the leaked debug script, removed committed browser credentials, standardized browser verifiers to env-only auth, and re-verified the full CRM print flow with Playwright. |
-| X | Module Builder Foundation | In progress | Module Builder implementation files are in the workspace and remain separate from the completed Phase 6.3.1 cleanup. |
+| 6.4 | Framework Core Completion Gate | Complete | Fixed the ambiguous access-control role update path, added breadcrumb foundation and safer permission UX, provisioned real test users securely, and completed low-privilege CRM Lead verification with Playwright. |
+| X | Module Builder Foundation | Deferred / separate workspace only | Module Builder work remains outside this branch closeout and is not part of the completed Phase 6.4 gate. |
 
 ## Phase 4.1 Implementation Summary
 **Status:** Backend foundation complete on Supabase Cloud.
@@ -576,3 +577,66 @@ Migration 0044 applied to Supabase Cloud. Playwright verification against `hippo
 | `npm run test` | 50 pass, 0 fail |
 | `npm run build` | Success |
 | `npm run test:simulation` | All simulation files found |
+
+## Phase 6.4 — Framework Core Completion Gate (2026-06-04 / 2026-06-05)
+
+### Completed
+
+- Reproduced the access-control failure caused by ambiguous `id` references during role updates.
+- Added `supabase/migrations/0046_access_control_ambiguity_fix.sql` and applied the fix to Supabase Cloud.
+- Added breadcrumb utilities and shell rendering via `src/lib/navigation/breadcrumbs.ts` and `src/components/layout/BreadcrumbBar.tsx`.
+- Hardened access-denied messaging so normal users see `Access required: <permission_key>` plus a clear fix path, while technical details stay collapsible.
+- Added `scripts/provision_test_users.mjs` using env vars only and existing invite/accept flows rather than committed credentials or raw password hashes.
+- Fixed the real Playwright verifier so it waits for async saves, uses stable selectors, captures screenshots/results, and exits non-zero on failure.
+- Applied the missing company-theme runtime migration pieces on Supabase Cloud so `get_company_theme(...)` no longer throws repeated browser `404` noise during verification.
+
+### Browser Verification
+
+Playwright command:
+
+- `node scripts/verify_phase6_access_control.mjs`
+
+Provisioning command:
+
+- `node scripts/provision_test_users.mjs`
+
+Artifacts:
+
+- `C:/tmp/phase-6-4-framework-core/results.json`
+- `C:/tmp/phase-6-4-framework-core/01-role-configured.png`
+- `C:/tmp/phase-6-4-framework-core/02-role-assigned.png`
+- `C:/tmp/phase-6-4-framework-core/03-low-priv-readonly.png`
+- `C:/tmp/phase-6-4-framework-core/04-read-revoked.png`
+- `C:/tmp/phase-6-4-framework-core/05-read-revoked-low-priv.png`
+
+Verified checks:
+
+| Check | Result |
+| --- | --- |
+| CRM Lead visible for low-privilege user with `view_crm_lead` only | PASS |
+| Create hidden | PASS |
+| Update hidden | PASS |
+| Delete hidden | PASS |
+| Export hidden | PASS |
+| Import hidden | PASS |
+| Print hidden | PASS |
+| Forbidden sidebar items hidden | PASS |
+| CRM Lead hidden or denied after revoking `view_crm_lead` | PASS |
+| No page errors | PASS |
+
+### Verification Results
+
+| Command | Result |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `npm run lint` | PASS with 50 warnings, 0 errors |
+| `npm run test` | PASS, 17 files / 72 tests |
+| `npm run build` | PASS |
+| `npm run test:simulation` | PASS |
+| `node scripts/provision_test_users.mjs` | PASS |
+| `node scripts/verify_phase6_access_control.mjs` | PASS |
+
+### Remaining Gaps
+
+- `npm run lint` still reports 50 pre-existing warnings.
+- The full `0043_company_branding_theme.sql` workspace-item seed was not applied to this cloud project because the `company_admin` workspace row does not exist there yet; the required runtime theme columns/functions were applied separately to clear verification noise.

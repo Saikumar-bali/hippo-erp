@@ -114,8 +114,18 @@ export function formatPermissionLabel(permissionKey: string) {
   return permissionKey.replace(/_/g, " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+export function inferPermissionKeyFromError(rawMessage: string, fallbackPermissionKey: string) {
+  const explicitMatch = rawMessage.match(/permission\s*:\s*([a-z0-9_]+)/i);
+  if (explicitMatch?.[1]) return explicitMatch[1];
+
+  const accessMatch = rawMessage.match(/access required[:\s]+([a-z0-9_]+)/i);
+  if (accessMatch?.[1]) return accessMatch[1];
+
+  return fallbackPermissionKey;
+}
+
 export function buildAccessErrorMessage(permissionKey: string) {
-  return `Access required: ${permissionKey}\nOpen Access Control Manager and grant this right to the user role.`;
+  return `Access required: ${permissionKey}. Fix: Open Access Control Manager and grant this right to one of the user's active roles.`;
 }
 
 export function buildMissingRightsDiagnostics(target: AccessMatrixTarget | null, effectivePermissionKeys: readonly string[]) {

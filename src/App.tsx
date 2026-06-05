@@ -9,6 +9,8 @@ import { WorkspaceSidebar } from "./components/layout/WorkspaceSidebar";
 import { TopBar } from "./components/layout/TopBar";
 import { DynamicRouteRenderer } from "./components/metadata/DynamicRouteRenderer";
 import type { WorkspaceItemMeta } from "./lib/metadata/workspace-types";
+import type { BreadcrumbItem } from "./lib/navigation/breadcrumbs";
+import { buildBreadcrumbs } from "./lib/navigation/breadcrumbs";
 import { getCompanyTheme } from "./lib/theme-api";
 import { DEFAULT_THEME_SETTINGS, type CompanyThemeSettings } from "./lib/theme-types";
 
@@ -22,6 +24,14 @@ export default function App() {
   const [companyTheme, setCompanyTheme] = useState<CompanyThemeSettings | null>(null);
   const permissions = usePermissions();
   const { tree, loading: navLoading, refresh: refreshSidebar } = useWorkspaceNavigation();
+
+  const isSameItem = useCallback((nextItem: WorkspaceItemMeta | null) => {
+    if (!selectedItem && !nextItem) return true;
+    if (!selectedItem || !nextItem) return false;
+    return selectedItem.item_key === nextItem.item_key
+      && selectedItem.workspace_key === nextItem.workspace_key
+      && selectedItem.target === nextItem.target;
+  }, [selectedItem]);
 
   // Sync selectedItem with URL pageKey
   useEffect(() => {
@@ -38,7 +48,9 @@ export default function App() {
 
       if (found) {
         console.log("[app] found matching item in tree:", found.item_key);
-        setSelectedItem(found);
+        if (!isSameItem(found)) {
+          setSelectedItem(found);
+        }
       } else if (pageKey.startsWith("metadata_studio") || pageKey === "crm_dashboard" || pageKey === "users_and_roles_access_assignments" || pageKey === "theme_studio" || pageKey.startsWith("print:")) {
         console.log("[app] creating virtual item for:", pageKey);
         
@@ -58,7 +70,7 @@ export default function App() {
         }
 
         // 2. Virtual item for metadata studio diagnostic sub-pages or CRM dashboard
-        setSelectedItem({
+        const virtualItem: WorkspaceItemMeta = {
           id: `virtual-${pageKey}`,
           workspace_key: workspaceKey,
           item_key: pageKey,
@@ -77,12 +89,15 @@ export default function App() {
           sort_order: 0,
           is_active: true,
           required_permission_key: requiredPermission,
-        });
+        };
+        if (!isSameItem(virtualItem)) {
+          setSelectedItem(virtualItem);
+        }
       } else {
         console.log("[app] pageKey did not match any item or virtual pattern:", pageKey);
       }
     }
-  }, [pageKey, tree, navLoading, permissions.loading]);
+  }, [pageKey, tree, navLoading, permissions.loading, isSameItem]);
 
   const doLogout = async () => {
     setSigningOut(true);
@@ -141,6 +156,22 @@ export default function App() {
     setSelectedItem(null);
     navigate("/");
   };
+
+  const breadcrumbs = useMemo(() => buildBreadcrumbs(selectedItem, tree), [selectedItem, tree]);
+
+  const handleBreadcrumbNavigate = useCallback((item: BreadcrumbItem) => {
+    if (item.key === "home") {
+      handleHomeClick();
+      return;
+    }
+    if (item.key.startsWith("workspace:")) {
+      const workspaceKey = item.key.replace("workspace:", "");
+      const firstWorkspaceItem = tree.find((group) => group.workspace.workspace_key === workspaceKey)?.items[0] ?? null;
+      if (firstWorkspaceItem) {
+        handleItemClick(firstWorkspaceItem);
+      }
+    }
+  }, [tree]);
 
   const handleNavigateToDocType = useCallback((doctypeKey: string) => {
     for (const ws of tree) {
@@ -227,6 +258,8 @@ export default function App() {
             onLogout={() => void doLogout()}
           />
         }
+        breadcrumbs={breadcrumbs}
+        onBreadcrumbNavigate={handleBreadcrumbNavigate}
         densityMode={effectiveTheme.density_mode}
         content={
           <DynamicRouteRenderer
