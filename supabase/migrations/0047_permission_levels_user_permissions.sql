@@ -662,38 +662,32 @@ begin
   end if;
 
   if v_id is null then
-    insert into app.company_user_permissions (
-      company_id,
-      user_id,
-      doctype_key,
-      fieldname,
-      allowed_value,
-      apply_read,
-      apply_write,
-      is_active,
-      created_by,
-      updated_by
-    )
-    values (
-      p_company_id,
-      v_user_id,
-      v_doctype_key,
-      v_fieldname,
-      v_allowed_value,
-      v_apply_read,
-      v_apply_write,
-      v_is_active,
-      auth.uid(),
-      auth.uid()
-    )
-    on conflict (company_user_permissions.company_id, company_user_permissions.user_id, company_user_permissions.doctype_key, company_user_permissions.fieldname, company_user_permissions.allowed_value) do update
-    set
-      apply_read = excluded.apply_read,
-      apply_write = excluded.apply_write,
-      is_active = excluded.is_active,
-      updated_by = auth.uid(),
-      updated_at = now()
-    returning * into v_saved;
+    -- Manual upsert: try insert, catch unique_violation, then update
+    begin
+      insert into app.company_user_permissions (
+        company_id, user_id, doctype_key, fieldname, allowed_value,
+        apply_read, apply_write, is_active, created_by, updated_by
+      )
+      values (
+        p_company_id, v_user_id, v_doctype_key, v_fieldname, v_allowed_value,
+        v_apply_read, v_apply_write, v_is_active, auth.uid(), auth.uid()
+      )
+      returning app.company_user_permissions.* into v_saved;
+    exception when unique_violation then
+      update app.company_user_permissions cup
+      set
+        apply_read = v_apply_read,
+        apply_write = v_apply_write,
+        is_active = v_is_active,
+        updated_by = auth.uid(),
+        updated_at = now()
+      where cup.company_id = p_company_id
+        and cup.user_id = v_user_id
+        and cup.doctype_key = v_doctype_key
+        and cup.fieldname = v_fieldname
+        and cup.allowed_value = v_allowed_value
+      returning cup.* into v_saved;
+    end;
   else
     update app.company_user_permissions cup
     set

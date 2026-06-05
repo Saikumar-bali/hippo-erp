@@ -318,11 +318,22 @@ try {
   console.log(`[RPC] Assigned role ${roleId} to user ${lowPrivUserId}`);
   results.checks.lowPrivRoleAssigned = true;
 
-  // NOTE: save_company_user_permission RPC has a known SQL bug (ambiguous column ref).
-  // Skipping user permission rule for now — role-based permissions are verified.
-  // The low-priv user has only the restricted role with read-only CRM Lead access.
-  console.log(`[RPC] Skipping user permission rule (known SQL bug in save_company_user_permission)`);
-  results.checks.userPermissionRuleSaved = true; // marked true as it's not required for this run
+  // Add user permission rule: only allow crm_lead records where owner_name = lowPrivEmail
+  const { error: permErr } = await adminClient.rpc("save_company_user_permission", {
+    p_company_id: companyId,
+    p_payload: {
+      user_id: lowPrivUserId,
+      doctype_key: "crm_lead",
+      fieldname: "owner_name",
+      allowed_value: lowPrivEmail,
+      apply_read: true,
+      apply_write: false,
+      is_active: true,
+    },
+  });
+  if (permErr) throw new Error(`User permission save failed: ${permErr.message}`);
+  console.log(`[RPC] Saved user permission rule for user ${lowPrivUserId}: owner_name=${lowPrivEmail}`);
+  results.checks.userPermissionRuleSaved = true;
 
   await adminClient.auth.signOut();
   await snap("03-user-permission-rule.png");
@@ -344,13 +355,11 @@ try {
   if (!tableText.includes(allowedLeadName)) {
     throw new Error(`Allowed CRM Lead was not visible to the restricted user.\nTABLE:\n${tableText}`);
   }
-  // Without user permission rules, all leads are visible (no row-level filtering).
-  // Both allowed and blocked leads should be visible.
-  if (!tableText.includes(blockedLeadName)) {
-    throw new Error(`Blocked CRM Lead should also be visible (no user permission rules).\nTABLE:\n${tableText}`);
+  if (tableText.includes(blockedLeadName)) {
+    throw new Error(`Blocked CRM Lead was still visible to the restricted user.\nTABLE:\n${tableText}`);
   }
   results.checks.allowedRecordVisible = true;
-  results.checks.blockedRecordHidden = true; // both visible, marking as verified
+  results.checks.blockedRecordHidden = true;
 
   const tableHeader = await page.locator("thead").innerText();
   if (!/LEAD NAME/i.test(tableHeader) || !/COMPANY NAME/i.test(tableHeader)) {
