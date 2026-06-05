@@ -264,9 +264,10 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
                     value={field.label}
                     onChange={(event) => {
                       const label = event.target.value;
+                      const shouldGenerateFieldname = !field.fieldname || field.fieldname === toSnakeCase(field.label);
                       updateField(index, {
                         label,
-                        fieldname: field.fieldname ? field.fieldname : toSnakeCase(label),
+                        fieldname: shouldGenerateFieldname ? toSnakeCase(label) : field.fieldname,
                       });
                     }}
                   />

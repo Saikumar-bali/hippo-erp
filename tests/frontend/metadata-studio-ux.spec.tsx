@@ -127,6 +127,21 @@ describe("Metadata Studio UX Polish", () => {
     expect(screen.getByText(/Supported types:/)).toBeTruthy();
   });
 
+  it("DocFieldBuilder keeps generating fieldname until it is manually customized", async () => {
+    render(<DocFieldBuilder />);
+    await screen.findByRole("heading", { name: "Field Builder" });
+
+    const labelInput = screen.getByLabelText("Label");
+    const fieldnameInput = screen.getByLabelText("Fieldname");
+
+    fireEvent.change(labelInput, { target: { value: "Store Name" } });
+    expect((fieldnameInput as HTMLInputElement).value).toBe("store_name");
+
+    fireEvent.change(fieldnameInput, { target: { value: "custom_store_key" } });
+    fireEvent.change(labelInput, { target: { value: "Retail Store Name" } });
+    expect((fieldnameInput as HTMLInputElement).value).toBe("custom_store_key");
+  });
+
   it("DocFieldBuilder saves valid options without clearing unmanaged field metadata", async () => {
     const updateRecordMock = vi.mocked(updateRecord);
     updateRecordMock.mockClear();
