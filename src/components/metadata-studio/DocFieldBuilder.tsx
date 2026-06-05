@@ -175,18 +175,12 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
           fieldname: field.fieldname,
           label: field.label.trim(),
           fieldtype: field.fieldtype,
-          db_column: null,
           options,
           is_required: field.is_required,
-          is_unique: false,
-          is_readonly: false,
           is_hidden: field.is_hidden,
           in_list_view: field.in_list_view,
           in_standard_filter: field.in_standard_filter,
           permlevel: field.permlevel,
-          default_value: null,
-          validation_rules: null,
-          depends_on: null,
           sort_order: field.sort_order,
         };
 
@@ -270,9 +264,10 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
                     value={field.label}
                     onChange={(event) => {
                       const label = event.target.value;
+                      const shouldGenerateFieldname = !field.fieldname || field.fieldname === toSnakeCase(field.label);
                       updateField(index, {
                         label,
-                        fieldname: field.fieldname ? field.fieldname : toSnakeCase(label),
+                        fieldname: shouldGenerateFieldname ? toSnakeCase(label) : field.fieldname,
                       });
                     }}
                   />
