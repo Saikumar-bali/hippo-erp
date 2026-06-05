@@ -686,7 +686,7 @@ begin
       auth.uid(),
       auth.uid()
     )
-    on conflict (company_id, user_id, doctype_key, fieldname, allowed_value) do update
+    on conflict (company_user_permissions.company_id, company_user_permissions.user_id, company_user_permissions.doctype_key, company_user_permissions.fieldname, company_user_permissions.allowed_value) do update
     set
       apply_read = excluded.apply_read,
       apply_write = excluded.apply_write,

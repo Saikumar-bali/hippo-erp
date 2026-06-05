@@ -499,7 +499,7 @@ export function UserRoleAssignmentPage({
                     )}
                   </div>
 
-                  <div className="studio-panel">
+                  <div className="studio-panel" data-testid="user-permissions-panel">
                     <div className="studio-icon-title">
                       <strong>User Permissions</strong>
                     </div>

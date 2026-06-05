@@ -118,8 +118,6 @@ export function AccessControlManagerPage({
       } else {
         setMatrixRows([]);
       }
-      setPermlevelRows([]);
-      setPermlevelOverrides({});
       setOverrides({});
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load Access Control Manager");
@@ -159,7 +157,10 @@ export function AccessControlManagerPage({
   useEffect(() => {
     let cancelled = false;
     async function loadPermlevels() {
-      if (!selectedTenantId || !selectedRoleId || selectedTarget?.targetType !== "doctype") {
+      if (!selectedTenantId || !selectedRoleId || !selectedTarget || selectedTarget.targetType !== "doctype") {
+        if (selectedTarget === null) {
+          return;
+        }
         setPermlevelRows([]);
         setPermlevelOverrides({});
         return;
@@ -183,7 +184,7 @@ export function AccessControlManagerPage({
     return () => {
       cancelled = true;
     };
-  }, [selectedRoleId, selectedTarget?.targetKey, selectedTarget?.targetType, selectedTenantId, selectedUser?.user_id]);
+  }, [selectedRoleId, selectedTarget?.targetKey, selectedTarget?.targetType, selectedTarget !== null, selectedTenantId, selectedUser?.user_id]);
 
   async function handleCreateRole() {
     if (!selectedTenantId) return;
@@ -426,7 +427,7 @@ export function AccessControlManagerPage({
             />
 
             {selectedTarget?.targetType === "doctype" && permlevelRows.length > 0 && (
-              <div className="studio-panel">
+              <div className="studio-panel" data-testid="permlevel-panel">
                 <div className="studio-icon-title">
                   <strong>Field-level permissions</strong>
                 </div>
