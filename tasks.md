@@ -1,23 +1,17 @@
-# Phase 6.6 Tasks: Audit Trail and Version Timeline Foundation
+# Phase 6.6.1 Tasks: Audit Security and Auth Refresh Fix
 
-Status: COMPLETE.
+Status: ACTIVE. Phase 6.6 is not accepted until this remediation passes.
 
-Phase 6.5 accepted from commit `9932af891d21e2a3f5182ea974db618909a480a1`.
+Reason: Phase 6.6 added audit/version timeline, but audit/version RPCs must prove backend masking and record-level restrictions. UI-only masking is not enough. Also fix the login issue where users must refresh after sign-in.
 
-Goal: add company-scoped audit history and version timeline support for metadata-driven generic_json DocTypes. CRM Lead is the proof target.
+## Scope
 
-## Tasks
+Do not start Phase 6.7, Workflow, Report Builder, Client Scripts, Module Builder, Purchase Orders, Fleet, PDF, or any new business module.
 
-- [x] Create migration 0049 for audit/version foundation
-- [x] Record create, update, and deactivate events in erp_audit_logs
-- [x] Add RPCs: erp_list_document_audit_events, erp_list_document_versions, erp_get_document_version_diff
-- [x] Add frontend API methods: listAuditEvents, listVersions, getVersionDiff
-- [x] Add audit/version timeline UI to DynamicDetailPage
-- [x] Level-1 field values masked in audit diffs for restricted users
-- [x] Apply migration 0049 to Supabase Cloud
-- [x] Create cloud verification script (22/22 PASS)
-- [x] Create browser verification script
-- [x] Run full pipeline: typecheck, lint, test, build
-- [x] Run cloud verification (22/22 PASS)
-- [x] Fix jsonb_object_keys bug in erp_update_document
-- [x] Update docs and push
+## Required work
+
+- [ ] Create migration `0050_audit_rpc_security_auth_followup.sql` or equivalent if SQL changes are needed.
+- [ ] Harden `erp_list_document_audit_events`, `erp_list_document_versions`, and `erp_get_document_version_diff`.
+- [ ] Audit/version RPCs must enforce document read permission and active user-permission record filters.
+- [ ] Audit/version RPCs must mask or omit fields whose permlevel the current user cannot read.
+- [ ] Audit/version RPC responses must not leak level-1 data
