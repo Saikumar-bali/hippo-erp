@@ -7,6 +7,7 @@ import {
   loadDocTypeKeys,
   updateRecord,
 } from "../../lib/metadata/metadata-studio-api";
+import { clearMetadataCache } from "../../lib/metadata/doctype-registry";
 import { moveItem } from "./builder-utils";
 
 type LayoutSection = {
@@ -20,6 +21,7 @@ type FieldOption = {
   fieldname: string;
   label: string;
   fieldtype: string;
+  options: Record<string, unknown>;
 };
 
 function makeSection(index: number): LayoutSection {
@@ -65,6 +67,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
         fieldname: String(row.fieldname),
         label: String(row.label ?? row.fieldname),
         fieldtype: String(row.fieldtype ?? "Data"),
+        options: (row.options as Record<string, unknown> | null) ?? {},
       })));
 
     const nextSections = Array.isArray(layout?.sections_json) && layout.sections_json.length > 0
@@ -147,6 +150,7 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
         await createRecord("form_layouts", payload);
       }
 
+      clearMetadataCache();
       toast.success(`Saved Form Layout for ${selectedDocType}`);
       await loadBuilderState(selectedDocType);
     } catch (error) {
@@ -360,7 +364,18 @@ export function FormLayoutBuilder({ initialDocTypeKey = "", onNavigate }: Props)
                       return (
                         <label key={`preview-${section.id}-${fieldname}`} className="studio-field">
                           <span>{meta?.label ?? fieldname}</span>
-                          <input value="" readOnly placeholder={fieldname} />
+                          {meta?.fieldtype === "Select" ? (
+                            <select value="" disabled>
+                              <option value="">Select {meta.label}…</option>
+                              {(Array.isArray(meta.options.options) ? meta.options.options : []).map((option) => (
+                                <option key={String(option)} value={String(option)}>{String(option)}</option>
+                              ))}
+                            </select>
+                          ) : meta?.fieldtype === "Text" ? (
+                            <textarea value="" readOnly placeholder={fieldname} rows={3} />
+                          ) : (
+                            <input value="" readOnly placeholder={fieldname} />
+                          )}
                         </label>
                       );
                     })}

@@ -32,3 +32,10 @@ export function normalizeSortOrder<T>(items: T[]) {
     sort_order: index + 1,
   }));
 }
+
+export function buildOwnerAdminPermissionGrants(permissionKeys: string[]) {
+  const uniquePermissionKeys = [...new Set(permissionKeys)];
+  return ["owner", "admin"].flatMap((role) =>
+    uniquePermissionKeys.map((permission_key) => ({ role, permission_key, is_granted: true })),
+  );
+}

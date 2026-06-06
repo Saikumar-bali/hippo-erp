@@ -5,7 +5,9 @@ import { WorkspaceItemsManager } from "../../src/components/metadata-studio/Work
 import { MetadataStudioHome } from "../../src/components/metadata-studio/MetadataStudioHome";
 import { DocTypeBuilder } from "../../src/components/metadata-studio/DocTypeBuilder";
 import { DocFieldBuilder } from "../../src/components/metadata-studio/DocFieldBuilder";
-import { updateRecord } from "../../src/lib/metadata/metadata-studio-api";
+import { FormLayoutBuilder } from "../../src/components/metadata-studio/FormLayoutBuilder";
+import { getDefaultFormLayoutRecord, listDocFieldsForDoctype, updateRecord } from "../../src/lib/metadata/metadata-studio-api";
+import { buildOwnerAdminPermissionGrants } from "../../src/components/metadata-studio/builder-utils";
 
 afterEach(() => {
   cleanup();
@@ -60,6 +62,7 @@ vi.mock("../../src/lib/metadata/metadata-studio-api", () => ({
   listDocFieldsForDoctype: vi.fn(async () => [
     { id: "f1", doctype_key: "purchase_invoice", fieldname: "invoice_number", label: "Invoice Number", fieldtype: "Data", is_required: true, in_list_view: true, in_standard_filter: true, is_hidden: false, sort_order: 1, options: null },
   ]),
+  getDefaultFormLayoutRecord: vi.fn(async () => null),
   METADATA_STUDIO_SCHEMA_OPTIONS: ["app", "wh"],
   METADATA_STUDIO_STORAGE_OPTIONS: ["generic_json", "physical_rpc"],
   METADATA_STUDIO_FIELD_TYPES: ["Data", "Text", "Int", "Float", "Check", "Select", "Link", "Date", "Datetime"],
@@ -87,6 +90,19 @@ vi.mock("lucide-react", () => ({
 }));
 
 describe("Metadata Studio UX Polish", () => {
+  it("builds owner/admin grants for every DocType permission", () => {
+    const permissionKeys = [
+      "view_store", "create_store", "update_store", "delete_store", "submit_store",
+      "cancel_store", "print_store", "export_store", "import_store", "report_store",
+    ];
+
+    const grants = buildOwnerAdminPermissionGrants(permissionKeys);
+
+    expect(grants).toHaveLength(20);
+    expect(grants).toContainEqual({ role: "owner", permission_key: "submit_store", is_granted: true });
+    expect(grants).toContainEqual({ role: "admin", permission_key: "report_store", is_granted: true });
+  });
+
   it("MetadataDataTable shows search and row count", async () => {
     const fetcher = async () => [{ id: "1", name: "Test", config: { a: 1 } }];
     render(<MetadataDataTable label="Test Table" tableKey="test" fetcher={fetcher} />);
@@ -119,6 +135,23 @@ describe("Metadata Studio UX Polish", () => {
     expect(screen.getByText(/app\.erp_documents/)).toBeTruthy();
   });
 
+  it("FormLayoutBuilder previews Select fields with their configured options", async () => {
+    vi.mocked(listDocFieldsForDoctype).mockResolvedValueOnce([
+      { id: "f-select", doctype_key: "purchase_invoice", fieldname: "store_type", label: "Store Type", fieldtype: "Select", is_hidden: false, options: { options: ["Retail", "Warehouse"] } },
+    ]);
+    vi.mocked(getDefaultFormLayoutRecord).mockResolvedValueOnce({
+      id: "layout-1",
+      sections_json: [{ id: "basic", section: "Basic Info", columns: 1, fields: ["store_type"] }],
+    });
+
+    render(<FormLayoutBuilder initialDocTypeKey="purchase_invoice" />);
+
+    const previewSelect = await screen.findByLabelText("Store Type");
+    expect(previewSelect.tagName).toBe("SELECT");
+    expect(screen.getByRole("option", { name: "Retail" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Warehouse" })).toBeTruthy();
+  });
+
   it("DocFieldBuilder uses field type dropdowns", async () => {
     render(<DocFieldBuilder />);
     expect(await screen.findByRole("heading", { name: "Field Builder" })).toBeTruthy();
@@ -132,8 +165,8 @@ describe("Metadata Studio UX Polish", () => {
     await screen.findByRole("heading", { name: "Field Builder" });
     fireEvent.click(screen.getByRole("button", { name: "Add Field" }));
 
-    const labelInputs = screen.getAllByLabelText("Label");
-    const fieldnameInputs = screen.getAllByLabelText("Fieldname");
+    const labelInputs = await screen.findAllByLabelText("Label");
+    const fieldnameInputs = await screen.findAllByLabelText("Fieldname");
     const labelInput = labelInputs[labelInputs.length - 1] as HTMLInputElement;
     const fieldnameInput = fieldnameInputs[fieldnameInputs.length - 1] as HTMLInputElement;
 

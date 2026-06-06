@@ -8,6 +8,7 @@ import {
   loadDocTypeKeys,
   updateRecord,
 } from "../../lib/metadata/metadata-studio-api";
+import { clearMetadataCache } from "../../lib/metadata/doctype-registry";
 import { moveItem, normalizeSortOrder, toSnakeCase } from "./builder-utils";
 
 type BuilderField = {
@@ -201,6 +202,7 @@ export function DocFieldBuilder({ initialDocTypeKey = "", onNavigate }: Props) {
         await deleteRecord("docfields", removedId);
       }
 
+      clearMetadataCache();
       toast.success(`Saved ${nextFields.length} field${nextFields.length === 1 ? "" : "s"}`);
       await loadFields(selectedDocType);
     } catch (error) {
