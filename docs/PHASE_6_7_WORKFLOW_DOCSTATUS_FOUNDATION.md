@@ -29,16 +29,32 @@ Adds Frappe-style workflow and document status support for metadata-driven gener
 
 ## Verification
 - Cloud verification: 17/17 PASS
-- Browser verification: 12/12 PASS
+- Browser verification: 12/12 PASS (initial), 16/16 PASS (Phase 6.7.1 final)
 - TypeScript: 0 errors
 - ESLint: 0 new errors
 - Tests: 77/77 pass
 - Build: success
 
+## Phase 6.7.1: Workflow Security Regression Gate (COMPLETE)
+Proves Phase 6.5/6.6.1 protections coexist with Phase 6.7 workflow.
+- Cloud: 17/17 PASS (field masking, record filtering, workflow transitions, version timeline)
+- Browser: 16/16 PASS (fresh lead creation, workflow actions, low-priv filtering)
+- Key fixes: `button.link-button` selector, fresh lead creation for workflow testing, dotenv injection
+
+## Phase 6.7.2: Migration Hygiene and Evidence Gate (COMPLETE)
+- Migration 0052 DELETED (cloud already has protections via direct application)
+- Debug scripts removed (debug_browser_detail.mjs, debug_permissions.mjs, debug_db_state.mjs)
+- dotenv added to all verification scripts
+- All build commands PASS
+- Docs updated
+
 ## Files created/modified
-- `supabase/migrations/0051_workflow_docstatus_foundation.sql` (new)
+- `supabase/migrations/0051_workflow_docstatus_foundation.sql` (new, applied to cloud)
+- `supabase/migrations/0052_workflow_security_regression_fix.sql` (DELETED — unapplied, cloud already protected)
 - `src/components/metadata/doctype-api-map.ts` (updated interface)
 - `src/lib/metadata/generic-doctype-api.ts` (added workflow methods)
 - `src/components/metadata/DynamicDetailPage.tsx` (workflow UI)
 - `scripts/verify_phase6_7_workflow_docstatus_cloud.mjs` (new)
 - `scripts/verify_phase6_7_workflow_docstatus_browser.mjs` (new)
+- `scripts/verify_phase6_7_1_workflow_security_regression.mjs` (new — cloud security proof)
+- `scripts/verify_phase6_7_1_browser_security.mjs` (new — browser security proof)

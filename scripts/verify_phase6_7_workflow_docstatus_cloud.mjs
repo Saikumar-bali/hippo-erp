@@ -15,6 +15,9 @@
  * 10. Permission: user without update_crm_lead cannot transition
  */
 
+import dotenv from "dotenv";
+dotenv.config();
+
 const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "bhqgszzvemejfbgndtnf";
 const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const MANAGEMENT_URL = `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`;

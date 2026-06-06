@@ -6,6 +6,8 @@
 
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "fs";
+import dotenv from "dotenv";
+dotenv.config();
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://[::1]:5174";
 const EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL;

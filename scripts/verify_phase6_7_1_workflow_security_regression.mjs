@@ -6,6 +6,10 @@
  * Tests via Management API against Supabase Cloud.
  */
 
+import { writeFileSync, mkdirSync } from "fs";
+import dotenv from "dotenv";
+dotenv.config();
+
 const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "bhqgszzvemejfbgndtnf";
 const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const MANAGEMENT_URL = `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`;
@@ -15,6 +19,7 @@ const ADMIN_EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL;
 const ADMIN_PASSWORD = process.env.PLAYWRIGHT_TEST_PASSWORD;
 const LOW_PRIV_EMAIL = process.env.PLAYWRIGHT_LOW_PRIV_EMAIL;
 const LOW_PRIV_PASSWORD = process.env.PLAYWRIGHT_LOW_PRIV_PASSWORD;
+const OUTPUT_DIR = "C:/tmp/phase-6-7-2-cloud-proof";
 
 let passCount = 0;
 let failCount = 0;
@@ -153,6 +158,9 @@ async function run() {
   }
 
   console.log(`\n=== Results: ${passCount} PASS, ${failCount} FAIL out of ${passCount + failCount} ===\n`);
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+  writeFileSync(`${OUTPUT_DIR}/results.json`, JSON.stringify({ passCount, failCount, results }, null, 2));
+  console.log(`Results saved to: ${OUTPUT_DIR}/results.json\n`);
   if (failCount > 0) process.exit(1);
 }
 
