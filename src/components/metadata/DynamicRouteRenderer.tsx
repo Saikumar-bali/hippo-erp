@@ -25,6 +25,8 @@ import { CrmDashboardPage } from "../crm/CrmDashboardPage";
 import { ThemeStudioPage } from "../theme/ThemeStudioPage";
 import { PrintPreviewPage } from "../print/PrintPreviewPage";
 import { PrintFormatBuilderPage } from "../print/PrintFormatBuilderPage";
+import { ReportsPage } from "../reports/ReportsPage";
+import { ReportRunner } from "../reports/ReportRunner";
 import type { CompanyThemeSettings } from "../../lib/theme-types";
 
 import { DocFieldList } from "../metadata-studio/DocFieldList";
@@ -245,6 +247,10 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
       return <CrmDashboardPage tenantId={tenantId} onNavigateToDocType={onNavigateToDocType} />;
     }
 
+    if (itemKey === "reports_home" || target === "reports_home") {
+      return <ReportsPage tenantId={tenantId} />;
+    }
+
     if (itemKey === "users_and_roles") {
       return (
         <UsersRolesView
@@ -301,12 +307,16 @@ export function DynamicRouteRenderer({ selectedItem, tenantId, permissions, onRe
   }
 
   if (itemType === "report") {
+    if (selectedItem.target) {
+      return (
+        <ReportRunner
+          reportId={selectedItem.target}
+          tenantId={tenantId}
+        />
+      );
+    }
     return (
-      <ModuleView
-        tenantId={tenantId}
-        module={selectedItem.label}
-        can={can(permissions.can)}
-      />
+      <ReportsPage tenantId={tenantId} />
     );
   }
 

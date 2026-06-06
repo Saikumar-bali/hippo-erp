@@ -1,33 +1,67 @@
-# Phase 6.7.2 Tasks: Workflow Migration Hygiene and Evidence Gate
+# Phase 6.8 Tasks: Report Builder Foundation
 
 Status: COMPLETE
 
 ## Why this gate exists
 
-Phase 6.7.1 added useful workflow-security regression verification, but the closeout had migration ambiguity and debug leftovers.
+Adds Frappe-like Report Builder foundation for metadata-driven DocTypes. Uses CRM Lead and CRM Opportunity as proof DocTypes. Backend/RPC enforces all access; frontend is UX only.
 
-## Completed
+## Deferred
 
-- [x] Migration 0052 decision: DELETED (cloud already has equivalent protections via direct application)
-- [x] Debug scripts removed: debug_browser_detail.mjs, debug_permissions.mjs, debug_db_state.mjs
-- [x] Untracked junk files removed: `=`, `dev-server.log`
-- [x] dotenv added to all verification scripts (was missing, causing env var failures)
-- [x] Cloud proof: 17/17 PASS (Phase 6.7.1 workflow security regression)
-- [x] Browser proof: 16/16 PASS (Phase 6.7.1 strict browser verification)
-- [x] typecheck: PASS
-- [x] lint: PASS (55 warnings, 0 errors — all pre-existing)
-- [x] build: PASS
-- [x] test: PASS (17 files, 77 tests)
-- [x] test:simulation: PASS (12 simulation files)
-- [x] Docs updated (tasks.md, progress.md, phase doc)
+- Module Builder — separate workspace, not part of this phase
+- Purchase Orders — business module, not started
+- Purchase Invoice — business module, not started
+- Fleet — business module, not started
+- Client Scripts — not started
+- PDF generation — not started
 
-## Migration 0052 Decision
+## Tasks
 
-**Path B — 0052 is not required.**
+### 1. Database migration (0053_report_builder_foundation.sql)
+- [x] Create `app.erp_reports` table (id, company_id, report_key, report_name, doctype_key, report_type, is_standard, is_active, created_by, created_at, updated_at)
+- [x] Create `app.erp_report_columns` table (report_id, fieldname, label, fieldtype, order_index, width, is_visible, aggregation)
+- [x] Create `app.erp_report_filters` table (report_id, fieldname, operator, default_value, is_required, order_index)
+- [x] RLS policies on all report tables
+- [x] Seed CRM Lead List Report (standard)
+- [x] Seed CRM Opportunity List Report (standard)
+- [x] Activate Reports workspace and add CRM report workspace items
+- [x] Add `view_reports` and `export_reports` permission grants to owner/admin roles
+- [x] Add `reports_home` workspace item for report list page
 
-- Cloud RPCs (`erp_list_documents`, `erp_apply_workflow_action`, `erp_update_document`, etc.) already contain the exact protections that 0052 defines.
-- Cloud migration history shows latest applied version is `0047_permission_levels_user_permissions` — 0051 and 0052 were never applied via the migration system.
-- Protections were applied directly (out-of-band) and are live on the cloud.
-- `document_matches_user_permission_rules` and `filter_document_data_by_user_access` helper functions exist on cloud.
-- `CREATE OR REPLACE` in 0052 would be a no-op since the cloud already has identical code.
-- File deleted from repo to prevent confusion.
+### 2. Backend RPCs
+- [x] `erp_list_reports(p_company_id)` — list reports for company
+- [x] `erp_get_report_definition(p_report_id, p_company_id)` — get report definition with columns and filters
+- [x] `erp_run_report(p_report_id, p_company_id, p_filters)` — execute report with full security
+- [x] `erp_create_report(p_company_id, p_report_key, p_report_name, p_doctype_key, ...)` — create custom report
+- [x] `erp_update_report(p_report_id, p_company_id, ...)` — update custom report
+- [x] `erp_delete_report(p_report_id, p_company_id)` — soft-delete custom report (not standard)
+
+### 3. Frontend
+- [x] `src/lib/reports-api.ts` — API wrappers for report RPCs (including resolveReportId)
+- [x] `src/components/reports/ReportsPage.tsx` — list available reports with internal navigation
+- [x] `src/components/reports/ReportRunner.tsx` — run report with filters and show results
+- [x] Update `DynamicRouteRenderer.tsx` to render ReportRunner for `item_type === "report"` and ReportsPage for `reports_home`
+
+### 4. Security checks
+- [x] Report execution checks DocType read permission (via erp_run_report RPC)
+- [x] Report execution applies record-level user permissions (document_matches_user_permission_rules)
+- [x] Report execution masks/omits fields above user's read permlevel (filter_document_data_by_user_access)
+- [x] Filters cannot bypass user permissions (applied AFTER permission filtering)
+- [x] Columns cannot expose hidden/unauthorized fields (only report-defined + masked columns)
+- [x] CRM Opportunity report works
+
+### 5. Verification
+- [x] `scripts/verify_phase6_8_report_builder_cloud.mjs` — cloud proof (16/16 PASS)
+- [x] `scripts/verify_phase6_8_report_builder_browser.mjs` — browser proof (13/13 PASS)
+- [x] Run full command set (typecheck, lint, test, build, test:simulation, provision, cloud, browser)
+- [ ] Create docs (PHASE_6_8_REPORT_BUILDER_FOUNDATION.md, ai-runs doc)
+- [x] Update tasks.md, progress.md with results
+
+### 6. Final
+- [ ] Final commit and push to phase-2.5-metadata-engine
+
+## Key fixes during implementation
+
+- **erp_run_report bug**: Original SQL had broken `order by ' || format('%L', 'created_at') || ' desc` concatenation that created unterminated string literals. Fixed to use single `format()` call with `%s` for WHERE and ORDER BY clauses.
+- **report_key vs UUID**: Workspace items store `report_key` (string) as target, but RPCs expect UUID. Added `resolveReportId()` helper that resolves keys to UUIDs via `listReports()`.
+- **Reports home page**: Added `reports_home` page item to Reports workspace so users can see the full reports list before drilling into individual reports.
