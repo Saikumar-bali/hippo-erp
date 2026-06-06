@@ -14,10 +14,10 @@ Proves exposed credentials have been addressed and all verifiers pass with rotat
 |-----------|--------|------------------|------------------|
 | Publishable key | ✅ ROTATED | `sb_publishable_Wl_xCBh...` | `sb_publishable_s1_4--4...` |
 | Service role key | ⚠️ NOT ROTATED | Same JWT returned | Same JWT |
-| Admin password | ⚠️ NOT ROTATED | `Phase64Admin!2026` | `Admin@2026` (rejected) |
-| Low-priv password | ⚠️ NOT ROTATED | `Phase64Low!2026` | `User@2026` (rejected) |
+| Admin password | ⚠️ NOT ROTATED (at time of 6.8.3) | `Phase64Admin!2026` | `Admin@2026` (rejected) |
+| Low-priv password | ⚠️ NOT ROTATED (at time of 6.8.3) | `Phase64Low!2026` | `User@2026` (rejected) |
 
-**Note**: Passwords were attempted but Supabase rejected them ("Invalid login credentials"). The old passwords still work. This suggests either the Dashboard password change was not saved, or the passwords need to meet complexity requirements not satisfied by the provided values.
+**Note**: Passwords were attempted but Supabase rejected them at the time of Phase 6.8.3. They were subsequently rotated successfully via the Supabase Auth Admin API in Phase 6.8.4.
 
 ## Secret Scan Result
 
