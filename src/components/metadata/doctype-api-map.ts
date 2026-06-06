@@ -5,6 +5,14 @@ import {
 } from "../../lib/product-api";
 import { supabase } from "../../lib/supabase";
 
+export interface WorkflowAction {
+  action: string;
+  from_state: string;
+  to_state: string;
+  required_permission_key: string | null;
+  allowed: boolean;
+}
+
 export interface DocTypeApi {
   list: (tenantId: string) => Promise<unknown[]>;
   get: (id: string, tenantId?: string) => Promise<unknown>;
@@ -15,6 +23,11 @@ export interface DocTypeApi {
   listAuditEvents?: (id: string, tenantId?: string) => Promise<Record<string, unknown>[]>;
   listVersions?: (id: string, tenantId?: string) => Promise<Record<string, unknown>[]>;
   getVersionDiff?: (id: string, versionFrom: number, versionTo: number, tenantId?: string) => Promise<{ diff: Record<string, unknown>; dataFrom: Record<string, unknown>; dataTo: Record<string, unknown> }>;
+  getWorkflow?: (tenantId?: string) => Promise<{ workflow_key: string; label: string; states: { state_key: string; label: string }[]; transitions: { from_state: string; to_state: string; action_label: string }[] } | null>;
+  getWorkflowActions?: (id: string, tenantId?: string) => Promise<WorkflowAction[]>;
+  applyWorkflowAction?: (id: string, action: string, tenantId?: string) => Promise<void>;
+  submitDocument?: (id: string, tenantId?: string) => Promise<void>;
+  cancelDocument?: (id: string, tenantId?: string) => Promise<void>;
 }
 
 const doctypeApiRegistry = new Map<string, DocTypeApi>();

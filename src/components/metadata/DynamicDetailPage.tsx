@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
-import { getDocTypeApi, detectAndRegisterGenericDocTypeApi, type DocTypeApi } from "./doctype-api-map";
+import { getDocTypeApi, detectAndRegisterGenericDocTypeApi, type DocTypeApi, type WorkflowAction } from "./doctype-api-map";
 import { StatusField } from "./StatusField";
 import { Printer, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
@@ -67,6 +67,8 @@ export function DynamicDetailPage({
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditExpanded, setAuditExpanded] = useState(false);
   const [selectedVersionDiff, setSelectedVersionDiff] = useState<{ from: number; to: number; diff: Record<string, unknown> } | null>(null);
+  const [workflowActions, setWorkflowActions] = useState<WorkflowAction[]>([]);
+  const [, setWorkflowLoading] = useState(false);
 
   const [registeredApi, setRegisteredApi] = useState<DocTypeApi | null>(() => getDocTypeApi(doctypeKey));
   const [apiReady, setApiReady] = useState(false);
@@ -152,6 +154,24 @@ export function DynamicDetailPage({
     return () => { cancelled = true; };
   }, [api, recordId, tenantId]);
 
+  // Load workflow actions for the document
+  useEffect(() => {
+    if (!api?.getWorkflowActions || !recordId || !tenantId) return;
+    let cancelled = false;
+    setWorkflowLoading(true);
+    api.getWorkflowActions(recordId, tenantId)
+      .then((actions) => {
+        if (!cancelled) setWorkflowActions(actions);
+      })
+      .catch(() => {
+        // Non-critical: workflow may not be configured
+      })
+      .finally(() => {
+        if (!cancelled) setWorkflowLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [api, recordId, tenantId]);
+
   if (metaLoading || dataLoading || accessLoading) {
     return <div className="card state-info">Loading {doctypeKey} details…</div>;
   }
@@ -171,6 +191,11 @@ export function DynamicDetailPage({
   const formatDate = (d: string | null) => d ? new Date(d).toLocaleString() : "—";
 
   const isActive = record.is_active as boolean ?? true;
+  const docstatus = record.docstatus as number | undefined;
+  const workflowState = record.workflow_state as string | undefined;
+
+  const docstatusLabel = docstatus === 0 ? "Draft" : docstatus === 1 ? "Submitted" : docstatus === 2 ? "Cancelled" : null;
+  const docstatusClass = docstatus === 0 ? "mini-badge--active" : docstatus === 1 ? "mini-badge--info" : "mini-badge--inactive";
 
   return (
     <div className="module-stack">
@@ -179,7 +204,19 @@ export function DynamicDetailPage({
           <p className="eyebrow">{config.doctype.label} Detail</p>
           <h3>{(record.name ?? record.sku ?? record.code ?? "Record") as string}</h3>
         </div>
-        <StatusField value={isActive} />
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {docstatusLabel && (
+            <span className={`mini-badge ${docstatusClass}`}>
+              {docstatusLabel}
+            </span>
+          )}
+          {workflowState && (
+            <span className="mini-badge mini-badge--info">
+              {workflowState}
+            </span>
+          )}
+          <StatusField value={isActive} />
+        </div>
       </div>
 
       {sections.map((sec) => (
@@ -347,6 +384,33 @@ export function DynamicDetailPage({
       )}
 
       <div className="form-actions">
+        {workflowActions.length > 0 && (
+          <div style={{ display: "flex", gap: "6px", marginRight: "auto" }}>
+            {workflowActions.map((wa) => (
+              <button
+                key={wa.action}
+                className="primary-action"
+                onClick={async () => {
+                  try {
+                    await api?.applyWorkflowAction?.(recordId, wa.action, tenantId);
+                    toast.success(`Action "${wa.action}" applied successfully`);
+                    // Reload document
+                    const updated = await api?.get(recordId, tenantId);
+                    if (updated) setRecord(updated as Record<string, unknown>);
+                    // Reload workflow actions
+                    const newActions = await api?.getWorkflowActions?.(recordId, tenantId);
+                    if (newActions) setWorkflowActions(newActions);
+                  } catch (err: unknown) {
+                    toast.error(err instanceof Error ? err.message : `Failed to apply action: ${wa.action}`);
+                  }
+                }}
+                title={`${wa.from_state} → ${wa.to_state}`}
+              >
+                {wa.action}
+              </button>
+            ))}
+          </div>
+        )}
         {canPrint && isActive && (
           <button 
             className="logout" 

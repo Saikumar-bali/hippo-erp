@@ -1,5 +1,5 @@
 import { supabase } from "../supabase";
-import type { DocTypeApi } from "../../components/metadata/doctype-api-map";
+import type { DocTypeApi, WorkflowAction } from "../../components/metadata/doctype-api-map";
 
 function handleRpcResponse(response: unknown): Record<string, unknown>[] {
   const r = response as { ok?: boolean; data?: unknown[]; error?: string } | null;
@@ -137,6 +137,62 @@ export function createGenericDocTypeApi(doctypeKey: string): DocTypeApi {
       const r = data as { ok?: boolean; diff?: Record<string, unknown>; data_from?: Record<string, unknown>; data_to?: Record<string, unknown>; error?: string } | null;
       if (!r?.ok) throw new Error(r?.error ?? "Version diff failed");
       return { diff: r.diff ?? {}, dataFrom: r.data_from ?? {}, dataTo: r.data_to ?? {} };
+    },
+
+    getWorkflow: async () => {
+      const { data, error } = await supabase.rpc("erp_get_workflow_for_doctype", {
+        p_doctype_key: doctypeKey,
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; data?: { workflow_key: string; label: string; states: { state_key: string; label: string }[]; transitions: { from_state: string; to_state: string; action_label: string }[] }; error?: string } | null;
+      if (!r?.ok) return null;
+      return r.data ?? null;
+    },
+
+    getWorkflowActions: async (id: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_list_workflow_actions", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; data?: WorkflowAction[]; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Failed to list workflow actions");
+      return (r.data ?? []).filter((a) => a.allowed);
+    },
+
+    applyWorkflowAction: async (id: string, action: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_apply_workflow_action", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+        p_action: action,
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Workflow action failed");
+    },
+
+    submitDocument: async (id: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_submit_document", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Submit failed");
+    },
+
+    cancelDocument: async (id: string, tenantId?: string) => {
+      const { data, error } = await supabase.rpc("erp_cancel_document", {
+        p_doctype_key: doctypeKey,
+        p_document_id: id,
+        p_company_id: tenantId ?? "00000000-0000-0000-0000-000000000000",
+      });
+      if (error) throw new Error(error.message);
+      const r = data as { ok?: boolean; error?: string } | null;
+      if (!r?.ok) throw new Error(r?.error ?? "Cancel failed");
     },
   };
 }
