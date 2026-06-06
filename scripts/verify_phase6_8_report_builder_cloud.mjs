@@ -5,8 +5,14 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const PROJECT_REF = "bhqgszzvemejfbgndtnf";
+function requireEnv(name) {
+  const val = process.env[name];
+  if (!val) { console.error(`❌ Missing required env var: ${name}`); process.exit(1); }
+  return val;
+}
+
+const ACCESS_TOKEN = requireEnv("SUPABASE_ACCESS_TOKEN");
+const PROJECT_REF = requireEnv("SUPABASE_PROJECT_REF");
 const COMPANY_ID = "11111111-1111-1111-1111-111111111111";
 
 let passed = 0;

@@ -15,9 +15,15 @@ import { writeFileSync, mkdirSync } from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://[::1]:5174";
-const EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL;
-const PASSWORD = process.env.PLAYWRIGHT_TEST_PASSWORD;
+function requireEnv(name) {
+  const val = process.env[name];
+  if (!val) { console.error(`❌ Missing required env var: ${name}`); process.exit(1); }
+  return val;
+}
+
+const BASE_URL = requireEnv("PLAYWRIGHT_BASE_URL");
+const EMAIL = requireEnv("PLAYWRIGHT_TEST_EMAIL");
+const PASSWORD = requireEnv("PLAYWRIGHT_TEST_PASSWORD");
 const OUTPUT_DIR = "C:/tmp/phase-6-8-report-builder";
 
 let passCount = 0;

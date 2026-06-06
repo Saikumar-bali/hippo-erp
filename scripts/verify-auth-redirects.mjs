@@ -1,7 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
+import dotenv from "dotenv";
+dotenv.config();
 
-const url = 'https://bhqgszzvemejfbgndtnf.supabase.co';
-const key = 'sb_publishable_Wl_xCBhyjpzUlJsdTtSxNA_tS9uR6kU';
+function requireEnv(name) {
+  const val = process.env[name];
+  if (!val) { console.error(`❌ Missing required env var: ${name}`); process.exit(1); }
+  return val;
+}
+
+const url = requireEnv("VITE_SUPABASE_URL");
+const key = requireEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
 const supabase = createClient(url, key);
 
 const id = Date.now();

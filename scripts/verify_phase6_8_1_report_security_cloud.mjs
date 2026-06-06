@@ -1,26 +1,41 @@
 #!/usr/bin/env node
 /**
- * Phase 6.8.1 — Report Builder Security: Cloud verification
+ * Phase 6.8.2 — Report Builder Security: Cloud verification
  *
  * Strict security proof. Uses admin user session for RPC tests (service_role has no auth.uid()).
  * Uses Management API for structural verification (RLS, GRANT, definitions).
+ * Proves restricted-user report security.
+ *
+ * Required env vars (exits non-zero if any missing):
+ *   VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, SUPABASE_ACCESS_TOKEN,
+ *   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_REF,
+ *   PLAYWRIGHT_TEST_EMAIL, PLAYWRIGHT_TEST_PASSWORD,
+ *   PLAYWRIGHT_LOW_PRIV_EMAIL, PLAYWRIGHT_LOW_PRIV_PASSWORD
  */
 import dotenv from "dotenv";
 dotenv.config();
 
 import { createClient } from "@supabase/supabase-js";
 
-const URL = process.env.VITE_SUPABASE_URL;
-const SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJocWdzenp2ZW1lamZiZ25kdG5mIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTg3NDc3MSwiZXhwIjoyMDk1NDUwNzcxfQ.R_jrgYbxwSjjNuRxzS2FTUboB_BsKeXR_rVxjxKklj0";
-const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const PROJECT_REF = "bhqgszzvemejfbgndtnf";
+// ── Require all env vars (no fallbacks, no hardcoded secrets) ─────────────────
+function requireEnv(name) {
+  const val = process.env[name];
+  if (!val) { console.error(`❌ Missing required env var: ${name}`); process.exit(1); }
+  return val;
+}
+
+const URL = requireEnv("VITE_SUPABASE_URL");
+const PUBLISHABLE_KEY = requireEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
+const ACCESS_TOKEN = requireEnv("SUPABASE_ACCESS_TOKEN");
+const SERVICE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+const PROJECT_REF = requireEnv("SUPABASE_PROJECT_REF");
 const COMPANY_ID = "11111111-1111-1111-1111-111111111111";
 const FAKE_COMPANY = "00000000-0000-0000-0000-000000000000";
 
-const ADMIN_EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL || "saikumarbali555@gmail.com";
-const ADMIN_PASS = process.env.PLAYWRIGHT_TEST_PASSWORD || "Phase64Admin!2026";
-const LOW_EMAIL = process.env.PLAYWRIGHT_LOW_PRIV_EMAIL || "new_user@example.com";
-const LOW_PASS = process.env.PLAYWRIGHT_LOW_PRIV_PASSWORD || "Phase64Low!2026";
+const ADMIN_EMAIL = requireEnv("PLAYWRIGHT_TEST_EMAIL");
+const ADMIN_PASS = requireEnv("PLAYWRIGHT_TEST_PASSWORD");
+const LOW_EMAIL = requireEnv("PLAYWRIGHT_LOW_PRIV_EMAIL");
+const LOW_PASS = requireEnv("PLAYWRIGHT_LOW_PRIV_PASSWORD");
 
 let pass = 0, fail = 0;
 function ok(l) { pass++; console.log(`  ✅ ${l}`); }
@@ -39,7 +54,6 @@ async function mgmtSql(query, label) {
 
 // ── Create authenticated clients ──────────────────────────────────────────────
 const adminClient = createClient(URL, SERVICE_KEY);
-const anonClient = createClient(URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_Wl_xCBhyjpzUlJsdTtSxNA_tS9uR6kU");
 
 console.log("\n🔑 Signing in as admin user...");
 const { data: adminAuth, error: adminErr } = await adminClient.auth.signInWithPassword({
@@ -48,7 +62,7 @@ const { data: adminAuth, error: adminErr } = await adminClient.auth.signInWithPa
 if (adminErr) { console.error("Admin sign-in failed:", adminErr.message); process.exit(1); }
 console.log(`  Admin user: ${adminAuth.user.email} (${adminAuth.user.id})`);
 
-const authedAdmin = createClient(URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_Wl_xCBhyjpzUlJsdTtSxNA_tS9uR6kU");
+const authedAdmin = createClient(URL, PUBLISHABLE_KEY);
 await authedAdmin.auth.setSession({
   access_token: adminAuth.session.access_token,
   refresh_token: adminAuth.session.refresh_token,
@@ -62,7 +76,7 @@ const { data: lowAuth, error: lowErr } = await adminClient.auth.signInWithPasswo
 if (lowErr) { console.error("Low-priv sign-in failed:", lowErr.message); process.exit(1); }
 console.log(`  Low-priv user: ${lowAuth.user.email} (${lowAuth.user.id})`);
 
-const authedLow = createClient(URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_Wl_xCBhyjpzUlJsdTtSxNA_tS9uR6kU");
+const authedLow = createClient(URL, PUBLISHABLE_KEY);
 await authedLow.auth.setSession({
   access_token: lowAuth.session.access_token,
   refresh_token: lowAuth.session.refresh_token,
@@ -197,14 +211,12 @@ try {
 
   const leadId = std.find(r => r.report_key === "crm_lead_list")?.id;
   if (leadId) {
-    // Try to delete standard report (should fail)
     const { data: delRes } = await authedAdmin.rpc("erp_delete_report", {
       p_report_id: leadId, p_company_id: COMPANY_ID,
     });
     if (delRes?.ok === false) ok("Standard report delete blocked");
     else no("standard delete", `expected blocked, got ok=${delRes?.ok}`);
 
-    // Try to update standard report (should fail)
     const { data: updRes } = await authedAdmin.rpc("erp_update_report", {
       p_report_id: leadId, p_company_id: COMPANY_ID, p_report_name: "HACKED",
       p_columns: [{ fieldname: "lead_name", label: "Hacked", fieldtype: "Data", width: 200 }],
@@ -237,14 +249,83 @@ try {
   ok("Cross-company access blocked (definition, error)");
 }
 
-// ── 8. Low-priv user access ──────────────────────────────────────────────────
-console.log("\n🔹 8. Low-priv user access...");
+// ── 8. Low-priv user: restricted access ──────────────────────────────────────
+console.log("\n🔹 8. Low-priv user: restricted access...");
+
+// 8a. Low-priv user can list reports (if they have view_reports)
 try {
   const { data: lowListRes } = await authedLow.rpc("erp_list_reports", { p_company_id: COMPANY_ID });
   const lowReports = lowListRes?.data ?? [];
-  if (lowListRes?.ok) ok(`Low-priv list_reports: ${lowReports.length} reports (may be 0 if no view_reports perm)`);
+  if (lowListRes?.ok) ok(`Low-priv list_reports: ${lowReports.length} reports`);
   else no("low-priv list", `error=${lowListRes?.error}`);
 } catch (e) { no("low-priv list", e.message); }
+
+// 8b. Low-priv user: run CRM Lead report
+let lowLeadReportId = null;
+try {
+  const { data: lowLeadId } = await authedLow.rpc("erp_list_reports", { p_company_id: COMPANY_ID });
+  lowLeadReportId = lowLeadId?.data?.find(r => r.report_key === "crm_lead_list")?.id;
+  if (lowLeadReportId) {
+    const { data: lowRunRes } = await authedLow.rpc("erp_run_report", {
+      p_report_id: lowLeadReportId, p_company_id: COMPANY_ID, p_filters: {},
+    });
+    if (lowRunRes?.ok && Array.isArray(lowRunRes.data)) {
+      const lowRows = lowRunRes.data;
+      ok(`Low-priv erp_run_report: ${lowRows.length} rows`);
+      // Verify restricted fields are not present in results
+      const hasEmail = lowRows.some(row => row.email !== undefined);
+      const hasPhone = lowRows.some(row => row.phone !== undefined);
+      const hasNotes = lowRows.some(row => row.notes !== undefined);
+      if (!hasEmail) ok("Low-priv: email field masked");
+      else no("low-priv email", "email field visible (permlevel violation)");
+      if (!hasPhone) ok("Low-priv: phone field masked");
+      else no("low-priv phone", "phone field visible (permlevel violation)");
+      if (!hasNotes) ok("Low-priv: notes field masked");
+      else no("low-priv notes", "notes field visible (permlevel violation)");
+    } else {
+      no("low-priv run report", `ok=${lowRunRes?.ok}, error=${lowRunRes?.error}`);
+    }
+  } else {
+    ok("Low-priv: no CRM Lead report accessible (expected if no doctype read)");
+  }
+} catch (e) { no("low-priv run report", e.message); }
+
+// 8c. Low-priv user: attempt to request unauthorized columns
+if (lowLeadReportId) {
+  try {
+    const { data: lowDefRes } = await authedLow.rpc("erp_get_report_definition", {
+      p_report_id: lowLeadReportId, p_company_id: COMPANY_ID,
+    });
+    if (lowDefRes?.ok) {
+      const cols = lowDefRes.data?.columns ?? [];
+      const hasEmailCol = cols.some(c => c.fieldname === "email");
+      const hasPhoneCol = cols.some(c => c.fieldname === "phone");
+      const hasNotesCol = cols.some(c => c.fieldname === "notes");
+      if (!hasEmailCol) ok("Low-priv: email column hidden from definition");
+      else no("low-priv def email", "email column exposed in definition");
+      if (!hasPhoneCol) ok("Low-priv: phone column hidden from definition");
+      else no("low-priv def phone", "phone column exposed in definition");
+      if (!hasNotesCol) ok("Low-priv: notes column hidden from definition");
+      else no("low-priv def notes", "notes column exposed in definition");
+    }
+  } catch (e) { no("low-priv definition check", e.message); }
+}
+
+// 8d. Low-priv user: filters cannot reveal blocked records
+if (lowLeadReportId) {
+  try {
+    const { data: lowFilterRes } = await authedLow.rpc("erp_run_report", {
+      p_report_id: lowLeadReportId, p_company_id: COMPANY_ID,
+      p_filters: { status: { op: "eq", value: "converted" } },
+    });
+    if (lowFilterRes?.ok) {
+      const filteredRows = lowFilterRes.data ?? [];
+      const hasEmail = filteredRows.some(row => row.email !== undefined);
+      if (!hasEmail) ok("Low-priv: filter cannot reveal masked fields");
+      else no("low-priv filter bypass", "email visible via filter (permlevel bypass)");
+    }
+  } catch (e) { no("low-priv filter check", e.message); }
+}
 
 // ── 9. Column permlevel filtering ────────────────────────────────────────────
 console.log("\n🔹 9. Column metadata validation...");
@@ -304,6 +385,21 @@ if (customReportId) {
     else no("delete report", `ok=${delRes?.ok}, error=${delRes?.error}`);
   } catch (e) { no("delete report", e.message); }
 }
+
+// ── 11. CRM Opportunity report runs ─────────────────────────────────────────
+console.log("\n🔹 11. CRM Opportunity report...");
+try {
+  const { data: listRes } = await authedAdmin.rpc("erp_list_reports", { p_company_id: COMPANY_ID });
+  const reports = listRes?.data ?? [];
+  const oppReport = reports.find(r => r.report_key === "crm_opportunity_list");
+  if (!oppReport) { no("opp report in list", "not found"); } else {
+    const { data: runRes } = await authedAdmin.rpc("erp_run_report", {
+      p_report_id: oppReport.id, p_company_id: COMPANY_ID, p_filters: {},
+    });
+    if (runRes?.ok) ok(`Opportunity report returns ${runRes.data?.length ?? 0} rows`);
+    else no("opp report", `ok=${runRes?.ok}, error=${runRes?.error}`);
+  }
+} catch (e) { no("opp report", e.message); }
 
 // ── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n════════════════════════════════`);

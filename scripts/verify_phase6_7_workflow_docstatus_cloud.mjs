@@ -18,8 +18,14 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "bhqgszzvemejfbgndtnf";
-const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
+function requireEnv(name) {
+  const val = process.env[name];
+  if (!val) { console.error(`❌ Missing required env var: ${name}`); process.exit(1); }
+  return val;
+}
+
+const PROJECT_REF = requireEnv("SUPABASE_PROJECT_REF");
+const SUPABASE_ACCESS_TOKEN = requireEnv("SUPABASE_ACCESS_TOKEN");
 const MANAGEMENT_URL = `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`;
 
 const ADMIN_EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL;
