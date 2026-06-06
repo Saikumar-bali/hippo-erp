@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshPromiseRef = useRef<Promise<void> | null>(null);
   const lastLoadedUserIdRef = useRef<string | null>(null);
   const refreshSeqRef = useRef(0);
+  const tenantsCountRef = useRef(0);
   // Internal key retained for compatibility: `tenant_id` stores the selected company context.
   const [selectedTenantId, setSelectedTenantIdState] = useState<string | null>(localStorage.getItem("tenant_id"));
 
@@ -84,8 +85,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (requestId !== refreshSeqRef.current) return;
       setTenantLoadError("");
       setTenants(rows);
+      tenantsCountRef.current = rows.length;
       writeCachedTenants(rows);
-      lastLoadedUserIdRef.current = session?.user?.id ?? lastLoadedUserIdRef.current;
+      // Use the auth user directly instead of stale session closure
+      const { data: { user } } = await supabase.auth.getUser();
+      lastLoadedUserIdRef.current = user?.id ?? lastLoadedUserIdRef.current;
+      devLog("refreshTenants:lastLoadedUserIdSet", { userId: lastLoadedUserIdRef.current });
       if (rows.length > 0 && !selectedTenantId) {
         setSelectedTenantId(rows[0].id);
       }
@@ -114,10 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await refreshTenants();
           } catch (err: any) {
           const cached = readCachedTenants();
-            if (cached.length > 0 || tenants.length > 0) {
+            if (cached.length > 0 || tenantsCountRef.current > 0) {
               setTenantLoadError("");
-              if (tenants.length === 0) {
+              if (tenantsCountRef.current === 0) {
                 setTenants(cached);
+                tenantsCountRef.current = cached.length;
               }
               return;
             }
@@ -126,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
             devLog("refreshTenants:error@getSession", err?.message ?? err);
             setTenants([]);
+            tenantsCountRef.current = 0;
             setTenantLoadError(err?.message ?? "Failed to load company memberships.");
           }
       }
@@ -149,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setSession(next);
       if (next) {
-        if (lastLoadedUserIdRef.current === next.user.id && tenants.length > 0) {
+        if (lastLoadedUserIdRef.current === next.user.id && tenantsCountRef.current > 0) {
           devLog("onAuthStateChange:skipRefresh", { userId: next.user.id });
           return;
         }
@@ -157,22 +164,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await refreshTenants();
         } catch (err: any) {
           const cached = readCachedTenants();
-          if (cached.length > 0 || tenants.length > 0) {
+          if (cached.length > 0 || tenantsCountRef.current > 0) {
             setTenantLoadError("");
-            if (tenants.length === 0) {
+            if (tenantsCountRef.current === 0) {
               setTenants(cached);
+              tenantsCountRef.current = cached.length;
             }
             return;
           }
-          if (lastLoadedUserIdRef.current === next.user.id && tenants.length > 0) {
+          if (lastLoadedUserIdRef.current === next.user.id && tenantsCountRef.current > 0) {
             return;
           }
           devLog("refreshTenants:error@authChange", err?.message ?? err);
           setTenants([]);
+          tenantsCountRef.current = 0;
           setTenantLoadError(err?.message ?? "Failed to load company memberships.");
         }
       } else {
         lastLoadedUserIdRef.current = null;
+        tenantsCountRef.current = 0;
         setTenants([]);
         setTenantLoadError("");
         localStorage.removeItem("tenant_id");
