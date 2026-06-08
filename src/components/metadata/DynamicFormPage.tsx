@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useDocTypeConfig } from "../../lib/metadata/doctype-registry";
 import { getDocTypeApi } from "./doctype-api-map";
 import type { DocFieldMeta, FormLayoutSection } from "../../lib/metadata/types";
 import { buildAccessErrorMessage, inferPermissionKeyFromError } from "../../lib/access-control";
 import { useDocTypeFieldAccess } from "../../lib/metadata/use-doctype-field-access";
+import { useClientScripts } from "../../lib/client-scripts/useClientScripts";
 
 type Props = {
   doctypeKey: string;
@@ -35,8 +36,26 @@ export function DynamicFormPage({
   const [linkSearch, setLinkSearch] = useState<Record<string, string>>({});
   const [linkFocus, setLinkFocus] = useState<Record<string, boolean>>({});
   const [linkValues, setLinkValues] = useState<Record<string, string>>({});
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const onLoadRun = useRef(false);
 
   const api = useMemo(() => getDocTypeApi(doctypeKey), [doctypeKey]);
+
+  const fieldMap = useMemo(() => {
+    const m = new Map<string, DocFieldMeta>();
+    if (config) for (const f of config.fields) m.set(f.fieldname, f);
+    return m;
+  }, [config]);
+
+  const {
+    scripts: clientScripts,
+    loading: csLoading,
+    overrides: csOverrides,
+    runOnLoad,
+    runOnFieldChange,
+    runBeforeSaveValidation,
+  } = useClientScripts(doctypeKey, formValues, fieldMap, tenantId);
 
   useEffect(() => {
     if (action !== "update" || !recordId || !api) return;
@@ -44,7 +63,10 @@ export function DynamicFormPage({
     setDataLoading(true);
     api.get(recordId, tenantId)
       .then((data) => {
-        if (!cancelled) setRecord(data as Record<string, unknown>);
+        if (!cancelled) {
+          setRecord(data as Record<string, unknown>);
+          setFormValues(data as Record<string, unknown>);
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) toast.error(err instanceof Error ? err.message : "Failed to load record");
@@ -98,16 +120,66 @@ export function DynamicFormPage({
     setLinkValues((prev) => ({ ...prev, ...initial }));
   }, [record]);
 
-  const fieldMap = useMemo(() => {
-    const m = new Map<string, DocFieldMeta>();
-    if (config) for (const f of config.fields) m.set(f.fieldname, f);
-    return m;
-  }, [config]);
+  useEffect(() => {
+    if (csLoading || clientScripts.length === 0 || onLoadRun.current) return;
+    if (action === "update" && !record) return;
+    onLoadRun.current = true;
+    runOnLoad();
+  }, [csLoading, clientScripts, action, record, runOnLoad]);
+
+  const handleFieldChange = useCallback(
+    (fieldname: string, rawValue: string) => {
+      let value: unknown = rawValue;
+      const field = fieldMap.get(fieldname);
+      if (field?.fieldtype === "Check") {
+        value = rawValue === "on";
+      } else if (field?.fieldtype === "Float" || field?.fieldtype === "Int") {
+        value = rawValue ? Number(rawValue) : 0;
+      }
+      setFormValues((prev) => ({ ...prev, [fieldname]: value }));
+      runOnFieldChange(fieldname);
+    },
+    [fieldMap, runOnFieldChange],
+  );
 
   const layout = config?.formLayout;
   const sections: FormLayoutSection[] = layout?.sections_json ?? [
     { section: "Details", columns: 2, fields: config?.fields.filter((f) => !f.is_hidden).map((f) => f.fieldname) ?? [] },
   ];
+
+  const isFieldRequired = useCallback(
+    (fieldname: string, originalRequired: boolean): boolean => {
+      return originalRequired || csOverrides.requiredFields.has(fieldname);
+    },
+    [csOverrides.requiredFields],
+  );
+
+  const isFieldReadonly = useCallback(
+    (fieldname: string, originalReadonly: boolean): boolean => {
+      return originalReadonly || csOverrides.readonlyFields.has(fieldname);
+    },
+    [csOverrides.readonlyFields],
+  );
+
+  const isFieldVisible = useCallback(
+    (fieldname: string): boolean => {
+      if (csOverrides.visibleFields.size === 0) return true;
+      return csOverrides.visibleFields.has(fieldname);
+    },
+    [csOverrides.visibleFields],
+  );
+
+  useEffect(() => {
+    for (const msg of csOverrides.messages) {
+      if (msg.level === "error") {
+        toast.error(msg.message);
+      } else if (msg.level === "warning") {
+        toast.warning(msg.message);
+      } else {
+        toast.info(msg.message);
+      }
+    }
+  }, [csOverrides.messages]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -129,11 +201,16 @@ export function DynamicFormPage({
         value = linkValues[f.fieldname] ?? raw;
       }
 
-      if (f.is_required && (value === "" || value === null || value === undefined)) {
+      if (isFieldRequired(f.fieldname, f.is_required) && (value === "" || value === null || value === undefined)) {
         validationErrors[f.fieldname] = `${f.label} is required.`;
       }
 
       data[f.fieldname] = value;
+    }
+
+    const scriptValidation = runBeforeSaveValidation();
+    for (const [key, msg] of Object.entries(scriptValidation)) {
+      validationErrors[key] = msg;
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -181,10 +258,12 @@ export function DynamicFormPage({
 
   const renderField = (field: DocFieldMeta) => {
     if (field.is_hidden || !readableFieldnames.has(field.fieldname)) return null;
+    if (!isFieldVisible(field.fieldname)) return null;
     const currentValue = record?.[field.fieldname];
     const defaultValue = field.default_value ?? "";
     const canWriteField = writableFieldnames.has(field.fieldname);
-    const isReadonly = field.is_readonly || !canWriteField || (action === "update" && (field.fieldname === "created_by" || field.fieldname === "created_at"));
+    const readonly = field.is_readonly || !canWriteField || isFieldReadonly(field.fieldname, false) || (action === "update" && (field.fieldname === "created_by" || field.fieldname === "created_at"));
+    const required = isFieldRequired(field.fieldname, field.is_required);
 
     if (field.fieldtype === "Check") {
       return (
@@ -193,7 +272,8 @@ export function DynamicFormPage({
             type="checkbox"
             name={field.fieldname}
             defaultChecked={(currentValue as boolean) ?? (defaultValue === "true")}
-            disabled={isReadonly}
+            disabled={readonly}
+            onChange={(e) => handleFieldChange(field.fieldname, e.target.checked ? "on" : "")}
           />
           <span>{field.label}</span>
           {errors[field.fieldname] && <span className="field-error">{errors[field.fieldname]}</span>}
@@ -212,17 +292,17 @@ export function DynamicFormPage({
 
       return (
         <label key={field.fieldname} className="field field--link">
-          <span>{field.label}{field.is_required ? " *" : ""}</span>
+          <span>{field.label}{required ? " *" : ""}</span>
           <div style={{ position: "relative" }}>
             <input
               type="text"
               placeholder={`Search ${field.label}…`}
               value={search}
-              onChange={(e) => setLinkSearch((prev) => ({ ...prev, [field.fieldname]: e.target.value }))}
+              onChange={(e) => { setLinkSearch((prev) => ({ ...prev, [field.fieldname]: e.target.value })); handleFieldChange(field.fieldname, e.target.value); }}
               onFocus={() => setLinkFocus((prev) => ({ ...prev, [field.fieldname]: true }))}
               onBlur={() => setTimeout(() => setLinkFocus((prev) => ({ ...prev, [field.fieldname]: false })), 200)}
-              required={field.is_required && !selectedId}
-              disabled={isReadonly}
+              required={required && !selectedId}
+              disabled={readonly}
               autoComplete="off"
               style={selectedId ? { borderColor: "#4ade80" } : undefined}
             />
@@ -243,6 +323,7 @@ export function DynamicFormPage({
                       setLinkSearch((prev) => ({ ...prev, [field.fieldname]: opt.label }));
                       setLinkFocus((prev) => ({ ...prev, [field.fieldname]: false }));
                       setLinkValues((prev) => ({ ...prev, [field.fieldname]: opt.id }));
+                      handleFieldChange(field.fieldname, opt.id);
                     }}
                   >
                     {opt.label}
@@ -260,12 +341,13 @@ export function DynamicFormPage({
       const opts = (field.options as Record<string, unknown>)?.options as string[] ?? [];
       return (
         <label key={field.fieldname} className="field">
-          <span>{field.label}{field.is_required ? " *" : ""}</span>
+          <span>{field.label}{required ? " *" : ""}</span>
           <select
             name={field.fieldname}
             defaultValue={(currentValue as string) ?? defaultValue}
-            required={field.is_required}
-            disabled={isReadonly}
+            required={required}
+            disabled={readonly}
+            onChange={(e) => handleFieldChange(field.fieldname, e.target.value)}
           >
             <option value="">Select {field.label}…</option>
             {opts.map((opt) => (
@@ -280,13 +362,14 @@ export function DynamicFormPage({
     if (field.fieldtype === "Text") {
       return (
         <label key={field.fieldname} className="field field--wide">
-          <span>{field.label}{field.is_required ? " *" : ""}</span>
+          <span>{field.label}{required ? " *" : ""}</span>
           <textarea
             name={field.fieldname}
             defaultValue={(currentValue as string) ?? defaultValue}
             rows={3}
-            required={field.is_required}
-            disabled={isReadonly}
+            required={required}
+            disabled={readonly}
+            onChange={(e) => handleFieldChange(field.fieldname, e.target.value)}
           />
           {errors[field.fieldname] && <span className="field-error">{errors[field.fieldname]}</span>}
         </label>
@@ -296,13 +379,14 @@ export function DynamicFormPage({
     if (field.fieldtype === "Datetime" || field.fieldtype === "Date") {
       return (
         <label key={field.fieldname} className="field">
-          <span>{field.label}{field.is_required ? " *" : ""}</span>
+          <span>{field.label}{required ? " *" : ""}</span>
           <input
             type={field.fieldtype === "Date" ? "date" : "datetime-local"}
             name={field.fieldname}
             defaultValue={(currentValue as string) ? (currentValue as string).slice(0, field.fieldtype === "Date" ? 10 : 16) : defaultValue}
-            required={field.is_required}
-            disabled={isReadonly}
+            required={required}
+            disabled={readonly}
+            onChange={(e) => handleFieldChange(field.fieldname, e.target.value)}
           />
           {errors[field.fieldname] && <span className="field-error">{errors[field.fieldname]}</span>}
         </label>
@@ -313,15 +397,16 @@ export function DynamicFormPage({
 
     return (
       <label key={field.fieldname} className="field">
-        <span>{field.label}{field.is_required ? " *" : ""}</span>
+        <span>{field.label}{required ? " *" : ""}</span>
         <input
           type={inputType}
           name={field.fieldname}
           defaultValue={(currentValue as string) ?? defaultValue}
-          required={field.is_required}
-          disabled={isReadonly}
+          required={required}
+          disabled={readonly}
           min={field.fieldtype === "Float" || field.fieldtype === "Int" ? "0" : undefined}
           step={field.fieldtype === "Float" ? "any" : undefined}
+          onChange={(e) => handleFieldChange(field.fieldname, e.target.value)}
         />
         {errors[field.fieldname] && <span className="field-error">{errors[field.fieldname]}</span>}
       </label>
@@ -333,7 +418,7 @@ export function DynamicFormPage({
       <div className="card-head">
         <h3>{action === "create" ? "New" : "Edit"} {config.doctype.label}</h3>
       </div>
-      <form className="form-grid" onSubmit={handleSubmit}>
+      <form className="form-grid" onSubmit={handleSubmit} ref={formRef}>
         {sections.map((sec) => (
           <div key={sec.section} style={{ gridColumn: "1 / -1" }}>
             <h4 className="detail-section-title">{sec.section}</h4>

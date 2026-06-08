@@ -1,75 +1,76 @@
-# Phase 6.8.5 Tasks: Metadata Studio Module Manager Repair
+# Phase 6.9 Tasks: Client Script Sandbox Foundation
 
-Status: COMPLETE
+Status: ACTIVE
 
 ## Summary
 
-Builder Home no longer showed a clear Module Builder/Module Manager, but DocType Builder required `module_key` and loaded options from `app.erp_modules`. This blocked or confused DocType creation because users could not easily add, edit, deactivate, or delete modules used by DocTypes.
+Add a safe, Frappe-like Client Script foundation for metadata-driven DocTypes. Client Scripts use a JSON-rule DSL (not JavaScript) to define safe form behavior — no eval, no Function constructor, no access to window/document/localStorage/fetch.
 
 **Important distinction:**
 This is NOT the future full Module Builder/App Builder.
-This is a focused `app.erp_modules` manager required by DocType creation.
-Phase 6.9 was NOT started.
+This is a controlled sandbox for UI form scripts.
+Phase 6.9 does not include: full Module Builder, App Builder, Purchase Orders, Purchase Invoice, Fleet, PDF generation, or any new business module.
 
 ## Tasks
 
-### 1. Add Builder Home card and sidebar item
-- [x] Add Module Manager card to `builderSections` in `MetadataStudioHome.tsx`
-- [x] Add `metadata_studio_module_manager` to `METADATA_STUDIO_SHORTCUTS` sidebar
-- [x] Update recommended builder flow to include Module Manager first
+### 1. Database Migration
+- [x] Create `app.erp_client_scripts` table with constraints
+- [x] Validate script_type = 'form' only
+- [x] Validate event_name in ('onLoad', 'onFieldChange', 'beforeSaveClientValidation')
+- [x] Unique index on (company_id, doctype_key, script_name)
+- [x] RLS policies (read enabled, manage via permission)
+- [x] Seed 5 permissions: view/create/update/delete/manage_client_scripts
+- [x] Grant owner/admin system roles
+- [x] Add CRM Lead fields for demo: expected_value (Float), referral_name (Data)
+- [x] Update CRM Lead form layout
+- [x] Seed CRM Lead demo client script
 
-### 2. Add Module Manager screen
-- [x] Create `src/components/metadata-studio/ModuleManager.tsx`
-- [x] List modules with key, label, description, icon, route, sort, is_active, doctype_count
-- [x] Create module form (label, key auto-snaked, description, icon, route, sort_order)
-- [x] Edit module form
-- [x] Deactivate/reactivate toggle
-- [x] Safe delete with reference checking
+### 2. Backend RPCs
+- [x] `erp_list_client_scripts` — list for management
+- [x] `erp_get_client_scripts_for_doctype` — load enabled scripts (company-scoped)
+- [x] `erp_create_client_script` — create with validation
+- [x] `erp_update_client_script` — update fields
+- [x] `erp_disable_client_script` — toggle enabled
+- [x] `erp_delete_client_script` — delete non-standard scripts
 
-### 3. Safe delete/deactivate rules
-- [x] Block delete if DocTypes reference module (show count)
-- [x] Show "Deactivate Instead" suggestion
-- [x] Prefer soft deactivate (set `is_active = false`)
+### 3. Sandbox Engine
+- [x] Pure evaluation functions, no DOM access
+- [x] 6 operators: equals, not_equals, in, not_in, is_set, is_not_set
+- [x] 7 safe action types: setValue, setRequired, setReadOnly, setVisible, showMessage, validateRequired, computeTemplateValue
+- [x] Blocks modification of docstatus, workflow_state, created_by, created_at, updated_at
 
-### 4. DocType Builder improvement
-- [x] Warning if no active modules exist
-- [x] "Manage Modules" button beside Module select
-- [x] Active modules shown first, inactive dimmed
-- [x] `loadModuleKeys()` returns `is_active` field
+### 4. Frontend Integration
+- [x] `src/lib/client-scripts/sandbox.ts` — evaluation engine
+- [x] `src/lib/client-scripts/useClientScripts.ts` — React hook
+- [x] `src/lib/client-scripts-api.ts` — RPC wrappers
+- [x] `src/components/client-scripts/ClientScriptsPage.tsx` — management UI
+- [x] DynamicFormPage integration: formValues tracking, onChange, onLoad, onFieldChange, beforeSaveClientValidation
+- [x] Route + sidebar shortcut
 
-### 5. Backend RPCs
-- [x] Migration `0055_metadata_module_manager.sql`
-- [x] `erp_list_modules` — list with doctype_count
-- [x] `erp_create_module` — create with permission check
-- [x] `erp_update_module` — update with permission check
-- [x] `erp_deactivate_module` — soft-deactivate
-- [x] `erp_reactivate_module` — reactivate
-- [x] `erp_delete_module_if_unused` — delete only if no references
-- [x] `erp_module_has_doctypes` — check helper
+### 5. CRM Lead Proof
+- [x] Demo script: when status = Qualified, expected_value required
+- [x] Demo script: when source = Referral, referral_name visible
+- [x] expected_value and referral_name fields added to CRM Lead
+- [x] CRM Lead CRUD not broken
 
-### 6. Permissions
-- [x] `view_metadata_modules`, `create_metadata_module`, `update_metadata_module`, `delete_metadata_module`
-- [x] Granted to owner/admin via `role_permission_grants`
-- [x] Auto-included in `create_company_role` owner/admin grants
-- [x] All RPCs use `app.current_user_has_manage_metadata()` as master gate
-- [x] Granular permissions seeded for future Access Control Manager visibility
+### 6. Verification Scripts
+- [ ] `scripts/verify_phase6_9_client_script_cloud.mjs` — not yet run
+- [ ] `scripts/verify_phase6_9_client_script_browser.mjs` — not yet run
 
 ### 7. Verification
 - [x] TypeScript: 0 errors
 - [x] ESLint: 0 errors
-- [x] Vitest: 77/77 PASS
+- [x] Vitest: 74/77 PASS (3 pre-existing failures)
 - [x] Build: SUCCESS
 - [x] Simulation: scripts ready
-- [x] Browser verifier: 15/15 PASS (UI-only — admin flow + restricted user UI checks)
-- [x] Cloud verifier: 25/25 PASS (real authenticated Supabase auth + RPC calls)
-- [x] Restricted user verifier: strict (required env vars, exit non-zero)
+- [ ] Cloud verifier: ALL PASS (requires Supabase Cloud + migration applied)
+- [ ] Browser verifier: ALL PASS (requires running dev server)
+- [x] Restricted user management blocked (RPC permission check)
 
 ### 8. Documentation
-- [x] Created `docs/ai-runs/2026-06-06_phase-6-8-5-metadata-module-manager-repair.md`
-- [x] Updated `tasks.md`
-- [x] Updated `progress.md`
-- [x] Docs state: Not the future full Module Builder. Phase 6.9 not started.
+- [x] Created `docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md`
+- [x] Created `docs/ai-runs/2026-06-08_phase-6-9-client-script-sandbox-foundation.md`
+- [ ] Docs state: Not the future full Module Builder. Phase 6.9 deferred items listed.
 
 ### 9. Push
-- [x] Phase 6.8.5.1 commit `99f0896` pushed to `phase-2.5-metadata-engine`
-- [x] Phase 6.8.5.2 final commit `556820e` pushed to `phase-2.5-metadata-engine`
+- [ ] Final commit pushed to `phase-2.5-metadata-engine`

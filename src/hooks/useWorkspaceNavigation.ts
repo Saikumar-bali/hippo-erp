@@ -32,6 +32,18 @@ const METADATA_STUDIO_SHORTCUTS: WorkspaceItemMeta[] = [
     required_permission_key: "manage_metadata",
   },
   {
+    id: "metadata-shortcut-client-scripts",
+    workspace_key: "metadata_studio",
+    item_key: "metadata_studio_client_scripts",
+    label: "Client Scripts",
+    item_type: "page",
+    target: "metadata_studio_client_scripts",
+    icon: "ScrollText",
+    sort_order: 2,
+    is_active: true,
+    required_permission_key: "manage_metadata",
+  },
+  {
     id: "metadata-shortcut-doctype-builder",
     workspace_key: "metadata_studio",
     item_key: "metadata_studio_doctype_builder",
