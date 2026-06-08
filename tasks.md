@@ -60,8 +60,8 @@ Phase 6.9 was NOT started.
 - [x] Vitest: 77/77 PASS
 - [x] Build: SUCCESS
 - [x] Simulation: scripts ready
-- [x] Browser verifier: 14/14 PASS on Supabase Cloud
-- [x] Cloud verifier: ALL PASS
+- [x] Browser verifier: 15/15 PASS (UI-only — admin flow + restricted user UI checks)
+- [x] Cloud verifier: 25/25 PASS (real authenticated Supabase auth + RPC calls)
 - [x] Restricted user verifier: strict (required env vars, exit non-zero)
 
 ### 8. Documentation
@@ -71,4 +71,5 @@ Phase 6.9 was NOT started.
 - [x] Docs state: Not the future full Module Builder. Phase 6.9 not started.
 
 ### 9. Push
-- [x] Final commit `a796dd9` pushed to `phase-2.5-metadata-engine`
+- [x] Phase 6.8.5.1 commit `99f0896` pushed to `phase-2.5-metadata-engine`
+- [ ] Phase 6.8.5.2 final commit pushed to `phase-2.5-metadata-engine`

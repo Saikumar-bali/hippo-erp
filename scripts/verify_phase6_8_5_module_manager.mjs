@@ -520,45 +520,7 @@ async function run() {
     }
     await screenshot(page, "12c-restricted-route-blocked");
 
-    // 12d: Restricted user must NOT create/update/deactivate/delete modules via UI
-    // Try calling RPCs directly to verify backend blocks them
-    {
-      let blockedCount = 0;
-      // Try erp_create_module (should fail)
-      const createResult = await page.evaluate(async (url) => {
-        try {
-          const r = await fetch(url + "/rest/v1/rpc/erp_create_module", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ p_module_key: "restricted_test_" + Date.now(), p_label: "Restricted Test" })
-          });
-          return await r.json();
-        } catch (e) { return { error: String(e) }; }
-      }, BASE_URL).catch(() => ({ error: "evaluate failed" }));
-      if (createResult.error || (createResult.ok === false)) {
-        blockedCount++;
-      }
-      // Try erp_list_modules (should fail or return empty)
-      const listResult = await page.evaluate(async (url) => {
-        try {
-          const r = await fetch(url + "/rest/v1/rpc/erp_list_modules", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({})
-          });
-          return await r.json();
-        } catch (e) { return { error: String(e) }; }
-      }, BASE_URL).catch(() => ({ error: "evaluate failed" }));
-      if (listResult.error || (listResult.ok === false) || (listResult.data && Array.isArray(listResult.data) && listResult.data.length === 0)) {
-        blockedCount++;
-      }
-      if (blockedCount >= 2) {
-        pass("12d. Restricted user cannot manage modules via RPC (blocked)");
-      } else {
-        fail("12d. Restricted user cannot manage modules via RPC", `Only ${blockedCount}/2 blocked`);
-      }
-    }
-    await screenshot(page, "12d-restricted-rpc-blocked");
+    // (12d removed — real authenticated RPC checks run in cloud verifier)
 
     // ══════════════════════════════════════════════════════════════════
     // 13. No page errors

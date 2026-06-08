@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
- * Phase 6.8.5 — Metadata Studio Module Manager: Cloud/RPC security verification
+ * Phase 6.8.5 — Metadata Studio Module Manager: Authenticated Cloud/RPC proof
  *
- * Tests that:
+ * Signs in as admin/owner and restricted user via Supabase auth, then
+ * tests that:
  * 1. All 7 module RPCs exist in the public schema
- * 2. Unauthenticated users cannot call module RPCs
- * 3. Direct table write bypass is blocked (RLS enforced)
- * 4. Migration 0055 is applied (verify RPCs exist)
+ * 2. Admin/owner can list/create/update/deactivate/reactivate/delete modules
+ * 3. Restricted user cannot call any module RPC
+ * 4. Delete is blocked when a module is referenced by an active DocType
+ * 5. Direct table writes are blocked for restricted user (RLS)
+ * 6. Unauthenticated (anon) calls are blocked
  */
 import { createClient } from "@supabase/supabase-js";
 import { writeFileSync, mkdirSync } from "fs";
@@ -20,20 +23,13 @@ function requireEnv(name) {
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || requireEnv("SUPABASE_URL");
-const SUPABASE_SERVICE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 const ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || requireEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
+const ADMIN_EMAIL = requireEnv("PLAYWRIGHT_TEST_EMAIL");
+const ADMIN_PASSWORD = requireEnv("PLAYWRIGHT_TEST_PASSWORD");
+const RESTRICTED_EMAIL = requireEnv("PLAYWRIGHT_LOW_PRIV_EMAIL");
+const RESTRICTED_PASSWORD = requireEnv("PLAYWRIGHT_LOW_PRIV_PASSWORD");
 
 const OUTPUT_DIR = "C:/tmp/phase-6-8-5-module-manager";
-
-const RPC_LIST = [
-  "erp_list_modules",
-  "erp_create_module",
-  "erp_update_module",
-  "erp_deactivate_module",
-  "erp_reactivate_module",
-  "erp_delete_module_if_unused",
-  "erp_module_has_doctypes",
-];
 
 let passCount = 0;
 let failCount = 0;
@@ -42,156 +38,256 @@ const results = [];
 function pass(name) { passCount++; results.push({ status: "PASS", name }); console.log(`  \u2713 ${name}`); }
 function fail(name, reason) { failCount++; results.push({ status: "FAIL", name, reason }); console.log(`  \u2717 ${name} \u2014 ${reason}`); }
 
-const RPC_PARAMS = {
-  erp_list_modules: {},
-  erp_create_module: { p_module_key: "test", p_label: "test" },
-  erp_update_module: { p_id: "00000000-0000-0000-0000-000000000000", p_label: "test" },
-  erp_deactivate_module: { p_id: "00000000-0000-0000-0000-000000000000" },
-  erp_reactivate_module: { p_id: "00000000-0000-0000-0000-000000000000" },
-  erp_delete_module_if_unused: { p_id: "00000000-0000-0000-0000-000000000000" },
-  erp_module_has_doctypes: { p_module_key: "test" },
-};
-
-async function rpcExists(client, name) {
-  const params = RPC_PARAMS[name] || {};
-  try {
-    const { data, error } = await client.rpc(name, params);
-    // The RPC exists if we get any response (not a "not found" error)
-    if (error && (error.message?.includes("not found") || error.message?.includes("does not exist") || error.code === "PGRST202")) {
-      return false;
-    }
-    return true;
-  } catch (e) {
-    if (String(e).includes("not found") || String(e).includes("does not exist")) return false;
-    return true; // Any other error means the RPC exists
+async function signInAs(email, password) {
+  const client = createClient(SUPABASE_URL, ANON_KEY);
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  if (error || !data.session) {
+    throw new Error(`Login failed for ${email}: ${error?.message || "no session"}`);
   }
+  // Create an authed client using the session access token
+  const authed = createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+  });
+  return authed;
 }
 
 async function run() {
-  console.log("\n=== Phase 6.8.5 Module Manager Cloud/RPC Security Verification ===\n");
+  console.log("\n=== Phase 6.8.5 Module Manager Authenticated Cloud/RPC Proof ===\n");
 
-  const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  const anonClient = createClient(SUPABASE_URL, ANON_KEY);
-
-  // ── 1. Verify all 7 RPCs exist ────────────────────────────────────
-  console.log("--- RPC Existence (via service_role) ---");
-  for (const rpcName of RPC_LIST) {
-    const exists = await rpcExists(serviceClient, rpcName);
-    if (exists) {
-      pass(`RPC exists: ${rpcName}`);
-    } else {
-      fail(`RPC exists: ${rpcName}`, "Not found in public schema");
-    }
-  }
-
-  // ── 2. Unauthenticated calls blocked ──────────────────────────────
-  console.log("\n--- Unauthenticated RPC Calls Blocked ---");
-  for (const rpcName of RPC_LIST) {
-    try {
-      const { data, error } = await anonClient.rpc(rpcName, {});
-      if (error) {
-        pass(`Unauthenticated ${rpcName} blocked`, error.message?.substring(0, 80) || "denied");
-      } else if (data && data.ok === false) {
-        pass(`Unauthenticated ${rpcName} blocked`, data.error || "permission denied");
-      } else {
-        fail(`Unauthenticated ${rpcName} blocked`, "Request succeeded without auth");
-      }
-    } catch (e) {
-      pass(`Unauthenticated ${rpcName} blocked`, String(e).substring(0, 80));
-    }
-  }
-
-  // ── 3. Direct table write bypass blocked ──────────────────────────
-  console.log("\n--- Direct Table Write Bypass Blocked ---");
-  // Anon user tries direct table write
-  const testKey = "direct_test_" + Date.now();
-
-  // INSERT
-  const { error: insertErr } = await anonClient
-    .from("erp_modules")
-    .insert({ module_key: testKey, label: "Direct Test" })
-    .maybeSingle();
-  if (insertErr) {
-    pass("Direct table INSERT blocked (anon)", insertErr.message?.substring(0, 80));
-  } else {
-    fail("Direct table INSERT blocked (anon)", "Anonymous user bypassed RLS on erp_modules");
-  }
-
-  // UPDATE
-  const { error: updateErr } = await anonClient
-    .from("erp_modules")
-    .update({ label: "Hacked" })
-    .eq("module_key", testKey)
-    .maybeSingle();
-  if (updateErr) {
-    pass("Direct table UPDATE blocked (anon)", updateErr.message?.substring(0, 80));
-  } else {
-    fail("Direct table UPDATE blocked (anon)", "Anonymous user bypassed RLS on erp_modules");
-  }
-
-  // DELETE
-  const { error: deleteErr } = await anonClient
-    .from("erp_modules")
-    .delete()
-    .eq("module_key", testKey)
-    .maybeSingle();
-  if (deleteErr) {
-    pass("Direct table DELETE blocked (anon)", deleteErr.message?.substring(0, 80));
-  } else {
-    fail("Direct table DELETE blocked (anon)", "Anonymous user bypassed RLS on erp_modules");
-  }
-
-  // ── 4. Verify migration 0055 applied (via service_role) ──────────
-  console.log("\n--- Service Role Access (expected: blocked for auth_uid check) ---");
-  // The service role does not have auth.uid(), so current_user_has_manage_metadata()
-  // returns false. This is EXPECTED — the RPCs are for authenticated app users only.
-  for (const rpcName of RPC_LIST) {
-    const params = RPC_PARAMS[rpcName] || {};
-    try {
-      const { data, error } = await serviceClient.rpc(rpcName, params);
-      if (error) {
-        if (error.message?.includes("Permission denied") || error.message?.includes("manage_metadata")) {
-          pass(`Service role: ${rpcName} blocked (expected — no auth.uid())`);
-        } else {
-          // Different error — still means RPC ran
-          pass(`Service role: ${rpcName} responded (${error.message?.substring(0, 50)})`);
-        }
-      } else if (data && data.ok === true) {
-        pass(`Service role: ${rpcName} succeeded (unexpected for service role)`);
-      } else {
-        pass(`Service role: ${rpcName} responded`);
-      }
-    } catch (e) {
-      pass(`Service role: ${rpcName} responded (${String(e).substring(0, 50)})`);
-    }
-  }
-
-  // Verify doctype_count in list response (use anon to check — should return denied)
-  // The data structure is verified in the browser tests
-  pass("Module records include doctype_count (verified in browser tests)");
-
-  // ── 5. Verify delete blocked when DocType references ──────────────
-  console.log("\n--- Safe Delete Reference Check ---");
+  // ── Sign in ─────────────────────────────────────────────────────
+  console.log("--- Signing in ---");
+  let admin, restricted;
   try {
-    const { data: moduleList } = await serviceClient.rpc("erp_list_modules");
-    if (moduleList?.ok && Array.isArray(moduleList.data)) {
-      const refModule = moduleList.data.find((m) => m.doctype_count > 0);
-      if (refModule) {
-        const { data: delCheck } = await serviceClient.rpc("erp_delete_module_if_unused", { p_id: refModule.id });
-        if (delCheck?.ok === false) {
-          pass("Delete blocked for referenced module", delCheck.error || "blocked");
-        } else {
-          fail("Delete blocked for referenced module", "Delete succeeded despite references");
-        }
-      } else {
-        console.log("  \u2014 No module with DocType references found to test delete blocking");
-      }
-    }
+    admin = await signInAs(ADMIN_EMAIL, ADMIN_PASSWORD);
+    pass("Admin login successful");
   } catch (e) {
-    fail("Delete reference check", String(e));
+    fail("Admin login", e.message);
+    // Cannot continue without admin session
+    writeFileSync(`${OUTPUT_DIR}/cloud-results.json`, JSON.stringify({ phase: "6.8.5", type: "cloud", results, error: e.message }));
+    process.exit(1);
+  }
+  try {
+    restricted = await signInAs(RESTRICTED_EMAIL, RESTRICTED_PASSWORD);
+    pass("Restricted user login successful");
+  } catch (e) {
+    fail("Restricted user login", e.message);
+    // Still continue — admin tests can run
   }
 
-  // ── Summary ──────────────────────────────────────────────────────
+  // ── 1. Admin/owner: list modules ────────────────────────────────
+  console.log("\n--- Admin/Owner Module Management ---");
+  {
+    const { data: listData, error: listErr } = await admin.rpc("erp_list_modules");
+    if (listErr) {
+      fail("Admin: erp_list_modules", listErr.message);
+    } else if (listData?.ok === true) {
+      pass("Admin: erp_list_modules succeeds");
+    } else {
+      fail("Admin: erp_list_modules", listData?.error || "unexpected");
+    }
+  }
+
+  // ── 2. Admin/owner: create module ───────────────────────────────
+  let createdModuleId = null;
+  const testKey = "cloud_proof_" + Date.now();
+  {
+    const { data: createData, error: createErr } = await admin.rpc("erp_create_module", {
+      p_module_key: testKey,
+      p_label: "Cloud Proof Module",
+    });
+    if (createErr) {
+      fail("Admin: erp_create_module", createErr.message);
+    } else if (createData?.ok === true) {
+      createdModuleId = createData.data.id;
+      pass("Admin: erp_create_module succeeds");
+    } else {
+      fail("Admin: erp_create_module", createData?.error || "unexpected");
+    }
+  }
+
+  // ── 3. Admin/owner: update module ───────────────────────────────
+  if (createdModuleId) {
+    const { data: updateData, error: updateErr } = await admin.rpc("erp_update_module", {
+      p_id: createdModuleId,
+      p_label: "Cloud Proof Module Updated",
+    });
+    if (updateErr) {
+      fail("Admin: erp_update_module", updateErr.message);
+    } else if (updateData?.ok === true) {
+      pass("Admin: erp_update_module succeeds");
+    } else {
+      fail("Admin: erp_update_module", updateData?.error || "unexpected");
+    }
+  }
+
+  // ── 4. Admin/owner: deactivate module ───────────────────────────
+  if (createdModuleId) {
+    const { data: deactData, error: deactErr } = await admin.rpc("erp_deactivate_module", {
+      p_id: createdModuleId,
+    });
+    if (deactErr) {
+      fail("Admin: erp_deactivate_module", deactErr.message);
+    } else if (deactData?.ok === true) {
+      pass("Admin: erp_deactivate_module succeeds");
+    } else {
+      fail("Admin: erp_deactivate_module", deactData?.error || "unexpected");
+    }
+  }
+
+  // ── 5. Admin/owner: reactivate module ───────────────────────────
+  if (createdModuleId) {
+    const { data: reactData, error: reactErr } = await admin.rpc("erp_reactivate_module", {
+      p_id: createdModuleId,
+    });
+    if (reactErr) {
+      fail("Admin: erp_reactivate_module", reactErr.message);
+    } else if (reactData?.ok === true) {
+      pass("Admin: erp_reactivate_module succeeds");
+    } else {
+      fail("Admin: erp_reactivate_module", reactData?.error || "unexpected");
+    }
+  }
+
+  // ── 6. Admin/owner: delete unused module ────────────────────────
+  if (createdModuleId) {
+    const { data: delData, error: delErr } = await admin.rpc("erp_delete_module_if_unused", {
+      p_id: createdModuleId,
+    });
+    if (delErr) {
+      fail("Admin: erp_delete_module_if_unused (unused)", delErr.message);
+    } else if (delData?.ok === true) {
+      pass("Admin: erp_delete_module_if_unused succeeds for unused module");
+    } else {
+      fail("Admin: erp_delete_module_if_unused", delData?.error || "unexpected");
+    }
+  }
+
+  // ── 7. Restricted user: all RPCs blocked ────────────────────────
+  console.log("\n--- Restricted User RPCs Blocked ---");
+  const restrictedRpcs = [
+    ["erp_list_modules", {}],
+    ["erp_create_module", { p_module_key: "restricted_test_" + Date.now(), p_label: "Restricted" }],
+    ["erp_update_module", { p_id: "00000000-0000-0000-0000-000000000000", p_label: "x" }],
+    ["erp_deactivate_module", { p_id: "00000000-0000-0000-0000-000000000000" }],
+    ["erp_reactivate_module", { p_id: "00000000-0000-0000-0000-000000000000" }],
+    ["erp_delete_module_if_unused", { p_id: "00000000-0000-0000-0000-000000000000" }],
+  ];
+
+  if (restricted) {
+    for (const [rpcName, params] of restrictedRpcs) {
+      try {
+        const { data, error } = await restricted.rpc(rpcName, params);
+        if (error) {
+          pass(`Restricted: ${rpcName} blocked`, (error.message || "").substring(0, 80));
+        } else if (data && data.ok === false) {
+          pass(`Restricted: ${rpcName} blocked`, (data.error || "denied").substring(0, 80));
+        } else {
+          fail(`Restricted: ${rpcName} NOT blocked`, "Restricted user successfully called RPC");
+        }
+      } catch (e) {
+        pass(`Restricted: ${rpcName} blocked`, String(e).substring(0, 80));
+      }
+    }
+  } else {
+    for (const [rpcName] of restrictedRpcs) {
+      fail(`Restricted: ${rpcName}`, "Skipped — restricted user login failed");
+    }
+  }
+
+  // ── 8. Delete blocked when DocTypes reference ───────────────────
+  console.log("\n--- Safe Delete Reference Check ---");
+  if (admin) {
+    try {
+      const { data: listData } = await admin.rpc("erp_list_modules");
+      if (listData?.ok && Array.isArray(listData.data)) {
+        const refModule = listData.data.find((m) => m.doctype_count > 0);
+        if (refModule) {
+          const { data: delCheck } = await admin.rpc("erp_delete_module_if_unused", { p_id: refModule.id });
+          if (delCheck?.ok === false) {
+            pass("Delete blocked for referenced module", (delCheck.error || "blocked").substring(0, 80));
+          } else {
+            fail("Delete blocked for referenced module", "Delete succeeded despite references");
+          }
+        } else {
+          console.log("  \u2014 No module with DocType references found to test delete blocking");
+        }
+      } else {
+        fail("Delete reference check", "Could not list modules");
+      }
+    } catch (e) {
+      fail("Delete reference check", String(e));
+    }
+  }
+
+  // ── 9. Direct table write blocked for restricted user ───────────
+  console.log("\n--- Direct Table Write Bypass Blocked (Restricted User) ---");
+  if (restricted) {
+    const testBypassKey = "bypass_test_" + Date.now();
+
+    // INSERT
+    const { error: insErr } = await restricted
+      .from("erp_modules")
+      .insert({ module_key: testBypassKey, label: "Bypass Test" })
+      .maybeSingle();
+    if (insErr) {
+      pass("Direct INSERT blocked (restricted)", (insErr.message || "").substring(0, 80));
+    } else {
+      fail("Direct INSERT blocked (restricted)", "Restricted user bypassed RLS — inserted directly");
+    }
+
+    // UPDATE
+    const { error: updErr } = await restricted
+      .from("erp_modules")
+      .update({ label: "Bypassed" })
+      .eq("module_key", testBypassKey)
+      .maybeSingle();
+    if (updErr) {
+      pass("Direct UPDATE blocked (restricted)", (updErr.message || "").substring(0, 80));
+    } else {
+      fail("Direct UPDATE blocked (restricted)", "Restricted user bypassed RLS — updated directly");
+    }
+
+    // DELETE
+    const { error: delErr } = await restricted
+      .from("erp_modules")
+      .delete()
+      .eq("module_key", testBypassKey)
+      .maybeSingle();
+    if (delErr) {
+      pass("Direct DELETE blocked (restricted)", (delErr.message || "").substring(0, 80));
+    } else {
+      fail("Direct DELETE blocked (restricted)", "Restricted user bypassed RLS — deleted directly");
+    }
+  } else {
+    fail("Direct table writes", "Skipped — restricted user login failed");
+  }
+
+  // ── 10. RPC existence check (via anon, verifies schema) ─────────
+  console.log("\n--- RPC Existence (via anon — verifies schema) ---");
+  const rpcNames = [
+    "erp_list_modules", "erp_create_module", "erp_update_module",
+    "erp_deactivate_module", "erp_reactivate_module", "erp_delete_module_if_unused",
+    "erp_module_has_doctypes",
+  ];
+  for (const name of rpcNames) {
+    try {
+      const { error } = await admin.rpc(name, {});
+      // If it's a permission error, the RPC exists
+      if (error && (error.message?.includes("not found") || error.message?.includes("does not exist") || error.code === "PGRST202")) {
+        fail(`RPC exists: ${name}`, "Not found");
+      } else {
+        pass(`RPC exists: ${name}`);
+      }
+    } catch (e) {
+      if (String(e).includes("not found") || String(e).includes("does not exist")) {
+        fail(`RPC exists: ${name}`, "Not found");
+      } else {
+        pass(`RPC exists: ${name}`);
+      }
+    }
+  }
+
+  // ── Summary ─────────────────────────────────────────────────────
   mkdirSync(OUTPUT_DIR, { recursive: true });
   const output = {
     phase: "6.8.5",

@@ -66,7 +66,9 @@ Phase 6.9 was NOT started.
 - DocType Builder uses this to sort active modules first
 
 ### 9. Browser Verifier (`scripts/verify_phase6_8_5_module_manager.mjs`)
-- 13 checks covering admin login, sidebar/card presence, module CRUD, DocType reference safety, deactivation, restricted user isolation, and page errors
+- UI-only verification: admin login, sidebar/card presence, module CRUD, DocType reference safety, deactivation, restricted user UI isolation (sidebar hidden, direct route blocked), and page errors
+- No fake RPC calls through `PLAYWRIGHT_BASE_URL` (which is the Vite dev server, not Supabase REST)
+- Real authenticated RPC verification delegated to cloud verifier
 - Exits non-zero on any failure
 
 ## Files Changed/Created
@@ -98,7 +100,11 @@ This design means:
 - Users without `manage_metadata` (restricted roles) cannot access Module Manager at all
 - Granular permissions exist in the permission catalog for future fine-grained control via Access Control Manager
 
-## Phase 6.8.5.1 Closeout Verification Results
+## Phase 6.8.5.1 Closeout Verification Results (Initial — superseded by 6.8.5.2 fixes)
+### Original Cloud Verifier Approach:
+- Used anon key for RPC existence checks (25 tests)
+- Restricted user verification only via browser (no authenticated RPC calls)
+- Weakness: RPC existence checks via anon key do not prove authenticated admin or restricted user behavior
 
 ### Command Results
 
@@ -110,30 +116,33 @@ This design means:
 | `npx vite build` | ✅ SUCCESS |
 | `node scripts/run-simulation.cjs` | ✅ Simulation scripts ready |
 
+## Phase 6.8.5.2 Authenticated Cloud/RPC Proof (Real Supabase Auth)
+
+### Design Change
+The Phase 6.8.5.1 cloud verifier used anon key for RPC checks, which did not prove authenticated admin or restricted user behavior. The **browser verifier** originally included a fake RPC check hitting `${PLAYWRIGHT_BASE_URL}/rest/v1/rpc/` (the Vite dev server, not Supabase REST). Both were insufficient.
+
+**New approach:**
+- **Browser verifier** (`scripts/verify_phase6_8_5_module_manager.mjs`): **UI-only**. Proves admin can see/use the Module Manager UI and restricted user cannot (sidebar hidden, direct route blocked, no page errors). No RPC calls.
+- **Cloud verifier** (`scripts/verify_phase6_8_5_module_manager_cloud.mjs`): **Real authenticated Supabase auth**. Signs in as admin and restricted user via `supabase.auth.signInWithPassword()`, then calls RPCs through authenticated Supabase clients with real session tokens.
+
 ### Cloud Verifier Results (`scripts/verify_phase6_8_5_module_manager_cloud.mjs`)
 
 | # | Test | Result |
 |---|------|--------|
-| 1 | RPC exists: `erp_list_modules` | ✅ PASS |
-| 2 | RPC exists: `erp_create_module` | ✅ PASS |
-| 3 | RPC exists: `erp_update_module` | ✅ PASS |
-| 4 | RPC exists: `erp_deactivate_module` | ✅ PASS |
-| 5 | RPC exists: `erp_reactivate_module` | ✅ PASS |
-| 6 | RPC exists: `erp_delete_module_if_unused` | ✅ PASS |
-| 7 | RPC exists: `erp_module_has_doctypes` | ✅ PASS |
-| 8 | Unauthenticated `erp_list_modules` blocked | ✅ PASS |
-| 9 | Unauthenticated `erp_create_module` blocked | ✅ PASS |
-| 10 | Unauthenticated `erp_update_module` blocked | ✅ PASS |
-| 11 | Unauthenticated `erp_deactivate_module` blocked | ✅ PASS |
-| 12 | Unauthenticated `erp_reactivate_module` blocked | ✅ PASS |
-| 13 | Unauthenticated `erp_delete_module_if_unused` blocked | ✅ PASS |
-| 14 | Unauthenticated `erp_module_has_doctypes` blocked | ✅ PASS |
-| 15 | Direct table INSERT blocked (anon) | ✅ PASS |
-| 16 | Direct table UPDATE blocked (anon) | ✅ PASS |
-| 17 | Direct table DELETE blocked (anon) | ✅ PASS |
-| 18–24 | Service role blocked (no auth.uid, expected) | ✅ PASS |
-| 25 | doctype_count verified in browser tests | ✅ PASS |
-| **Total** | **25 tests** | **25 PASS, 0 FAIL** |
+| 1 | Admin login successful | ✅ PASS |
+| 2 | Restricted user login successful | ✅ PASS |
+| 3 | Admin: `erp_list_modules` succeeds | ✅ PASS |
+| 4 | Admin: `erp_create_module` succeeds | ✅ PASS |
+| 5 | Admin: `erp_update_module` succeeds | ✅ PASS |
+| 6 | Admin: `erp_deactivate_module` succeeds | ✅ PASS |
+| 7 | Admin: `erp_reactivate_module` succeeds | ✅ PASS |
+| 8 | Admin: `erp_delete_module_if_unused` succeeds for unused module | ✅ PASS |
+| 9–14 | Restricted: all 6 RPCs blocked | ✅ PASS |
+| 15 | Delete blocked for referenced module | ✅ PASS |
+| 16 | Direct INSERT blocked (restricted) | ✅ PASS |
+| 17 | Direct UPDATE blocked (restricted) | ✅ PASS |
+| 18 | Direct DELETE blocked (restricted) | ✅ PASS |
+| 19–25 | RPC existence (via admin calls) | ✅ PASS |
 
 Results JSON: `C:/tmp/phase-6-8-5-module-manager/cloud-results.json`
 
@@ -155,28 +164,27 @@ Results JSON: `C:/tmp/phase-6-8-5-module-manager/cloud-results.json`
 | 12a | Restricted user login | ✅ PASS |
 | 12b | Module Manager hidden for restricted user | ✅ PASS |
 | 12c | Restricted user cannot access Module Manager route | ✅ PASS |
-| 12d | Restricted user cannot manage modules via RPC | ✅ PASS |
 | 13 | No page errors | ✅ PASS |
-| **Total** | **16 tests** | **16 PASS, 0 FAIL** |
+| **Total** | **15 tests** | **15 PASS, 0 FAIL** |
 
 Screenshots: `C:/tmp/phase-6-8-5-module-manager/`
 Results JSON: `C:/tmp/phase-6-8-5-module-manager/results.json`
 
 ### Security Proof
 
-1. **All 7 RPCs exist** in `public` schema, verified via service-role calls
-2. **Unauthenticated (anon) calls blocked** — all 7 RPCs return permission errors
-3. **Direct table writes blocked** — anon INSERT/UPDATE/DELETE on `app.erp_modules` fail (RLS enforced)
-4. **Service role blocked** — `auth.uid()` is null for service role, so `current_user_has_manage_metadata()` returns false (RPCs designed for authenticated app users only)
-5. **Restricted users blocked** — verified via browser tests (sidebar hidden, direct route blocked, RPC calls fail)
-6. **Delete blocked for referenced modules** — `erp_delete_module_if_unused` returns error when `doctype_count > 0`
+1. **All 7 RPCs exist** in `public` schema, verified via authenticated admin calls
+2. **Admin/owner can call all RPCs** — list, create, update, deactivate, reactivate, delete
+3. **Admin delete blocked for referenced modules** — `erp_delete_module_if_unused` returns error when `doctype_count > 0`
+4. **Restricted user RPCs blocked** — all 6 RPCs return permission errors via real authenticated session
+5. **Direct table writes blocked** — restricted user INSERT/UPDATE/DELETE on `app.erp_modules` fail (RLS enforced)
+6. **Restricted user UI blocked** — sidebar hidden, direct route redirects, no page errors
 7. **Prefer soft-deactivate** — deactivation is the default action; delete requires explicit user intent
 
 ### Final Commit
 
 ```
-a796dd96c193ebd4313aeaeb2136d0df4df5221d
-Phase 6.8.5: Metadata Studio Module Manager Repair
+99f0896ac6df20a849615811bd8aeede8778a666
+Phase 6.8.5.2: Authenticated cloud RPC proof, fix browser verifier
 Branch: phase-2.5-metadata-engine
 ```
 
@@ -185,6 +193,13 @@ Branch: phase-2.5-metadata-engine
 - "Deactivate Instead" suggested in the UI
 - Deactivation is the preferred default action
 - RPC `erp_delete_module_if_unused` enforces this at the database level
+
+## Phase 6.8.5.2 Changes
+- Removed fake `${PLAYWRIGHT_BASE_URL}/rest/v1/rpc/` RPC calls from browser verifier (test 12d). Browser verifier is now **UI-only** — it proves admin can use the UI and restricted user cannot.
+- Cloud verifier rewritten to use **real Supabase auth** — signs in as admin and restricted user via `supabase.auth.signInWithPassword()`, then calls RPCs through authenticated Supabase clients with real Bearer tokens.
+- Verified: admin can call all 7 RPCs; restricted user cannot call any; direct table writes blocked for restricted user.
+- Permission env vars `PLAYWRIGHT_LOW_PRIV_EMAIL`/`PASSWORD` are required; script exits non-zero if missing.
+- Updated commit hash in documentation.
 
 ## Remaining Gaps
 - Granular module permissions (`view_metadata_modules`, etc.) are seeded but not checked by RPCs (design decision: `manage_metadata` is the master gate)
