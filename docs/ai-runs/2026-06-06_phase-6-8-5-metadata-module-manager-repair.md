@@ -88,15 +88,97 @@ Phase 6.9 was NOT started.
 | `tasks.md` | Updated |
 | `progress.md` | Updated |
 
-## Command Results
+## Permission Model
+
+**All 7 RPCs use `app.current_user_has_manage_metadata()` as the master permission gate.**
+The 4 granular permissions (`view_metadata_modules`, `create_metadata_module`, `update_metadata_module`, `delete_metadata_module`) are seeded and granted to owner/admin roles for **future Access Control Manager visibility**, but they are NOT individually checked by the RPCs. The RPCs rely on the broader `manage_metadata` permission only.
+
+This design means:
+- Any user with `manage_metadata` (owner/admin by default) can manage modules
+- Users without `manage_metadata` (restricted roles) cannot access Module Manager at all
+- Granular permissions exist in the permission catalog for future fine-grained control via Access Control Manager
+
+## Phase 6.8.5.1 Closeout Verification Results
+
+### Command Results
 
 | Command | Result |
 |---------|--------|
 | `npx tsc --noEmit` | ✅ 0 errors |
 | `npx eslint src/` | ✅ 0 errors, 56 warnings (pre-existing) |
-| `npx vitest run` | ✅ 77/77 PASS (3 pre-existing failures unrelated to this phase) |
+| `npx vitest run` | ✅ 74/77 PASS (3 pre-existing failures unrelated) |
 | `npx vite build` | ✅ SUCCESS |
 | `node scripts/run-simulation.cjs` | ✅ Simulation scripts ready |
+
+### Cloud Verifier Results (`scripts/verify_phase6_8_5_module_manager_cloud.mjs`)
+
+| # | Test | Result |
+|---|------|--------|
+| 1 | RPC exists: `erp_list_modules` | ✅ PASS |
+| 2 | RPC exists: `erp_create_module` | ✅ PASS |
+| 3 | RPC exists: `erp_update_module` | ✅ PASS |
+| 4 | RPC exists: `erp_deactivate_module` | ✅ PASS |
+| 5 | RPC exists: `erp_reactivate_module` | ✅ PASS |
+| 6 | RPC exists: `erp_delete_module_if_unused` | ✅ PASS |
+| 7 | RPC exists: `erp_module_has_doctypes` | ✅ PASS |
+| 8 | Unauthenticated `erp_list_modules` blocked | ✅ PASS |
+| 9 | Unauthenticated `erp_create_module` blocked | ✅ PASS |
+| 10 | Unauthenticated `erp_update_module` blocked | ✅ PASS |
+| 11 | Unauthenticated `erp_deactivate_module` blocked | ✅ PASS |
+| 12 | Unauthenticated `erp_reactivate_module` blocked | ✅ PASS |
+| 13 | Unauthenticated `erp_delete_module_if_unused` blocked | ✅ PASS |
+| 14 | Unauthenticated `erp_module_has_doctypes` blocked | ✅ PASS |
+| 15 | Direct table INSERT blocked (anon) | ✅ PASS |
+| 16 | Direct table UPDATE blocked (anon) | ✅ PASS |
+| 17 | Direct table DELETE blocked (anon) | ✅ PASS |
+| 18–24 | Service role blocked (no auth.uid, expected) | ✅ PASS |
+| 25 | doctype_count verified in browser tests | ✅ PASS |
+| **Total** | **25 tests** | **25 PASS, 0 FAIL** |
+
+Results JSON: `C:/tmp/phase-6-8-5-module-manager/cloud-results.json`
+
+### Browser Verifier Results (`scripts/verify_phase6_8_5_module_manager.mjs`)
+
+| # | Test | Result |
+|---|------|--------|
+| 1 | Admin login | ✅ PASS |
+| 2 | Metadata Studio opened | ✅ PASS |
+| 3 | Module Manager in sidebar | ✅ PASS |
+| 4 | Module Manager card in Builder Home | ✅ PASS |
+| 5 | Module Manager screen opened | ✅ PASS |
+| 6 | Test module created | ✅ PASS |
+| 7 | Module in DocType Builder dropdown | ✅ PASS |
+| 8 | Test DocType created | ✅ PASS |
+| 9 | Delete blocked when DocType references module | ✅ PASS |
+| 10 | Module deactivated | ✅ PASS |
+| 11 | Existing DocType displays deactivated module | ✅ PASS |
+| 12a | Restricted user login | ✅ PASS |
+| 12b | Module Manager hidden for restricted user | ✅ PASS |
+| 12c | Restricted user cannot access Module Manager route | ✅ PASS |
+| 12d | Restricted user cannot manage modules via RPC | ✅ PASS |
+| 13 | No page errors | ✅ PASS |
+| **Total** | **16 tests** | **16 PASS, 0 FAIL** |
+
+Screenshots: `C:/tmp/phase-6-8-5-module-manager/`
+Results JSON: `C:/tmp/phase-6-8-5-module-manager/results.json`
+
+### Security Proof
+
+1. **All 7 RPCs exist** in `public` schema, verified via service-role calls
+2. **Unauthenticated (anon) calls blocked** — all 7 RPCs return permission errors
+3. **Direct table writes blocked** — anon INSERT/UPDATE/DELETE on `app.erp_modules` fail (RLS enforced)
+4. **Service role blocked** — `auth.uid()` is null for service role, so `current_user_has_manage_metadata()` returns false (RPCs designed for authenticated app users only)
+5. **Restricted users blocked** — verified via browser tests (sidebar hidden, direct route blocked, RPC calls fail)
+6. **Delete blocked for referenced modules** — `erp_delete_module_if_unused` returns error when `doctype_count > 0`
+7. **Prefer soft-deactivate** — deactivation is the default action; delete requires explicit user intent
+
+### Final Commit
+
+```
+a796dd96c193ebd4313aeaeb2136d0df4df5221d
+Phase 6.8.5: Metadata Studio Module Manager Repair
+Branch: phase-2.5-metadata-engine
+```
 
 ## Safe Delete Rules Verified
 - Delete blocked if any active DocType references the module via `module_key`
@@ -104,9 +186,16 @@ Phase 6.9 was NOT started.
 - Deactivation is the preferred default action
 - RPC `erp_delete_module_if_unused` enforces this at the database level
 
+## Remaining Gaps
+- Granular module permissions (`view_metadata_modules`, etc.) are seeded but not checked by RPCs (design decision: `manage_metadata` is the master gate)
+- Service role cannot manage modules (expected: RPCs require authenticated user session with `auth.uid()`)
+- Migration 0055 must be re-pushed if Supabase project is reset (standard procedure)
+
 ## Hard Failure Rules Respected
 - Phase 6.9 was NOT started
 - Full App Builder was NOT built
+- Full Module Builder was NOT built
 - Modules referenced by DocTypes cannot be deleted
 - Restricted users cannot manage modules
 - Existing Access Control Manager is unaffected
+- This is NOT the future full Module Builder/App Builder

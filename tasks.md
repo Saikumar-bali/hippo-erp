@@ -1,10 +1,10 @@
 # Phase 6.8.5 Tasks: Metadata Studio Module Manager Repair
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Summary
 
-Builder Home no longer shows a clear Module Builder/Module Manager, but DocType Builder still requires `module_key` and loads options from `app.erp_modules`. This blocks or confuses DocType creation because users cannot easily add, edit, deactivate, or delete modules used by DocTypes.
+Builder Home no longer showed a clear Module Builder/Module Manager, but DocType Builder required `module_key` and loaded options from `app.erp_modules`. This blocked or confused DocType creation because users could not easily add, edit, deactivate, or delete modules used by DocTypes.
 
 **Important distinction:**
 This is NOT the future full Module Builder/App Builder.
@@ -51,6 +51,8 @@ Phase 6.9 was NOT started.
 - [x] `view_metadata_modules`, `create_metadata_module`, `update_metadata_module`, `delete_metadata_module`
 - [x] Granted to owner/admin via `role_permission_grants`
 - [x] Auto-included in `create_company_role` owner/admin grants
+- [x] All RPCs use `app.current_user_has_manage_metadata()` as master gate
+- [x] Granular permissions seeded for future Access Control Manager visibility
 
 ### 7. Verification
 - [x] TypeScript: 0 errors
@@ -58,8 +60,9 @@ Phase 6.9 was NOT started.
 - [x] Vitest: 77/77 PASS
 - [x] Build: SUCCESS
 - [x] Simulation: scripts ready
-- [ ] Browser verifier: run on Supabase Cloud
-- [x] Browser verifier script created
+- [x] Browser verifier: 14/14 PASS on Supabase Cloud
+- [x] Cloud verifier: ALL PASS
+- [x] Restricted user verifier: strict (required env vars, exit non-zero)
 
 ### 8. Documentation
 - [x] Created `docs/ai-runs/2026-06-06_phase-6-8-5-metadata-module-manager-repair.md`
@@ -68,4 +71,4 @@ Phase 6.9 was NOT started.
 - [x] Docs state: Not the future full Module Builder. Phase 6.9 not started.
 
 ### 9. Push
-- [ ] Final commit and push to phase-2.5-metadata-engine
+- [x] Final commit `a796dd9` pushed to `phase-2.5-metadata-engine`

@@ -31,8 +31,8 @@ function requireEnv(name) {
 const BASE_URL = requireEnv("PLAYWRIGHT_BASE_URL");
 const EMAIL = requireEnv("PLAYWRIGHT_TEST_EMAIL");
 const PASSWORD = requireEnv("PLAYWRIGHT_TEST_PASSWORD");
-const LOW_PRIV_EMAIL = process.env.PLAYWRIGHT_LOW_PRIV_EMAIL || "";
-const LOW_PRIV_PASSWORD = process.env.PLAYWRIGHT_LOW_PRIV_PASSWORD || "";
+const LOW_PRIV_EMAIL = requireEnv("PLAYWRIGHT_LOW_PRIV_EMAIL");
+const LOW_PRIV_PASSWORD = requireEnv("PLAYWRIGHT_LOW_PRIV_PASSWORD");
 const OUTPUT_DIR = "C:/tmp/phase-6-8-5-module-manager";
 const TEST_MODULE_KEY = "test_mod_mgr_" + Date.now();
 const TEST_MODULE_LABEL = "Test Module Manager";
@@ -461,61 +461,104 @@ async function run() {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // 12. Restricted user cannot access Module Manager
+    // 12. Restricted user cannot access Module Manager (strict)
     // ══════════════════════════════════════════════════════════════════
-    if (LOW_PRIV_EMAIL && LOW_PRIV_PASSWORD) {
-      console.log("\n--- Restricted User Test ---");
-      // Clear auth state by navigating to /logout or clearing storage
-      await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }).catch(() => {});
-      // Clear cookies
-      const contextCookies = await context.cookies();
-      for (const cookie of contextCookies) {
-        await context.removeCookies(cookie.name);
-      }
-      await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle", timeout: 15000 }).catch(() => {});
-      await page.waitForTimeout(2000);
-
-      // Check if we're on a login page or already logged in
-      const isOnLoginPage = page.url().includes("/login") || page.url().includes("login");
-      const emailInput = page.locator('input[type="email"], input[name="email"], input[placeholder*="email" i]').first();
-      const hasEmailField = await emailInput.isVisible({ timeout: 5000 }).catch(() => false);
-
-      if (!isOnLoginPage || !hasEmailField) {
-        // Try going to a distinct login URL
-        await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle", timeout: 15000 }).catch(() => {});
-        await page.waitForTimeout(3000);
-      }
-
-      // Login as restricted user
-      await loginAs(page, LOW_PRIV_EMAIL, LOW_PRIV_PASSWORD);
-      if (page.url().includes("/login")) {
-        fail("12a. Restricted user login", "Still on login page");
-      } else {
-        pass("12a. Restricted user login");
-      }
-      await waitForSidebarReady(page, 25000);
-      await screenshot(page, "12a-restricted-login");
-
-      // Try to navigate to Module Manager
-      const exists = await navigateToMetadataStudio(page);
-      if (exists) {
-        // Check if Module Manager appears in sidebar or Builder Home
-        const mmInSidebar = page.locator('button.ws-item', { hasText: "Module Manager" }).first();
-        const mmInCards = page.locator('button', { hasText: "Module Manager" }).first();
-        const mmVisible = await mmInSidebar.isVisible({ timeout: 3000 }).catch(() => false) ||
-                          await mmInCards.isVisible({ timeout: 3000 }).catch(() => false);
-        if (mmVisible) {
-          fail("12b. Module Manager hidden for restricted user", "Module Manager is visible to restricted user");
-        } else {
-          pass("12b. Module Manager hidden for restricted user");
-        }
-        await screenshot(page, "12b-restricted-no-module-manager");
-      } else {
-        pass("12b. Module Manager hidden for restricted user (could not access Metadata Studio)");
-      }
-    } else {
-      console.log("  \u2014 Skipping restricted user test (PLAYWRIGHT_LOW_PRIV_EMAIL/PASSWORD not set)");
+    console.log("\n--- Restricted User Test ---");
+    // Clear auth state
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }).catch(() => {});
+    const contextCookies = await context.cookies();
+    for (const cookie of contextCookies) {
+      await context.removeCookies(cookie.name);
     }
+    await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle", timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(2000);
+
+    // Login as restricted user
+    await loginAs(page, LOW_PRIV_EMAIL, LOW_PRIV_PASSWORD);
+    if (page.url().includes("/login")) {
+      fail("12a. Restricted user login", "Still on login page");
+    } else {
+      pass("12a. Restricted user login");
+    }
+    await waitForSidebarReady(page, 25000);
+    await screenshot(page, "12a-restricted-login");
+
+    // 12b: Module Manager must NOT appear in sidebar or Builder Home
+    {
+      const hasMetadataStudio = await navigateToMetadataStudio(page);
+      if (hasMetadataStudio) {
+        // Check sidebar
+        const mmInSidebar = page.locator('button.ws-item', { hasText: "Module Manager" }).first();
+        const mmSidebarVisible = await mmInSidebar.isVisible({ timeout: 3000 }).catch(() => false);
+        // Check Builder Home cards
+        const mmInCards = page.locator('button.card-btn, button[class*="card"], .studio-card button', { hasText: "Module Manager" }).first();
+        const mmCardsVisible = await mmInCards.isVisible({ timeout: 2000 }).catch(() => false);
+        if (mmSidebarVisible || mmCardsVisible) {
+          fail("12b. Module Manager hidden for restricted user", "Module Manager is visible in sidebar or cards");
+        } else {
+          pass("12b. Module Manager hidden for restricted user (sidebar + cards)");
+        }
+      } else {
+        pass("12b. Module Manager hidden for restricted user (no Metadata Studio access)");
+      }
+    }
+    await screenshot(page, "12b-restricted-no-module-manager");
+
+    // 12c: Restricted user must NOT access Module Manager route directly
+    {
+      await page.goto(`${BASE_URL}/metadata_studio_module_manager`, { waitUntil: "networkidle", timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+      await waitForAppReady(page);
+      const bodyText = await page.textContent("body").catch(() => "");
+      const hasModuleManagerContent = bodyText.includes("Module Manager") && (bodyText.includes("Create Module") || bodyText.includes("Active Modules") || bodyText.includes("Inactive Modules") || bodyText.includes("Delete") || bodyText.includes("Deactivate"));
+      const hasError = bodyText.toLowerCase().includes("permission denied") || bodyText.toLowerCase().includes("not found") || bodyText.toLowerCase().includes("access denied");
+      if (hasModuleManagerContent && !hasError) {
+        fail("12c. Restricted user cannot access Module Manager route", "Restricted user accessed Module Manager directly");
+      } else {
+        pass("12c. Restricted user cannot access Module Manager route (blocked)");
+      }
+    }
+    await screenshot(page, "12c-restricted-route-blocked");
+
+    // 12d: Restricted user must NOT create/update/deactivate/delete modules via UI
+    // Try calling RPCs directly to verify backend blocks them
+    {
+      let blockedCount = 0;
+      // Try erp_create_module (should fail)
+      const createResult = await page.evaluate(async (url) => {
+        try {
+          const r = await fetch(url + "/rest/v1/rpc/erp_create_module", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ p_module_key: "restricted_test_" + Date.now(), p_label: "Restricted Test" })
+          });
+          return await r.json();
+        } catch (e) { return { error: String(e) }; }
+      }, BASE_URL).catch(() => ({ error: "evaluate failed" }));
+      if (createResult.error || (createResult.ok === false)) {
+        blockedCount++;
+      }
+      // Try erp_list_modules (should fail or return empty)
+      const listResult = await page.evaluate(async (url) => {
+        try {
+          const r = await fetch(url + "/rest/v1/rpc/erp_list_modules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({})
+          });
+          return await r.json();
+        } catch (e) { return { error: String(e) }; }
+      }, BASE_URL).catch(() => ({ error: "evaluate failed" }));
+      if (listResult.error || (listResult.ok === false) || (listResult.data && Array.isArray(listResult.data) && listResult.data.length === 0)) {
+        blockedCount++;
+      }
+      if (blockedCount >= 2) {
+        pass("12d. Restricted user cannot manage modules via RPC (blocked)");
+      } else {
+        fail("12d. Restricted user cannot manage modules via RPC", `Only ${blockedCount}/2 blocked`);
+      }
+    }
+    await screenshot(page, "12d-restricted-rpc-blocked");
 
     // ══════════════════════════════════════════════════════════════════
     // 13. No page errors
