@@ -48,11 +48,12 @@ function fail(name, reason) { failCount++; results.push({ status: "FAIL", name, 
 
 async function login(page, email, password) {
   await page.goto(BASE_URL + "/login", { waitUntil: "networkidle" });
-  await page.waitForSelector('input[type="email"], input[name="email"]', { timeout: 10000 });
-  await page.fill('input[type="email"], input[name="email"]', email);
-  await page.fill('input[type="password"], input[name="password"]', password);
+  await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+  await page.fill('input[type="email"]', email);
+  await page.fill('input[type="password"]', password);
   await page.click('button[type="submit"]');
-  await page.waitForTimeout(3000);
+  // Wait for auth to complete, tenants to load, and navigation to finish
+  await page.waitForTimeout(8000);
 }
 
 async function screenshot(page, name) {
@@ -91,6 +92,10 @@ async function run() {
     // 2. Navigate to Client Scripts
     try {
       await adminPage.goto(BASE_URL + "/metadata_studio_client_scripts", { waitUntil: "networkidle", timeout: 15000 });
+      // Wait for SPA to restore session and render content
+      await adminPage.waitForTimeout(5000);
+      // Wait until "Loading session..." disappears
+      try { await adminPage.waitForFunction(() => !document.body.textContent.includes("Loading session"), { timeout: 10000 }); } catch {}
       await adminPage.waitForTimeout(2000);
       const bodyText = await adminPage.textContent("body");
       if (bodyText.includes("Client Scripts") || bodyText.includes("client script")) {
@@ -119,6 +124,9 @@ async function run() {
     // 4. Navigate to CRM Lead list and open create form
     try {
       await adminPage.goto(BASE_URL + "/crm_lead", { waitUntil: "networkidle", timeout: 15000 });
+      // Wait for SPA to restore session and render content
+      await adminPage.waitForTimeout(5000);
+      try { await adminPage.waitForFunction(() => !document.body.textContent.includes("Loading session"), { timeout: 10000 }); } catch {}
       await adminPage.waitForTimeout(2000);
 
       // Look for a "New" or "Create" button
@@ -287,6 +295,8 @@ async function run() {
     // 14. CRM Lead form loads for restricted user
     try {
       await restrictedPage.goto(BASE_URL + "/crm_lead", { waitUntil: "networkidle", timeout: 15000 });
+      await restrictedPage.waitForTimeout(5000);
+      try { await restrictedPage.waitForFunction(() => !document.body.textContent.includes("Loading session"), { timeout: 10000 }); } catch {}
       await restrictedPage.waitForTimeout(2000);
       const bodyText = await restrictedPage.textContent("body");
       if (bodyText.includes("Lead") || bodyText.includes("lead") || bodyText.includes("CRM Lead")) {

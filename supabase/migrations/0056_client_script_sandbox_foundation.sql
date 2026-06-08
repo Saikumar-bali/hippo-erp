@@ -21,7 +21,7 @@
 
 create table if not exists app.erp_client_scripts (
   id            uuid        primary key default gen_random_uuid(),
-  company_id    uuid        references app.companies(id) on delete cascade,
+  company_id    uuid        references app.tenants(id) on delete cascade,
   doctype_key   text        not null references app.erp_doctypes(doctype_key) on delete cascade,
   script_name   text        not null,
   script_type   text        not null default 'form',
@@ -52,6 +52,38 @@ create unique index idx_client_scripts_unique
 -- Enable RLS
 alter table app.erp_client_scripts enable row level security;
 
+-- ── 1.5 Current Company ID Helper ───────────────────────────────────────────────
+-- This function is used by RLS policies and RPCs to get the current user's
+-- selected company (tenant). If the user has not explicitly selected a company
+-- via the session parameter, it falls back to their first tenant membership.
+
+create or replace function app.current_company_id()
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_company_id uuid;
+begin
+  begin
+    v_company_id := current_setting('app.current_company_id')::uuid;
+  exception when others then
+    v_company_id := null;
+  end;
+  if v_company_id is not null then
+    return v_company_id;
+  end if;
+  select tenant_id into v_company_id
+  from app.tenant_members
+  where user_id = auth.uid()
+  order by created_at
+  limit 1;
+  return v_company_id;
+end;
+$$;
+
 -- ── 2. RLS Policies ────────────────────────────────────────────────────────────
 
 -- All authenticated users can read enabled scripts for doctypes they can access
@@ -70,7 +102,8 @@ create policy "manage_client_scripts"
     app.current_user_has_manage_metadata()
     or exists (
       select 1 from app.tenant_members tm
-      join app.company_role_assignments cra on cra.user_id = tm.user_id and cra.company_id = tm.tenant_id
+      join app.company_role_assignments cra on cra.user_id = tm.user_id
+      join app.company_roles cr on cr.id = cra.role_id and cr.tenant_id = tm.tenant_id
       join app.company_role_permissions crp on crp.role_id = cra.role_id
       where tm.user_id = auth.uid()
         and tm.tenant_id = app.current_company_id()
@@ -90,7 +123,8 @@ stable
 as $$
   select exists (
     select 1 from app.tenant_members tm
-    join app.company_role_assignments cra on cra.user_id = tm.user_id and cra.company_id = tm.tenant_id
+    join app.company_role_assignments cra on cra.user_id = tm.user_id
+    join app.company_roles cr on cr.id = cra.role_id and cr.tenant_id = tm.tenant_id
     join app.company_role_permissions crp on crp.role_id = cra.role_id
     where tm.user_id = auth.uid()
       and tm.tenant_id = app.current_company_id()
@@ -389,8 +423,12 @@ values
 on conflict (role, permission_key) do update
 set is_granted = excluded.is_granted, updated_at = now();
 
--- ── 11. Add CRM Lead fields for demo scripts ───────────────────────────────────
+-- ── 11. Add is_active column to erp_docfields (needed for upsert) ──────────────
 
+alter table app.erp_docfields add column if not exists is_active boolean not null default true;
+
+-- ── 12. Add CRM Lead fields for demo scripts ───────────────────────────────────
+--
 -- expected_value (Float) — for Rule A: when status = Qualified, make required
 insert into app.erp_docfields (doctype_key, fieldname, label, fieldtype, options, is_required, is_unique, is_readonly, is_hidden, in_list_view, in_standard_filter, sort_order)
 values
@@ -414,7 +452,7 @@ set sections_json = '[
 where doctype_key = 'crm_lead'
   and layout_key = 'default';
 
--- ── 12. Seed Demo CRM Lead Client Script ───────────────────────────────────────
+-- ── 13. Seed Demo CRM Lead Client Script ───────────────────────────────────────
 
 insert into app.erp_client_scripts (doctype_key, script_name, script_type, event_name, script_body, is_enabled, is_standard, created_by)
 values
@@ -467,7 +505,7 @@ values
 on conflict (coalesce(company_id, '00000000-0000-0000-0000-000000000000'::uuid), doctype_key, script_name)
 do nothing;
 
--- ── 13. Grant execute to authenticated ─────────────────────────────────────────
+-- ── 14. Grant execute to authenticated ─────────────────────────────────────────
 
 grant execute on function public.erp_list_client_scripts()                                                                             to authenticated;
 grant execute on function public.erp_get_client_scripts_for_doctype(p_doctype_key text, p_company_id uuid)                              to authenticated;

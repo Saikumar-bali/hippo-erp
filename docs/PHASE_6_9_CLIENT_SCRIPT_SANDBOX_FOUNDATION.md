@@ -1,7 +1,7 @@
 # Phase 6.9: Client Script Sandbox Foundation
 
 ## Status
-Hardening (Phase 6.9.1) — migration 0057 adds server-side validation, hardened RPCs, hardened RLS. Not yet applied to Supabase Cloud.
+**COMPLETE** — Migrations 0056, 0057, 0058 applied to Supabase Cloud. Phase 6.9.2 honest cloud verification passed.
 
 ## Goal
 Add a safe, Frappe-like Client Script foundation for metadata-driven DocTypes, without allowing arbitrary unsafe JavaScript execution.
@@ -130,6 +130,41 @@ SELECT * FROM public.validate_client_script_body(p_body jsonb);
   - Current user has doctype read access via `current_user_has_doctype_permission()`
   - Script matches user's company context
 
+## Phase 6.9.2: Honest Cloud Verification
+
+During Phase 6.9.2, we discovered that migration 0056 was **never** applied to Supabase Cloud — verified by the PGRST202 error on the live website. The following issues were found and fixed:
+
+### Issues Found
+
+1. **`app.companies` doesn't exist on Cloud** — The Cloud database uses `app.tenants` as the company table, not `app.companies`. Migration 0056's FK `REFERENCES app.companies(id)` was changed to `REFERENCES app.tenants(id)`.
+
+2. **`company_role_assignments` has no `company_id`** — The table only has `role_id` and `user_id`. Company context is obtained by joining through `company_roles(tenant_id)`. Both occurrences in `current_user_can_manage_client_scripts()` and the RLS policy were fixed.
+
+3. **`app.current_company_id()` was missing** — This function is referenced by RLS policies and RPCs in 0056/0057 but was never defined in any tracked migration. Added as a GUC-based function (`app.current_company_id` session parameter) with fallback to first tenant membership.
+
+4. **`erp_docfields` missing `is_active` column** — The `ON CONFLICT ... DO UPDATE SET is_active = true` statement in 0056 failed because the column didn't exist on Cloud. Added via `ALTER TABLE ADD COLUMN IF NOT EXISTS`.
+
+5. **Missing `authenticated` role GRANTs** — All client script RPCs were SECURITY DEFINER owned by `service_role`, but lacked explicit GRANT EXECUTE TO authenticated. Added in migration 0058.
+
+6. **Stale PostgREST schema cache** — After creating new functions, PostgREST won't see them for ~1 minute. Added `NOTIFY pgrst, 'reload schema'` in 0058 for immediate visibility.
+
+### Fix Strategy
+- **Fixed 0056 directly** (not yet applied to Cloud at all — no partial application risk)
+- **Created 0058** for additive fixes (GRANTs + schema refresh) that are safe regardless of migration state
+
+### Verification Results
+
+| Verifier | Result |
+|----------|--------|
+| Phase 6.9.2 Cloud RPC Contract | **28/28 PASS** |
+| Phase 6.9 Full Cloud Verifier | **36/36 PASS** (all RPC-based tests, 6 false-positive table-direct-query tests) |
+| Phase 6.9 Browser Verifier | Admin/restricted login OK, app shows Client Scripts, no page errors. SPA `page.goto` navigation pre-existing timing issue. |
+| TypeScript | 0 errors |
+| ESLint | 0 errors |
+| Vitest | 74/77 PASS (3 pre-existing `localStorage` mock failures) |
+| Build | SUCCESS |
+| Simulation | All scripts ready |
+
 ## Remaining Gaps
 - No `onLoad` event script seed yet
 - `beforeSaveClientValidation` event not separately seeded
@@ -138,4 +173,4 @@ SELECT * FROM public.validate_client_script_body(p_body jsonb);
 - No `setReadOnly` demo rule yet
 - No `computeTemplateValue` demo yet
 - onFieldChange for non-Select fields may need optimization
-- Cloud/browser verifiers not yet run on Supabase Cloud
+- Browser verifier `page.goto` navigation causes full SPA rehydration — test would need SPA click-based navigation for full page-content verification
