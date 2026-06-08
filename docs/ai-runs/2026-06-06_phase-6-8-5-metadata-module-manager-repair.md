@@ -183,8 +183,8 @@ Results JSON: `C:/tmp/phase-6-8-5-module-manager/results.json`
 ### Final Commit
 
 ```
-99f0896ac6df20a849615811bd8aeede8778a666
-Phase 6.8.5.2: Authenticated cloud RPC proof, fix browser verifier
+556820e34f70f3c9c01410f740acf77dcc20aeda
+Phase 6.8.5.2: Authenticated cloud RPC proof, browser verifier UI-only
 Branch: phase-2.5-metadata-engine
 ```
 
@@ -200,6 +200,13 @@ Branch: phase-2.5-metadata-engine
 - Verified: admin can call all 7 RPCs; restricted user cannot call any; direct table writes blocked for restricted user.
 - Permission env vars `PLAYWRIGHT_LOW_PRIV_EMAIL`/`PASSWORD` are required; script exits non-zero if missing.
 - Updated commit hash in documentation.
+
+## Phase 6.8.5.3 Module Manager Final Documentation Closeout
+
+- Updated final accepted commit to `556820e34f70f3c9c01410f740acf77dcc20aeda` in all documentation files.
+- Browser verifier: 15/15 PASS UI-only (fake RPC call removed in 6.8.5.2).
+- Cloud verifier: 25/25 PASS with real authenticated Supabase admin/restricted sessions.
+- No code changes required.
 
 ## Remaining Gaps
 - Granular module permissions (`view_metadata_modules`, etc.) are seeded but not checked by RPCs (design decision: `manage_metadata` is the master gate)

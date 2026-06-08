@@ -72,4 +72,4 @@ Phase 6.9 was NOT started.
 
 ### 9. Push
 - [x] Phase 6.8.5.1 commit `99f0896` pushed to `phase-2.5-metadata-engine`
-- [ ] Phase 6.8.5.2 final commit pushed to `phase-2.5-metadata-engine`
+- [x] Phase 6.8.5.2 final commit `556820e` pushed to `phase-2.5-metadata-engine`
