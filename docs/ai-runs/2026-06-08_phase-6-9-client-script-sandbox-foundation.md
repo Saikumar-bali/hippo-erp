@@ -1,158 +1,30 @@
-# Phase 6.9 — Client Script Sandbox Foundation
+# AI Run Report: Phase 6.9 — Client Script Sandbox Foundation
 
-**Date:** 2026-06-08
-**Branch:** phase-2.5-metadata-engine
+## Session: 2026-06-08
 
-## Summary
+### Phase 6.9 (Original)
+- Created migration 0056: `app.erp_client_scripts` table, 6 RPCs, 5 permissions, CRM Lead demo fields + demo script
+- Created sandbox engine: `src/lib/client-scripts/sandbox.ts`, `useClientScripts.ts`
+- Frontend integration: `ClientScriptsPage.tsx`, DynamicFormPage hooks, route + sidebar
+- Security: JSON-rule DSL only, no eval/Function, blocked field list
 
-Added a safe, Frappe-like Client Script foundation for metadata-driven DocTypes. Client Scripts use a JSON-rule DSL (not JavaScript) to define safe form behavior — no `eval()`, no `Function()` constructor, no access to `window`/`document`/`localStorage`/`fetch`.
+### Phase 6.9.1 (Security Hardening)
+- Migration 0057: `validate_client_script_body()`, hardened RPCs (doctype permission check), hardened RLS
+- Server-side validation rejects invalid operators, action types, blocked fields, suspicious keys
+- Restricted user blocked from management operations
 
-**Important distinction:**
-This is NOT the future full Module Builder/App Builder.
-Phase 6.9 provides a controlled sandbox for UI form scripts.
-Full Module Builder, App Builder, Purchase Orders, Purchase Invoice, Fleet, and other business modules are deferred.
+### Phase 6.9.2 (Honest Cloud Verification)
+- Discovered migration 0056 was **never** applied to Supabase Cloud (PGRST202 on live site)
+- Fixed 4 issues in 0056:
+  - FK `app.companies(id)` → `app.tenants(id)`
+  - `company_role_assignments` join (table has role_id+user_id only, no company_id)
+  - Created `app.current_company_id()` function (was missing from tracked migrations)
+  - Added `is_active` column to `app.erp_docfields`
+- Created 0058: GRANT EXECUTE + `notify pgrst, 'reload schema'`
+- Applied 0056/0057/0058 via `supabase db push`
+- Cloud RPC contract: 28/28 PASS
+- Full cloud verifier: 36/36 PASS (all RPC-based tests)
+- **Not accepted**: Browser tests used `page.goto` (SPA rehydration), direct table check used wrong schema
 
-## What Was Done
-
-### 1. Database Migration (`supabase/migrations/0056_client_script_sandbox_foundation.sql`)
-- Created `app.erp_client_scripts` table with constraints:
-  - `script_type` restricted to `'form'`
-  - `event_name` restricted to `'onLoad'`, `'onFieldChange'`, `'beforeSaveClientValidation'`
-  - Unique per `(company_id, doctype_key, script_name)`
-  - RLS policies for read/manage
-- Created `public.current_user_can_manage_client_scripts()` helper
-- Created 6 RPCs for client script CRUD
-- Seeded 5 permissions, granted to owner/admin
-- Added `expected_value` (Float) and `referral_name` (Data) fields to CRM Lead
-- Updated CRM Lead form layout to include new fields
-- Seeded CRM Lead demo client script with qualification rules
-
-### 2. Sandbox Engine (`src/lib/client-scripts/sandbox.ts`)
-- Pure evaluation functions with no DOM access
-- Supports 6 operators: `equals`, `not_equals`, `in`, `not_in`, `is_set`, `is_not_set`
-- Supports 7 safe action types: `setValue`, `setRequired`, `setReadOnly`, `setVisible`, `showMessage`, `validateRequired`, `computeTemplateValue`
-- Blocks modification of `docstatus`, `workflow_state`, `created_by`, `created_at`, `updated_at`
-
-### 3. React Hook (`src/lib/client-scripts/useClientScripts.ts`)
-- Loads enabled scripts for a DocType via RPC
-- Provides `runOnLoad()`, `runOnFieldChange(field)`, `runBeforeSaveValidation()` evaluators
-- Exposes script overrides (required fields, readonly fields, visible fields, messages)
-
-### 4. DynamicFormPage Integration (`src/components/metadata/DynamicFormPage.tsx`)
-- Tracks `formValues` state via onChange handlers on all inputs
-- Runs `onLoad` scripts after mount/form data load
-- Runs `onFieldChange` when any form field changes
-- Runs `beforeSaveClientValidation` before frontend save attempt
-- Applies script overrides (required, readonly, visible) to field rendering
-- Shows script messages as toast notifications
-
-### 5. Management UI (`src/components/client-scripts/ClientScriptsPage.tsx`)
-- List all client scripts with DocType, name, event, status
-- Create/edit script form with JSON body editor
-- Enable/disable toggle
-- Delete scripts (non-standard only)
-
-### 6. Route and Sidebar
-- Added `metadata_studio_client_scripts` route in DynamicRouteRenderer
-- Added `Client Scripts` shortcut to Metadata Studio sidebar
-
-### 7. Frontend API (`src/lib/client-scripts-api.ts`)
-- Type-safe RPC wrappers for all 6 RPCs
-
-## Files Changed/Created
-
-| File | Action |
-|------|--------|
-| `supabase/migrations/0056_client_script_sandbox_foundation.sql` | Created |
-| `src/lib/client-scripts/sandbox.ts` | Created |
-| `src/lib/client-scripts/useClientScripts.ts` | Created |
-| `src/lib/client-scripts-api.ts` | Created |
-| `src/components/client-scripts/ClientScriptsPage.tsx` | Created |
-| `src/components/metadata/DynamicFormPage.tsx` | Modified |
-| `src/components/metadata/DynamicRouteRenderer.tsx` | Modified |
-| `src/hooks/useWorkspaceNavigation.ts` | Modified |
-| `docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md` | Created |
-| `scripts/verify_phase6_9_client_script_cloud.mjs` | Created |
-| `scripts/verify_phase6_9_client_script_browser.mjs` | Created |
-| `tasks.md` | Updated |
-| `progress.md` | Updated |
-
-## Permission Model
-
-- `manage_client_scripts` is the master gate for script management RPCs
-- `view_client_scripts`, `create_client_script`, `update_client_script`, `delete_client_script` are granular permissions
-- All granted to owner/admin system roles
-- Normal form users can only load enabled scripts for DocTypes they can access
-- Cross-company access fails
-
-## Security Design
-
-1. **No raw JavaScript execution** — JSON-rule DSL only
-2. **No eval() or Function()** — the sandbox has zero code execution primitives
-3. **No access to browser APIs** — sandbox functions receive only form values and field metadata
-4. **Unsafe fields blocked** — `docstatus`, `workflow_state`, `created_by`, `created_at`, `updated_at` cannot be modified
-5. **Action type whitelist** — only 7 safe action types are allowed
-6. **Script errors are non-fatal** — caught and shown as UI warnings
-7. **Backend is source of truth** — scripts only affect frontend UX, never backend validation
-
-## Hard Failure Rules Respected
-- No `eval()` or `Function()` used
-- No access to `window`/`document`/`localStorage`/`fetch` from sandbox
-- No backend permission bypass possible
-- Scripts cannot change `docstatus`/`workflow_state` directly
-- Restricted users cannot manage scripts
-- Full Module Builder/App Builder NOT started
-- Purchase Orders, Purchase Invoice, Fleet NOT started
-
-## Command Results
-
-| Command | Result |
-|---------|--------|
-| `npx tsc --noEmit` | ✅ 0 errors |
-| `npx eslint src/` | ✅ 0 errors, 58 warnings (pre-existing) |
-| `npx vitest run` | ✅ 74/77 PASS (3 pre-existing failures unrelated) |
-| `npx vite build` | ✅ SUCCESS |
-| `node scripts/run-simulation.cjs` | ✅ Simulation scripts ready |
-
-**Note:** Cloud verifier and browser verifier require Supabase Cloud migration 0056 to be applied first, along with a running dev server. These have not yet been run.
-
-## Phase 6.9.1 — Server-Side Hardening
-
-**Note:** This closeout was prepared as part of Phase 6.9.1 hardening. Migration 0057 and verifier scripts are source-complete but NOT yet applied to Supabase Cloud or run.
-
-### Migration 0057 Changes
-- Created `supabase/migrations/0057_client_script_security_hardening.sql`
-
-### Server-Side Validation (`validate_client_script_body`)
-- Rejects: non-object body, missing rules, rules not array, invalid operators, invalid actions
-- Rejects blocked fields: `docstatus`, `workflow_state`, `created_by`, `created_at`, `updated_at`, `company_id`, `tenant_id`
-- Rejects suspicious keys: `code`, `javascript`, `eval`, `functionBody`, `source`
-
-### Hardened RPCs
-- `erp_get_client_scripts_for_doctype` — checks `current_user_has_doctype_permission(p_doctype_key, 'read')`
-- `erp_create_client_script` — validates script_body via `validate_client_script_body()`
-- `erp_update_client_script` — validates script_body when provided
-
-### Hardened RLS
-- Read policy verifies doctype read access via `current_user_has_doctype_permission()`
-
-## Remaining Gaps (pre-closeout)
-- Cloud verifier not yet run on Supabase Cloud (requires migrations 0056 + 0057 applied)
-- Browser verifier not yet run (requires running dev server)
-- `onLoad` event script not yet seeded as demo
-- `beforeSaveClientValidation` event not separately seeded
-- Full visual Form Layout Builder deferred
-- Script management UI is basic (no visual rule builder)
-- `setReadOnly`/`computeTemplateValue` not demonstrated in demo script
-- Script events limited to form (not list, not dashboard)
-- No script debugging/error logging UI
-
-## Command Results (Static Checks)
-
-| Command | Result |
-|---------|--------|
-| `npx tsc --noEmit` | ✅ 0 errors |
-| `npx eslint src/` | ✅ 0 errors |
-| `npx vitest run` | ✅ 74/77 PASS (3 pre-existing failures) |
-| `npx vite build` | ✅ SUCCESS |
-| `node scripts/run-simulation.cjs` | ✅ Simulation scripts ready |
+### Phase 6.9.3 (Current — Browser Proof & Direct RLS Gate)
+**Objective**: Prove the Client Script feature works in the actual browser UI using real SPA navigation, and prove direct table writes are really blocked through the correct Supabase schema call.

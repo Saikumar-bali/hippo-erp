@@ -1,6 +1,6 @@
-# Phase 6.9 / 6.9.1 / 6.9.2 Tasks: Client Script Sandbox Foundation + Security Hardening + Honest Cloud Verification
+# Phase 6.9 / 6.9.1 / 6.9.2 / 6.9.3 Tasks: Client Script Sandbox Foundation + Security Hardening + Honest Cloud Verification + Browser Proof
 
-Status: COMPLETE
+Status: COMPLETE (verified via Phase 6.9.3 — Browser Proof & Direct RLS Verification Gate)
 
 ## Summary
 
@@ -9,6 +9,7 @@ Safe, Frappe-like Client Script foundation for metadata-driven DocTypes. Client 
 Phase 6.9: Base migration (0056), sandbox engine, frontend integration, CRM Lead demo.
 Phase 6.9.1: Security hardening migration (0057), server-side validation, hardened RPCs, hardened RLS.
 Phase 6.9.2: Honest cloud verification gate — fixed FK issues, missing `app.current_company_id()`, missing `is_active` column, applied all migrations to Supabase Cloud, verified all RPCs with authenticated sessions.
+Phase 6.9.3: Browser proof and direct RLS verification gate — full SPA navigation testing, CRM Lead form client script behavior, correct `.schema("app").from()` direct table access, explicit PGRST202 absence proof in browser.
 
 **Important distinction:**
 This is NOT the future full Module Builder/App Builder.
@@ -112,6 +113,48 @@ This is a controlled sandbox for UI form scripts.
 ### 5. Documentation & Push
 - [x] Update tasks.md with Phase 6.9.2 closeout
 - [x] Update docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md with closeout
+- [x] Final commit pushed to `phase-2.5-metadata-engine`
+
+## Tasks (6.9.3 Browser Proof & Direct RLS Verification Gate)
+
+### 1. Direct Table RLS Verification (Correct Schema)
+- [x] Create `scripts/verify_phase6_9_3_client_script_rls_cloud.mjs` using `.schema("app").from("erp_client_scripts")`
+- [x] Verify restricted direct INSERT is blocked — **8/8 PASS**
+- [x] Verify restricted direct UPDATE is blocked (RLS filtered all rows)
+- [x] Verify restricted direct DELETE is blocked (RLS filtered all rows)
+- [x] Verify restricted direct SELECT does not expose scripts for unauthorized DocTypes
+- [x] Save results JSON, exit non-zero on failure
+
+### 2. Browser SPA Navigation Proof
+- [x] Create `scripts/verify_phase6_9_3_client_script_browser_spa.mjs` using real SPA clicks (no `page.goto` for internal pages)
+- [x] Admin: login through real form
+- [x] Admin: navigate to Client Scripts page through sidebar/card/menu — **SPA navigation works**
+- [x] Admin: verify page loads without PGRST202
+- [x] Admin: verify CRM Lead demo script appears in the list
+- [x] Admin: navigate to CRM Lead through sidebar (click "Leads")
+- [x] Admin: open/create CRM Lead form (click "+ Create")
+- [x] Admin: change status to Qualified, verify expected_value becomes required
+- [x] Admin: try save without expected_value, verify client-side validation blocked save
+- [x] Admin: fill expected_value
+- [x] Admin: change source to Referral, verify referral_name appears
+- [x] Admin: no PGRST202 in page text, console, or network responses — **confirmed**
+- [x] Restricted: login and verify Client Scripts management inaccessible
+- [x] Restricted: verify direct route `/metadata_studio_client_scripts` shows access denied or redirect
+- [x] No page errors across all paths
+- **Result: 14/14 PASS**
+
+### 3. Static Checks
+- [x] TypeScript: 0 errors
+- [x] ESLint: 0 errors
+- [x] Vitest: 74/77 PASS (3 pre-existing failures)
+- [x] Build: SUCCESS
+- [x] Simulation: scripts ready
+
+### 4. Documentation & Push
+- [x] Update tasks.md with Phase 6.9.3 tasks
+- [x] Update progress.md with Phase 6.9.3 active status
+- [x] Update docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md
+- [x] Create docs/ai-runs/2026-06-08_phase-6-9-client-script-sandbox-foundation.md
 - [x] Final commit pushed to `phase-2.5-metadata-engine`
 
 ## Key Migration Fixes Applied During Phase 6.9.2

@@ -1,7 +1,7 @@
 # Phase 6.9: Client Script Sandbox Foundation
 
 ## Status
-**COMPLETE** — Migrations 0056, 0057, 0058 applied to Supabase Cloud. Phase 6.9.2 honest cloud verification passed.
+**COMPLETE** — All Phase 6.9.3 proof requirements met. Migrations 0056/0057/0058 applied to Supabase Cloud. PGRST202 confirmed absent. Client Scripts feature verified end-to-end in browser UI.
 
 ## Goal
 Add a safe, Frappe-like Client Script foundation for metadata-driven DocTypes, without allowing arbitrary unsafe JavaScript execution.
@@ -158,12 +158,32 @@ During Phase 6.9.2, we discovered that migration 0056 was **never** applied to S
 |----------|--------|
 | Phase 6.9.2 Cloud RPC Contract | **28/28 PASS** |
 | Phase 6.9 Full Cloud Verifier | **36/36 PASS** (all RPC-based tests, 6 false-positive table-direct-query tests) |
-| Phase 6.9 Browser Verifier | Admin/restricted login OK, app shows Client Scripts, no page errors. SPA `page.goto` navigation pre-existing timing issue. |
+| Phase 6.9.3 RLS Direct Table (`.schema("app").from()`) | **8/8 PASS** — INSERT blocked, UPDATE/DELETE filtered (RLS), SELECT gated |
+| Phase 6.9.3 Browser SPA Navigation | **14/14 PASS** — SPA sidebar clicks, Client Scripts page, CRM Lead form, status→Qualified validation, source→Referral visibility, PGRST202 absent, restricted blocked |
 | TypeScript | 0 errors |
 | ESLint | 0 errors |
 | Vitest | 74/77 PASS (3 pre-existing `localStorage` mock failures) |
 | Build | SUCCESS |
 | Simulation | All scripts ready |
+
+## Phase 6.9.3: Browser Proof & Direct RLS Verification Gate
+
+Phase 6.9.3 exists because Phase 6.9.2 cannot be accepted until:
+
+1. **SPA browser navigation works** — Previous browser tests used `page.goto()` for internal app pages, causing full SPA rehydration and timing failures. Phase 6.9.3 tests use real sidebar/menu clicks to navigate within the SPA.
+
+2. **CRM Lead form client script behavior verified in browser** — Changing status to Qualified must make expected_value required; changing source to Referral must make referral_name visible.
+
+3. **Direct RLS uses correct Supabase schema** — Previous tests used `.from("app.erp_client_scripts")` which is equivalent to `public.app.erp_client_scripts` (wrong schema). Phase 6.9.3 uses `.schema("app").from("erp_client_scripts")` for correct app-schema access.
+
+4. **PGRST202 explicitly proven absent** — No PGRST202 errors in page text, browser console, or network responses.
+
+### Verification Plan
+
+| Verifier | Method | Target |
+|----------|--------|--------|
+| RLS Cloud Verifier | Authenticated Supabase sessions + `.schema("app").from()` | INSERT/UPDATE/DELETE blocked, SELECT gated |
+| Browser SPA Verifier | Playwright + real SPA navigation (clicks, not `page.goto`) | Full form behavior, PGRST202 absence, restricted blocked |
 
 ## Remaining Gaps
 - No `onLoad` event script seed yet
@@ -173,4 +193,4 @@ During Phase 6.9.2, we discovered that migration 0056 was **never** applied to S
 - No `setReadOnly` demo rule yet
 - No `computeTemplateValue` demo yet
 - onFieldChange for non-Select fields may need optimization
-- Browser verifier `page.goto` navigation causes full SPA rehydration — test would need SPA click-based navigation for full page-content verification
+- Phase 6.9.3 browser verifier proves UI works with SPA sidebar navigation; original browser verifier (`verify_phase6_9_client_script_browser.mjs`) has `page.goto` timing issues and is superseded by the 6.9.3 version
