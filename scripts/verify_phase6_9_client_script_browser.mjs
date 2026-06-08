@@ -1,21 +1,25 @@
 #!/usr/bin/env node
 /**
- * Phase 6.9 — Client Script Sandbox Foundation: Browser verifier
+ * Phase 6.9 / 6.9.1 — Client Script Sandbox Foundation: Browser verifier
  *
  * Admin path:
  * 1. Admin login
  * 2. Opens Client Scripts management page
- * 3. Creates a new client script for CRM Lead
- * 4. Opens CRM Lead form
- * 5. Changes status to Qualified — verifies expected_value becomes required
- * 6. Tries save without expected_value — verifies validation error
- * 7. Fills expected_value — allows save attempt
+ * 3. CRM Lead demo script visible in list
+ * 4. Opens CRM Lead create form
+ * 5. Checks expected_value field exists
+ * 6. Checks referral_name field exists
+ * 7. Fills lead_name, changes status -> Qualified
+ * 8. expected_value becomes required (has required attribute)
+ * 9. Save without expected_value triggers validation
+ * 10. Fills expected_value
+ * 11. Changes source -> Referral, referral_name becomes visible (has required/visible attribute)
  *
  * Restricted user path:
- * 8. Restricted user login
- * 9. Tries to access Client Scripts page — must be blocked
- * 10. Opens CRM Lead form
- * 11. No page errors
+ * 12. Restricted user login
+ * 13. Tries to access Client Scripts page — must be blocked
+ * 14. CRM Lead form loads
+ * 15. No page errors across all pages
  */
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "fs";
@@ -214,6 +218,26 @@ async function run() {
       fail("10. Expected Value fill", e.message);
     }
 
+    // 11. Change source to Referral — referral_name should become visible
+    try {
+      const sourceSelect = await adminPage.$('select[name="source"]');
+      if (sourceSelect) {
+        await sourceSelect.selectOption("Referral");
+        await adminPage.waitForTimeout(1000);
+        const bodyText = await adminPage.textContent("body");
+        if (bodyText.includes("Referral Name")) {
+          pass("11. source=Referral makes referral_name visible");
+        } else {
+          fail("11. source=Referral makes referral_name visible", "referral_name not visible after source change");
+        }
+      } else {
+        fail("11. source=Referral", "Source select not found");
+      }
+    } catch (e) {
+      fail("11. source=Referral", e.message);
+    }
+    await screenshot(adminPage, "11-referral-visible");
+
     await adminCtx.close();
 
     // ── Restricted user path ────────────────────────────────────────
@@ -223,66 +247,66 @@ async function run() {
 
     restrictedPage.on("pageerror", (err) => pageErrors.push(err.message));
 
-    // 11. Restricted user login
+    // 12. Restricted user login
     try {
       await login(restrictedPage, RESTRICTED_EMAIL, RESTRICTED_PASSWORD);
       const url = restrictedPage.url();
       if (!url.includes("/login")) {
-        pass("11. Restricted user login successful");
+        pass("12. Restricted user login successful");
       } else {
-        fail("11. Restricted user login", "Still on login page");
+        fail("12. Restricted user login", "Still on login page");
       }
     } catch (e) {
-      fail("11. Restricted user login", e.message);
+      fail("12. Restricted user login", e.message);
     }
-    await screenshot(restrictedPage, "11-restricted-login");
+    await screenshot(restrictedPage, "12-restricted-login");
 
-    // 12. Restricted user tries to access Client Scripts page
+    // 13. Restricted user tries to access Client Scripts page
     try {
       await restrictedPage.goto(BASE_URL + "/metadata_studio_client_scripts", { waitUntil: "networkidle", timeout: 15000 });
       await restrictedPage.waitForTimeout(2000);
       const bodyText = await restrictedPage.textContent("body");
       if (bodyText.includes("Access Denied") || bodyText.includes("denied") || bodyText.includes("permission")) {
-        pass("12. Restricted user blocked from Client Scripts (Access Denied)");
+        pass("13. Restricted user blocked from Client Scripts (Access Denied)");
       } else {
         // Could be that it redirects somewhere or shows error
         const url = restrictedPage.url();
         if (url.includes("login") || url.includes("access") || url.includes("denied")) {
-          pass("12. Restricted user blocked from Client Scripts (redirected)");
+          pass("13. Restricted user blocked from Client Scripts (redirected)");
         } else if (!bodyText.includes("Client Scripts") && !bodyText.includes("client script")) {
-          pass("12. Restricted user cannot see Client Scripts content");
+          pass("13. Restricted user cannot see Client Scripts content");
         } else {
-          fail("12. Restricted user blocked from Client Scripts", "Page showed client scripts content");
+          fail("13. Restricted user blocked from Client Scripts", "Page showed client scripts content");
         }
       }
     } catch (e) {
-      fail("12. Restricted user Client Scripts", e.message);
+      fail("13. Restricted user Client Scripts", e.message);
     }
-    await screenshot(restrictedPage, "12-restricted-scripts-blocked");
+    await screenshot(restrictedPage, "13-restricted-scripts-blocked");
 
-    // 13. CRM Lead form loads for restricted user
+    // 14. CRM Lead form loads for restricted user
     try {
       await restrictedPage.goto(BASE_URL + "/crm_lead", { waitUntil: "networkidle", timeout: 15000 });
       await restrictedPage.waitForTimeout(2000);
       const bodyText = await restrictedPage.textContent("body");
       if (bodyText.includes("Lead") || bodyText.includes("lead") || bodyText.includes("CRM Lead")) {
-        pass("13. CRM Lead page loads for restricted user");
+        pass("14. CRM Lead page loads for restricted user");
       } else {
-        fail("13. CRM Lead page loads", "Page did not show CRM Lead content");
+        fail("14. CRM Lead page loads", "Page did not show CRM Lead content");
       }
     } catch (e) {
-      fail("13. CRM Lead page loads", e.message);
+      fail("14. CRM Lead page loads", e.message);
     }
-    await screenshot(restrictedPage, "13-restricted-crm-lead");
+    await screenshot(restrictedPage, "14-restricted-crm-lead");
 
     await restrictedCtx.close();
 
     // ── Page errors ──────────────────────────────────────────────────
     console.log("\n--- Page Errors Check ---");
     if (pageErrors.length === 0) {
-      pass("14. No page errors");
+      pass("15. No page errors");
     } else {
-      fail("14. No page errors", `${pageErrors.length} errors: ${pageErrors.slice(0, 3).join("; ")}`);
+      fail("15. No page errors", `${pageErrors.length} errors: ${pageErrors.slice(0, 3).join("; ")}`);
     }
 
   } finally {

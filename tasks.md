@@ -1,17 +1,19 @@
-# Phase 6.9 Tasks: Client Script Sandbox Foundation
+# Phase 6.9 / 6.9.1 Tasks: Client Script Sandbox Foundation + Security Hardening
 
-Status: ACTIVE
+Status: ACTIVE (hardening)
 
 ## Summary
 
-Add a safe, Frappe-like Client Script foundation for metadata-driven DocTypes. Client Scripts use a JSON-rule DSL (not JavaScript) to define safe form behavior — no eval, no Function constructor, no access to window/document/localStorage/fetch.
+Safe, Frappe-like Client Script foundation for metadata-driven DocTypes. Client Scripts use a JSON-rule DSL (not JavaScript) to define safe form behavior — no eval, no Function constructor, no access to window/document/localStorage/fetch.
+
+Phase 6.9: Base migration (0056), sandbox engine, frontend integration, CRM Lead demo.
+Phase 6.9.1: Security hardening migration (0057), server-side validation, hardened RPCs, hardened RLS, verification gates.
 
 **Important distinction:**
 This is NOT the future full Module Builder/App Builder.
 This is a controlled sandbox for UI form scripts.
-Phase 6.9 does not include: full Module Builder, App Builder, Purchase Orders, Purchase Invoice, Fleet, PDF generation, or any new business module.
 
-## Tasks
+## Tasks (6.9)
 
 ### 1. Database Migration
 - [x] Create `app.erp_client_scripts` table with constraints
@@ -54,23 +56,37 @@ Phase 6.9 does not include: full Module Builder, App Builder, Purchase Orders, P
 - [x] CRM Lead CRUD not broken
 
 ### 6. Verification Scripts
-- [ ] `scripts/verify_phase6_9_client_script_cloud.mjs` — not yet run
-- [ ] `scripts/verify_phase6_9_client_script_browser.mjs` — not yet run
+- [x] `scripts/verify_phase6_9_client_script_cloud.mjs` — updated with security checks
+- [x] `scripts/verify_phase6_9_client_script_browser.mjs` — updated with referral check + numbers
 
-### 7. Verification
+## Tasks (6.9.1 Hardening)
+
+### 1. Security Migration (0057)
+- [x] `validate_client_script_body()` function: rejects non-object, missing/non-array rules, invalid operators, invalid action types, blocked fields (docstatus, workflow_state, created_by, created_at, updated_at, company_id, tenant_id), suspicious keys (code, javascript, eval, functionBody, source)
+- [x] Hardened `erp_get_client_scripts_for_doctype`: checks DocType read permission via `current_user_has_doctype_permission()` before returning scripts
+- [x] Hardened `erp_create_client_script`: calls `validate_client_script_body()` before insert
+- [x] Hardened `erp_update_client_script`: calls `validate_client_script_body()` when script_body provided
+- [x] Hardened RLS read policy: checks doctype read access via `current_user_has_doctype_permission()`
+
+### 2. Cloud Verification
+- [ ] Migration 0057 applied to Supabase Cloud
+- [ ] Cloud verifier: ALL PASS (requires Supabase Cloud)
+- [ ] 17+ checks: table exists, validation function, RPCs, permissions, admin CRUD, restricted blocked, cross-company fail, invalid body rejected, unsafe actions rejected, raw-code payloads rejected, CRM Lead demo, CRM Opportunity CRUD, direct table write blocked
+
+### 3. Browser Verification
+- [ ] Browser verifier: ALL PASS (requires running dev server)
+- [ ] 15+ checks: admin login, scripts page, demo script visible, lead form, expected_value/referral_name fields, status→Qualified validation, source→Referral referral_name visible, restricted user blocked, CRM Lead loads, no page errors
+
+### 4. Static Checks
 - [x] TypeScript: 0 errors
 - [x] ESLint: 0 errors
 - [x] Vitest: 74/77 PASS (3 pre-existing failures)
 - [x] Build: SUCCESS
 - [x] Simulation: scripts ready
-- [ ] Cloud verifier: ALL PASS (requires Supabase Cloud + migration applied)
-- [ ] Browser verifier: ALL PASS (requires running dev server)
-- [x] Restricted user management blocked (RPC permission check)
 
-### 8. Documentation
-- [x] Created `docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md`
-- [x] Created `docs/ai-runs/2026-06-08_phase-6-9-client-script-sandbox-foundation.md`
-- [ ] Docs state: Not the future full Module Builder. Phase 6.9 deferred items listed.
-
-### 9. Push
+### 5. Documentation & Push
+- [ ] Update docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md with closeout
+- [ ] Update docs/ai-runs/2026-06-08_phase-6-9-client-script-sandbox-foundation.md with closeout
 - [ ] Final commit pushed to `phase-2.5-metadata-engine`
+
+**Note:** Cloud/browser verifiers require Supabase Cloud migrations 0056+0057 applied + dev server. Not yet run.

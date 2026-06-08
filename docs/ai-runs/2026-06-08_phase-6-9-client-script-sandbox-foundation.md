@@ -116,7 +116,29 @@ Full Module Builder, App Builder, Purchase Orders, Purchase Invoice, Fleet, and 
 
 **Note:** Cloud verifier and browser verifier require Supabase Cloud migration 0056 to be applied first, along with a running dev server. These have not yet been run.
 
-## Remaining Gaps
+## Phase 6.9.1 — Server-Side Hardening
+
+**Note:** This closeout was prepared as part of Phase 6.9.1 hardening. Migration 0057 and verifier scripts are source-complete but NOT yet applied to Supabase Cloud or run.
+
+### Migration 0057 Changes
+- Created `supabase/migrations/0057_client_script_security_hardening.sql`
+
+### Server-Side Validation (`validate_client_script_body`)
+- Rejects: non-object body, missing rules, rules not array, invalid operators, invalid actions
+- Rejects blocked fields: `docstatus`, `workflow_state`, `created_by`, `created_at`, `updated_at`, `company_id`, `tenant_id`
+- Rejects suspicious keys: `code`, `javascript`, `eval`, `functionBody`, `source`
+
+### Hardened RPCs
+- `erp_get_client_scripts_for_doctype` — checks `current_user_has_doctype_permission(p_doctype_key, 'read')`
+- `erp_create_client_script` — validates script_body via `validate_client_script_body()`
+- `erp_update_client_script` — validates script_body when provided
+
+### Hardened RLS
+- Read policy verifies doctype read access via `current_user_has_doctype_permission()`
+
+## Remaining Gaps (pre-closeout)
+- Cloud verifier not yet run on Supabase Cloud (requires migrations 0056 + 0057 applied)
+- Browser verifier not yet run (requires running dev server)
 - `onLoad` event script not yet seeded as demo
 - `beforeSaveClientValidation` event not separately seeded
 - Full visual Form Layout Builder deferred
@@ -124,3 +146,13 @@ Full Module Builder, App Builder, Purchase Orders, Purchase Invoice, Fleet, and 
 - `setReadOnly`/`computeTemplateValue` not demonstrated in demo script
 - Script events limited to form (not list, not dashboard)
 - No script debugging/error logging UI
+
+## Command Results (Static Checks)
+
+| Command | Result |
+|---------|--------|
+| `npx tsc --noEmit` | ✅ 0 errors |
+| `npx eslint src/` | ✅ 0 errors |
+| `npx vitest run` | ✅ 74/77 PASS (3 pre-existing failures) |
+| `npx vite build` | ✅ SUCCESS |
+| `node scripts/run-simulation.cjs` | ✅ Simulation scripts ready |

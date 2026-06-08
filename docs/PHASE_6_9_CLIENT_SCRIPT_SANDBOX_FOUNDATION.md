@@ -1,7 +1,7 @@
 # Phase 6.9: Client Script Sandbox Foundation
 
 ## Status
-Active development — not yet complete.
+Hardening (Phase 6.9.1) — migration 0057 adds server-side validation, hardened RPCs, hardened RLS. Not yet applied to Supabase Cloud.
 
 ## Goal
 Add a safe, Frappe-like Client Script foundation for metadata-driven DocTypes, without allowing arbitrary unsafe JavaScript execution.
@@ -88,14 +88,47 @@ Script body is a JSON object with a `rules` array:
 - Fields `expected_value` (Float) and `referral_name` (Data) added to CRM Lead
 
 ## Security Proof
+### Phase 6.9 (Frontend/Client-Side)
 1. No raw JS execution — JSON-rule DSL only
 2. No `eval()` or `Function()` anywhere
 3. No access to `window`, `document`, `localStorage`, `fetch` from sandbox
 4. UNSAFE_FIELDS list blocks `docstatus`, `workflow_state`, `created_by`, etc.
-5. Restricted users blocked from script management
-6. Cross-company access fails
-7. Script errors caught and shown as non-fatal warnings
-8. Backend permissions never bypassed
+5. Script errors caught and shown as non-fatal warnings
+
+### Phase 6.9.1 (Server-Side Hardening)
+6. Server-side `validate_client_script_body()` rejects all invalid bodies:
+   - Non-object, missing rules, rules not an array
+   - Invalid operators (not in whitelist: equals, not_equals, in, not_in, is_set, is_not_set)
+   - Invalid action types (not in whitelist: setValue, setRequired, setReadOnly, setVisible, showMessage, validateRequired, computeTemplateValue)
+   - Blocked fields: docstatus, workflow_state, created_by, created_at, updated_at, company_id, tenant_id
+   - Suspicious keys: code, javascript, eval, functionBody, source
+7. `erp_get_client_scripts_for_doctype` checks `current_user_has_doctype_permission(p_doctype_key, 'read')` before returning scripts
+8. `erp_create_client_script` calls validation function before insert
+9. `erp_update_client_script` calls validation function when script_body provided
+10. RLS read policy checks doctype read access (direct table reads also gated)
+11. Restricted users blocked from management RPCs
+12. Cross-company access fails
+13. Backend permissions never bypassed — scripts cannot load for unauthorized DocTypes
+14. Direct table INSERT blocked for restricted users
+
+## Phase 6.9.1 Changes (Migration 0057)
+
+### Server-Side Validation (`validate_client_script_body`)
+```sql
+SELECT * FROM public.validate_client_script_body(p_body jsonb);
+-- Returns { ok: true/false, error: "..." }
+```
+
+### Hardened RPCs
+- `erp_get_client_scripts_for_doctype` — now checks doctype read permission
+- `erp_create_client_script` — validates script_body before insert
+- `erp_update_client_script` — validates script_body when provided
+
+### Hardened RLS
+- Read policy on `app.erp_client_scripts` now verifies:
+  - Script is enabled
+  - Current user has doctype read access via `current_user_has_doctype_permission()`
+  - Script matches user's company context
 
 ## Remaining Gaps
 - No `onLoad` event script seed yet
@@ -105,3 +138,4 @@ Script body is a JSON object with a `rules` array:
 - No `setReadOnly` demo rule yet
 - No `computeTemplateValue` demo yet
 - onFieldChange for non-Select fields may need optimization
+- Cloud/browser verifiers not yet run on Supabase Cloud
