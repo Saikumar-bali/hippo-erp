@@ -33,10 +33,20 @@ export const METADATA_STUDIO_WORKSPACE_ITEM_TYPES = ["doctype", "workspace", "pa
 
 // ── Foreign key lookup helpers ────────────────────────────────────────────────
 
-export async function loadModuleKeys() {
-  const { data, error } = await meta().from("erp_modules").select("module_key, label").order("sort_order", { ascending: true });
+export interface ModuleKeyOption {
+  value: string;
+  label: string;
+  is_active?: boolean;
+}
+
+export async function loadModuleKeys(): Promise<ModuleKeyOption[]> {
+  const { data, error } = await meta().from("erp_modules").select("module_key, label, is_active").order("sort_order", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r: Record<string, unknown>) => ({ value: r.module_key as string, label: `${r.module_key} (${r.label})` }));
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    value: r.module_key as string,
+    label: `${r.module_key} (${r.label})`,
+    is_active: r.is_active as boolean,
+  }));
 }
 
 export async function loadDocTypeKeys() {

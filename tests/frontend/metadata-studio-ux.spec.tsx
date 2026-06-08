@@ -87,6 +87,7 @@ vi.mock("lucide-react", () => ({
   ListChecks: () => <div />,
   WandSparkles: () => <div />,
   Printer: () => <div />,
+  Box: () => <div />,
 }));
 
 describe("Metadata Studio UX Polish", () => {

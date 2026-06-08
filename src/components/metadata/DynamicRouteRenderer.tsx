@@ -10,6 +10,7 @@ import { ModuleView } from "../ModuleView";
 import { MetadataStudioHome } from "../metadata-studio/MetadataStudioHome";
 import { CustomDocTypeWizard } from "../metadata-studio/CustomDocTypeWizard";
 import { DocTypeBuilder } from "../metadata-studio/DocTypeBuilder";
+import { ModuleManager } from "../metadata-studio/ModuleManager";
 import { DocTypeList } from "../metadata-studio/DocTypeList";
 import { DocTypeCompletionChecklist } from "../metadata-studio/DocTypeCompletionChecklist";
 import { DocFieldBuilder } from "../metadata-studio/DocFieldBuilder";
@@ -133,6 +134,8 @@ function MetadataStudioRouter({ itemKey, onRefreshSidebar, onNavigateToDocType }
   }
 
   switch (subPageKey || subPage) {
+    case "metadata_studio_module_manager":
+      return <ModuleManager onNavigate={setSubPage} />;
     case "metadata_studio_wizard":
       return (
         <CustomDocTypeWizard

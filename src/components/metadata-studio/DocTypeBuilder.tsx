@@ -46,7 +46,7 @@ type Props = {
 export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved, onNavigate }: Props) {
   const [selectedDocTypeKey, setSelectedDocTypeKey] = useState(initialDocTypeKey);
   const [docTypes, setDocTypes] = useState<Array<{ value: string; label: string }>>([]);
-  const [modules, setModules] = useState<Array<{ value: string; label: string }>>([]);
+  const [modules, setModules] = useState<Array<{ value: string; label: string; is_active?: boolean }>>([]);
   const [state, setState] = useState<DocTypeFormState>(emptyState);
   const [manualKey, setManualKey] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,13 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved, onNavig
         label: `${String(row.doctype_key)} (${String(row.label ?? row.doctype_key)})`,
       }));
       setDocTypes(nextDocTypes);
-      setModules(moduleRows);
+      setModules(
+        [...moduleRows].sort((a, b) => {
+          if (a.is_active && !b.is_active) return -1;
+          if (!a.is_active && b.is_active) return 1;
+          return 0;
+        })
+      );
 
       const targetKey = preferredKey ?? selectedDocTypeKey;
       if (targetKey) {
@@ -260,15 +266,61 @@ export function DocTypeBuilder({ initialDocTypeKey = "", onDocTypeSaved, onNavig
               {duplicate && <span style={{ fontSize: "10px", color: "var(--danger)" }}>This key already exists.</span>}
             </label>
             <label className="studio-field">
-              <span>Module</span>
-              <select value={state.module_key} onChange={(event) => set("module_key", event.target.value)}>
-                <option value="">Select module</option>
-                {modules.map((module) => (
-                  <option key={module.value} value={module.value}>
-                    {module.label}
-                  </option>
-                ))}
-              </select>
+              <span>
+                Module
+                {modules.length > 0 && modules.some((m) => m.is_active === false) && (
+                  <span style={{ fontSize: "10px", color: "var(--muted)", marginLeft: "6px" }}>
+                    (inactive modules shown dimmed)
+                  </span>
+                )}
+              </span>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <select
+                  value={state.module_key}
+                  onChange={(event) => set("module_key", event.target.value)}
+                  style={{ flex: 1 }}
+                >
+                  {modules.length === 0 ? (
+                    <option value="">No modules found — create one first</option>
+                  ) : (
+                    <>
+                      <option value="">Select module</option>
+                      {modules.map((module) => (
+                        <option
+                          key={module.value}
+                          value={module.value}
+                          style={module.is_active === false ? { color: "#adb5bd", fontStyle: "italic" } : undefined}
+                        >
+                          {module.label}{module.is_active === false ? " (inactive)" : ""}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.("metadata_studio_module_manager")}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "4px",
+                    background: "#fff",
+                    color: "#006666",
+                    whiteSpace: "nowrap",
+                  }}
+                  title="Manage Modules"
+                >
+                  Manage Modules
+                </button>
+              </div>
+              {modules.length === 0 && (
+                <span style={{ fontSize: "11px", color: "#e03131", marginTop: "2px" }}>
+                  No modules found. <a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.("metadata_studio_module_manager"); }} style={{ color: "#006666", textDecoration: "underline" }}>Create a module first</a>.
+                </span>
+              )}
             </label>
             <label className="studio-field">
               <span>Schema</span>

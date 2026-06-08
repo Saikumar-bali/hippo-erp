@@ -1,59 +1,71 @@
-# Phase 6.8.4 Tasks: Final Credential Rotation Confirmation Gate
+# Phase 6.8.5 Tasks: Metadata Studio Module Manager Repair
 
-Status: COMPLETE
+Status: IN PROGRESS
 
-## Why this gate exists
+## Summary
 
-Phase 6.8.3 could not be accepted because service-role key and test-user passwords were not rotated. Old credentials still worked. This gate confirms old exposed credentials are invalidated and new credentials work.
+Builder Home no longer shows a clear Module Builder/Module Manager, but DocType Builder still requires `module_key` and loads options from `app.erp_modules`. This blocks or confuses DocType creation because users cannot easily add, edit, deactivate, or delete modules used by DocTypes.
+
+**Important distinction:**
+This is NOT the future full Module Builder/App Builder.
+This is a focused `app.erp_modules` manager required by DocType creation.
+Phase 6.9 was NOT started.
 
 ## Tasks
 
-### 1. Credential rotation
-- [x] Admin password rotated via Supabase Auth Admin API (`PUT /auth/v1/admin/users/{uid}`)
-- [x] Low-priv password rotated via Supabase Auth Admin API
-- [x] Publishable key rotated (previously in Phase 6.8.3)
-- [x] Service role key: NOT rotatable via API (requires Dashboard → JWT Secret → Regenerate)
+### 1. Add Builder Home card and sidebar item
+- [x] Add Module Manager card to `builderSections` in `MetadataStudioHome.tsx`
+- [x] Add `metadata_studio_module_manager` to `METADATA_STUDIO_SHORTCUTS` sidebar
+- [x] Update recommended builder flow to include Module Manager first
 
-### 2. Old credentials invalidated
-- [x] Old admin password `Phase64Admin!2026` → REJECTED ✅
-- [x] Old low-priv password `Phase64Low!2026` → REJECTED ✅
+### 2. Add Module Manager screen
+- [x] Create `src/components/metadata-studio/ModuleManager.tsx`
+- [x] List modules with key, label, description, icon, route, sort, is_active, doctype_count
+- [x] Create module form (label, key auto-snaked, description, icon, route, sort_order)
+- [x] Edit module form
+- [x] Deactivate/reactivate toggle
+- [x] Safe delete with reference checking
 
-### 3. New credentials verified
-- [x] New admin password `Admin@2026` → WORKS ✅
-- [x] New low-priv password `User@2026` → WORKS ✅
-- [x] `.env` updated with new credentials (not committed)
+### 3. Safe delete/deactivate rules
+- [x] Block delete if DocTypes reference module (show count)
+- [x] Show "Deactivate Instead" suggestion
+- [x] Prefer soft deactivate (set `is_active = false`)
 
-### 4. Secret scan
-- [x] `git grep` scan clean — no hardcoded active credentials in source
-- [x] All references are env var names or documentation text
+### 4. DocType Builder improvement
+- [x] Warning if no active modules exist
+- [x] "Manage Modules" button beside Module select
+- [x] Active modules shown first, inactive dimmed
+- [x] `loadModuleKeys()` returns `is_active` field
 
-### 5. Verification
+### 5. Backend RPCs
+- [x] Migration `0055_metadata_module_manager.sql`
+- [x] `erp_list_modules` — list with doctype_count
+- [x] `erp_create_module` — create with permission check
+- [x] `erp_update_module` — update with permission check
+- [x] `erp_deactivate_module` — soft-deactivate
+- [x] `erp_reactivate_module` — reactivate
+- [x] `erp_delete_module_if_unused` — delete only if no references
+- [x] `erp_module_has_doctypes` — check helper
+
+### 6. Permissions
+- [x] `view_metadata_modules`, `create_metadata_module`, `update_metadata_module`, `delete_metadata_module`
+- [x] Granted to owner/admin via `role_permission_grants`
+- [x] Auto-included in `create_company_role` owner/admin grants
+
+### 7. Verification
 - [x] TypeScript: 0 errors
-- [x] ESLint: 0 errors, 55 warnings
+- [x] ESLint: 0 errors
 - [x] Vitest: 77/77 PASS
 - [x] Build: SUCCESS
-- [x] Cloud verifier: 36/36 PASS (with new credentials)
-- [x] Browser verifier: 23/23 PASS (with new credentials)
+- [x] Simulation: scripts ready
+- [ ] Browser verifier: run on Supabase Cloud
+- [x] Browser verifier script created
 
-### 6. Documentation
-- [x] Updated tasks.md
-- [x] Updated progress.md
-- [x] Updated `docs/ai-runs/2026-06-06_phase-6-8-3-credential-rotation-proof.md`
-- [x] Created `docs/ai-runs/2026-06-06_phase-6-8-4-final-credential-rotation-confirmation.md`
+### 8. Documentation
+- [x] Created `docs/ai-runs/2026-06-06_phase-6-8-5-metadata-module-manager-repair.md`
+- [x] Updated `tasks.md`
+- [x] Updated `progress.md`
+- [x] Docs state: Not the future full Module Builder. Phase 6.9 not started.
 
-### 7. Final
+### 9. Push
 - [ ] Final commit and push to phase-2.5-metadata-engine
-
-## Rotation status
-
-| Credential | Status | Notes |
-|-----------|--------|-------|
-| Publishable key | ✅ ROTATED | `sb_publishable_s1_4--4nxdoY1vInmomjCg_ybbUTu2A` |
-| Admin password | ✅ ROTATED | Old `Phase64Admin!2026` rejected, new `Admin@2026` works |
-| Low-priv password | ✅ ROTATED | Old `Phase64Low!2026` rejected, new `User@2026` works |
-| Service role key | ⚠️ NOT ROTATED | Same JWT — no API endpoint; requires Dashboard JWT Secret regeneration |
-
-## Remaining gaps
-
-- Service role key not rotatable via API (requires Supabase Dashboard manual action)
-- Phase 6.9 is NOT started

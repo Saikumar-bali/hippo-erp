@@ -1,6 +1,7 @@
-import { Blocks, Columns3, FileJson, LayoutDashboard, LayoutTemplate, ListChecks, ListTree, PlusCircle, Printer, ShieldCheck, Table, WandSparkles } from "lucide-react";
+import { Blocks, Box, Columns3, FileJson, LayoutDashboard, LayoutTemplate, ListChecks, ListTree, PlusCircle, Printer, ShieldCheck, Table, WandSparkles } from "lucide-react";
 
 const builderSections = [
+  { key: "metadata_studio_module_manager", label: "Module Manager", icon: Box, desc: "Create and manage ERP modules used by DocTypes" },
   { key: "metadata_studio_doctype_builder", label: "DocType Builder", icon: FileJson, desc: "Create a business document type, then choose storage details only when needed" },
   { key: "metadata_studio_field_builder", label: "Field Builder", icon: Columns3, desc: "Add the fields users see on forms, with technical field keys shown second" },
   { key: "metadata_studio_list_view_builder", label: "List View Designer", icon: Table, desc: "Choose useful columns, filters, and search fields for daily work" },
@@ -57,13 +58,15 @@ export function MetadataStudioHome({ onNavigate }: Props) {
             <strong>Recommended setup flow</strong>
           </div>
           <div className="studio-pills">
-            <span>1. DocType Builder</span>
-            <span>2. Field Builder</span>
-            <span>3. List View Designer</span>
-            <span>4. Form Layout Designer</span>
-            <span>5. Workspace Menu Designer</span>
-            <span>6. Access Setup</span>
-            <span>7. Access Control Manager</span>
+            <span>1. Module Manager</span>
+            <span>2. DocType Builder</span>
+            <span>3. Field Builder</span>
+            <span>4. List View Designer</span>
+            <span>5. Form Layout Designer</span>
+            <span>6. Workspace Menu Designer</span>
+            <span>7. Access Setup</span>
+            <span>8. Access Control Manager</span>
+            <span>9. Check / Repair</span>
           </div>
         </div>
         <div className="studio-panel studio-panel--warm">
