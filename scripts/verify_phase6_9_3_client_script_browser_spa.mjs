@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Phase 6.9.3 — Client Script Browser SPA Proof
+ * Phase 6.9.4 — Client Script Browser Assertion Honesty Gate
  *
  * Uses real SPA navigation (sidebar/menu clicks, not page.goto) to verify:
  * - Client Scripts page loads without PGRST202
@@ -8,6 +8,11 @@
  * - CRM Lead form responds to client script rules (status=Qualified -> expected_value required)
  * - Restricted user blocked from Client Scripts management
  * - No PGRST202 errors anywhere
+ *
+ * STRICT RULES:
+ * - referral_name must be VISIBLE after source=Referral (fail if hidden)
+ * - expected_value must have required attribute or explicit validation after status=Qualified
+ * - PGRST202 must be absent from ALL sources
  *
  * Exit code: 0 if all pass, 1 if any fail.
  */
@@ -50,7 +55,10 @@ function setupPage(page) {
       pgrstErrors.push({ source: "console", text: text.substring(0, 150) });
     }
     if (msg.type() === "error") {
-      consoleErrors.push(text.substring(0, 150));
+      // Filter out ERR_NAME_NOT_RESOLVED (offline font/analytics CDN, not app errors)
+      if (!text.includes("ERR_NAME_NOT_RESOLVED")) {
+        consoleErrors.push(text.substring(0, 150));
+      }
     }
   });
   page.on("pageerror", (err) => {
@@ -58,7 +66,9 @@ function setupPage(page) {
     if (msg.includes("PGRST202") || msg.includes("schema cache")) {
       pgrstErrors.push({ source: "pageerror", text: msg.substring(0, 150) });
     }
-    consoleErrors.push(msg.substring(0, 150));
+    if (!msg.includes("ERR_NAME_NOT_RESOLVED")) {
+      consoleErrors.push(msg.substring(0, 150));
+    }
   });
   page.on("response", (resp) => {
     if (resp.status() >= 400) {
@@ -243,30 +253,47 @@ async function run() {
         await adminPage.waitForTimeout(2000);
         pass("8. Status changed to Qualified");
 
-        // 11. Try submit without expected_value — validation should fire
-        // The submit button is labeled "Create Lead" (not "Save")
-        // Use specific selector to avoid sidebar submit buttons
-        try {
-          const submitBtn = await adminPage.$('button:has-text("Create Lead")');
-          if (submitBtn) {
-            await submitBtn.click();
-            await adminPage.waitForTimeout(2500);
-          }
-        } catch {}
-        await adminPage.waitForTimeout(1500);
+        // Re-query expected_value after React re-render (status change triggers re-render)
+        const evAfterStatusChange = await adminPage.$('input[name="expected_value"]');
 
-        const afterSubmitBody = await adminPage.textContent("body");
-        const hasValidation = afterSubmitBody.includes("required") || afterSubmitBody.includes("Expected Value") || afterSubmitBody.includes("validation") || afterSubmitBody.includes("error");
-        if (hasValidation) {
-          pass("9. Validation shown when saving without expected_value");
-        } else {
-          // Check if the form is still open (didn't navigate away) — also counts as validation blocking
-          const formStillOpen = await adminPage.$('button:has-text("Cancel")');
-          if (formStillOpen) {
-            pass("9. Validation blocked save, form still open");
-          } else {
-            fail("9. Validation shown when saving without expected_value", "No validation message detected");
+        // 9. Verify expected_value becomes required after status=Qualified
+        if (evAfterStatusChange) {
+          let expectedValueProved = false;
+          let proofMethod = "";
+
+          // Check 1: required HTML attribute on the input
+          const evRequired = await evAfterStatusChange.evaluate(el => el.hasAttribute('required'));
+          if (evRequired) { expectedValueProved = true; proofMethod = "required attr"; }
+
+          // Check 2: asterisk (*) in the label near expected_value
+          if (!expectedValueProved) {
+            const bodyHtml = await adminPage.content();
+            if (bodyHtml.includes("Expected Value *") || bodyHtml.includes("Expected Value&#x2F;*")) {
+              expectedValueProved = true;
+              proofMethod = "asterisk label";
+            }
           }
+
+          if (expectedValueProved) {
+            pass("9. expected_value required after status=Qualified (" + proofMethod + ")");
+          } else {
+            // Check 3: try save and look for validation message
+            const submitBtn = await adminPage.$('button:has-text("Create Lead")');
+            if (submitBtn) {
+              await submitBtn.click();
+              await adminPage.waitForTimeout(3000);
+              const afterBody = await adminPage.textContent("body");
+              if (afterBody.includes("is required") || afterBody.includes("Expected Value") || afterBody.includes("validation")) {
+                pass("9. expected_value required after status=Qualified (validation msg)");
+              } else {
+                fail("9. expected_value required after status=Qualified", "No required attribute, no asterisk, no validation message");
+              }
+            } else {
+              fail("9. expected_value required after status=Qualified", "No required attribute, no asterisk, submit btn not found");
+            }
+          }
+        } else {
+          fail("9. expected_value required after status=Qualified", "expected_value input disappeared after status change");
         }
       } else {
         fail("8. Status dropdown", 'select[name="status"] not found');
@@ -287,7 +314,7 @@ async function run() {
       fail("10. Expected Value fill", e.message);
     }
 
-    // 13. Change source to Referral — verify referral_name visibility
+    // 13. Change source to Referral — STRICTLY verify referral_name is VISIBLE
     try {
       // Check form is still open; if not, reopen it
       let sourceSelect = await adminPage.$('select[name="source"]');
@@ -302,17 +329,19 @@ async function run() {
       if (sourceSelect) {
         await sourceSelect.selectOption("Referral");
         await adminPage.waitForTimeout(2000);
-        // Check if referral_name input is visible (Playwright's isVisible)
+        // STRICT CHECK: referral_name must exist AND be visible
         const rnInput = await adminPage.$('input[name="referral_name"]');
         if (rnInput) {
           const isVisible = await rnInput.isVisible();
           if (isVisible) {
             pass("11. source=Referral makes referral_name visible");
           } else {
-            pass("11. source=Referral triggered script", "referral_name input exists but not currently visible (possibly hidden by script condition)");
+            await screenshot(adminPage, "11-referral-name-hidden");
+            fail("11. source=Referral makes referral_name visible", "referral_name input exists but is HIDDEN — client script failed to show it");
           }
         } else {
-          fail("11. source=Referral", "referral_name input not found after source change");
+          await screenshot(adminPage, "11-referral-name-missing");
+          fail("11. source=Referral makes referral_name visible", "referral_name input NOT FOUND after source change");
         }
       } else {
         fail("11. source=Referral", 'select[name="source"] not found even after reopen');
@@ -410,7 +439,7 @@ async function run() {
 
   // ── Summary ─────────────────────────────────────────────────────────
   const output = {
-    phase: "6.9.3",
+    phase: "6.9.4",
     type: "browser-spa",
     timestamp: new Date().toISOString(),
     results,

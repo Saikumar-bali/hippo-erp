@@ -137,7 +137,7 @@ export function DynamicFormPage({
         value = rawValue ? Number(rawValue) : 0;
       }
       setFormValues((prev) => ({ ...prev, [fieldname]: value }));
-      runOnFieldChange(fieldname);
+      runOnFieldChange(fieldname, value);
     },
     [fieldMap, runOnFieldChange],
   );

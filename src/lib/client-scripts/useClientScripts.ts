@@ -83,7 +83,7 @@ export function useClientScripts(
   }, [doctypeKey, companyId]);
 
   const evaluateEvent = useCallback(
-    (event: ScriptEvent, changedField?: string): ScriptEvaluationResult => {
+    (event: ScriptEvent, changedField?: string, changedValue?: unknown): ScriptEvaluationResult => {
       const fieldMeta = new Map<
         string,
         { fieldname: string; fieldtype: string; label: string; is_required: boolean; is_hidden: boolean; is_readonly: boolean }
@@ -99,9 +99,14 @@ export function useClientScripts(
         });
       }
 
+      // Merge changed value into formValues immediately (avoids stale closure)
+      const mergedValues = changedField && changedValue !== undefined
+        ? { ...formValues, [changedField]: changedValue }
+        : formValues;
+
       return evaluateScripts(scripts, {
         event,
-        formValues,
+        formValues: mergedValues,
         changedField,
         doctypeKey,
         fieldMeta,
@@ -149,10 +154,10 @@ export function useClientScripts(
   }, [loading, scripts.length, evaluateEvent, applyResult]);
 
   const runOnFieldChange = useCallback(
-    (changedField: string) => {
+    (changedField: string, newValue?: unknown) => {
       if (loading || scripts.length === 0) return;
       lastChangedField.current = changedField;
-      const result = evaluateEvent("onFieldChange", changedField);
+      const result = evaluateEvent("onFieldChange", changedField, newValue);
       applyResult(result);
     },
     [loading, scripts.length, evaluateEvent, applyResult],

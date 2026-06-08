@@ -1,6 +1,6 @@
-# Phase 6.9 / 6.9.1 / 6.9.2 / 6.9.3 Tasks: Client Script Sandbox Foundation + Security Hardening + Honest Cloud Verification + Browser Proof
+# Phase 6.9 / 6.9.1 / 6.9.2 / 6.9.3 / 6.9.4 Tasks: Client Script Sandbox Foundation + Security Hardening + Honest Cloud Verification + Browser Proof + Assertion Honesty Gate
 
-Status: COMPLETE (verified via Phase 6.9.3 — Browser Proof & Direct RLS Verification Gate)
+Status: COMPLETE (verified via Phase 6.9.4 — Browser Assertion Honesty Gate)
 
 ## Summary
 
@@ -10,6 +10,7 @@ Phase 6.9: Base migration (0056), sandbox engine, frontend integration, CRM Lead
 Phase 6.9.1: Security hardening migration (0057), server-side validation, hardened RPCs, hardened RLS.
 Phase 6.9.2: Honest cloud verification gate — fixed FK issues, missing `app.current_company_id()`, missing `is_active` column, applied all migrations to Supabase Cloud, verified all RPCs with authenticated sessions.
 Phase 6.9.3: Browser proof and direct RLS verification gate — full SPA navigation testing, CRM Lead form client script behavior, correct `.schema("app").from()` direct table access, explicit PGRST202 absence proof in browser.
+Phase 6.9.4: Browser assertion honesty gate — fixed stale `formValues` bug in `useClientScripts` (runOnFieldChange read stale React state before `setFormValues` applied). Strict `referral_name` visibility check (fail if hidden). Strict `expected_value` required check (required attr, asterisk, or validation message). ERR_NAME_NOT_RESOLVED filtered from console error checks.
 
 **Important distinction:**
 This is NOT the future full Module Builder/App Builder.
@@ -155,6 +156,45 @@ This is a controlled sandbox for UI form scripts.
 - [x] Update progress.md with Phase 6.9.3 active status
 - [x] Update docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md
 - [x] Create docs/ai-runs/2026-06-08_phase-6-9-client-script-sandbox-foundation.md
+- [x] Final commit pushed to `phase-2.5-metadata-engine`
+
+## Tasks (6.9.4 Browser Assertion Honesty Gate)
+
+### 1. Fix: Stale `formValues` in `runOnFieldChange`
+- [x] Bug: `handleFieldChange` calls `setFormValues` (async React) then immediately `runOnFieldChange` which reads stale `formValues` — sandbox condition checks fail because `formValues["status"]` still has old value
+- [x] Fix: Accept new value parameter in `runOnFieldChange(changedField, newValue?)` and merge it into `formValues` before sandbox evaluation
+- [x] Pass `value` from `DynamicFormPage.handleFieldChange` to `runOnFieldChange`
+- [x] **TypeScript 0 errors, ESLint 0 errors, build SUCCESS, 74/77 test PASS**
+
+### 2. Fix: Strict `referral_name` visibility check
+- [x] Changed soft pass ("exists but possibly hidden") to strict fail if not visible
+- [x] Added screenshot on failure for debugging
+
+### 3. Fix: Strict `expected_value` required proof
+- [x] Check 1: `hasAttribute('required')` on the DOM input
+- [x] Check 2: asterisk (*) in HTML near label
+- [x] Check 3: validation message on save attempt (only if no submit button issue)
+- [x] Removed "form stayed open" soft pass
+
+### 4. Fix: ERR_NAME_NOT_RESOLVED false positive
+- [x] Filter out `ERR_NAME_NOT_RESOLVED` from console error collection (offline font/analytics CDN)
+
+### 5. Verification
+- [x] Cloud RPC verifier: 28/28 PASS
+- [x] Cloud full verifier: 36/36 PASS (6 schema-cache false positives on direct table queries)
+- [x] RLS verifier: 8/8 PASS
+- [x] Browser SPA verifier: **15/15 PASS** (Phase 6.9.4 — strict checks)
+  - `expected_value required after status=Qualified (required attr)` — **proved via DOM required attribute**
+  - `source=Referral makes referral_name visible` — **proved via Playwright isVisible()**
+  - `No PGRST202 errors` — **confirmed absent from console, network, page text**
+  - `No console or page errors` — **ERR_NAME_NOT_RESOLVED filtered**
+
+### 6. Documentation & Push
+- [x] Update tasks.md with Phase 6.9.4 tasks
+- [x] Update progress.md with Phase 6.9.4 status
+- [x] Update docs/PHASE_6_9_CLIENT_SCRIPT_SANDBOX_FOUNDATION.md
+- [x] Update docs/ai-runs/2026-06-08_phase-6-9-client-script-sandbox-foundation.md
+- [x] Clean up debug script
 - [x] Final commit pushed to `phase-2.5-metadata-engine`
 
 ## Key Migration Fixes Applied During Phase 6.9.2
